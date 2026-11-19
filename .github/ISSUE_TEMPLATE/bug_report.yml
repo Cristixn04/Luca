@@ -1,0 +1,29 @@
+name: Reporte de error
+description: Reporta un comportamiento inesperado en Luca
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Descripción
+      description: Qué ocurrió y qué esperabas que ocurriera.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      placeholder: |
+        1. Abrir...
+        2. Ingresar...
+        3. Observar...
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Entorno
+      placeholder: "Navegador, sistema operativo y versión de Luca"
+    validations:
+      required: true

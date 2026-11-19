@@ -1,0 +1,37 @@
+name: Tarea de hito
+description: Registra una tarea planificada (máximo 4 h) para un hito de Luca
+title: "[T0.0] "
+labels: ["task"]
+body:
+  - type: input
+    id: milestone
+    attributes:
+      label: Hito
+      placeholder: "Ej. M1 · Dominio en TypeScript"
+    validations:
+      required: true
+  - type: input
+    id: estimate
+    attributes:
+      label: Estimación (horas, ≤ 4 h)
+      placeholder: "Ej. 3 h"
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objetivo
+      description: Qué problema resuelve esta tarea y qué archivos/módulos toca.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Criterios de aceptación
+      description: Condiciones verificables (pruebas unitarias, RNF, comportamiento).
+      value: |
+        - [ ] Pruebas unitarias en verde
+        - [ ] Lint, tipos y build en verde
+        - [ ] Documentación actualizada
+    validations:
+      required: true
