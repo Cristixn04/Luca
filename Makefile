@@ -1,4 +1,4 @@
-.PHONY: install dev test test-coverage lint typecheck build format api-dev api-test
+.PHONY: install dev test test-coverage e2e lint typecheck build format api-dev api-test
 
 install:
 	pnpm install
@@ -11,6 +11,9 @@ test:
 
 test-coverage:
 	pnpm test:coverage
+
+e2e:
+	pnpm e2e
 
 lint:
 	pnpm lint

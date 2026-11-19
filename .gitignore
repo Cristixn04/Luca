@@ -46,6 +46,8 @@ htmlcov/
 
 # Testing & Coverage
 coverage/
+test-results/
+playwright-report/
 
 # OS / Editor
 .DS_Store

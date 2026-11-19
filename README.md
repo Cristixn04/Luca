@@ -2,7 +2,7 @@
 
 **Clóset inteligente, probador de calce en tres vistas y asesor de color. Una web instalable que recuerda tus gustos y guarda tus datos solo en tu dispositivo.**
 
-![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M2)-blue)
+![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M3)-blue)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green)
 ![Plataforma](https://img.shields.io/badge/plataforma-PWA-5A0FC8)
 ![Dominio](https://img.shields.io/badge/dominio-TypeScript-3178C6)
@@ -13,7 +13,7 @@ Luca te dice **cuánta holgura tendrá una prenda en cada zona de tu cuerpo** (v
 
 La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu perfil de color, tus gustos y tu historial nunca salen de tu dispositivo**, y se guardan cifrados con una contraseña que solo tú conoces. Los servicios en la nube son una API **sin estado y sin cuentas** que solo procesa lo mínimo, con tu permiso, y no guarda nada.
 
-> **Estado del documento:** hitos M0 y M1 completados; siguiente hito activo: **M2 (`v0.1`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
+> **Estado del documento:** hitos M0 a M2 completados (`v0.1` — primer producto usable); siguiente hito activo: **M3 (`v0.2`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
 
 ---
 
@@ -21,13 +21,13 @@ La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu 
 
 Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada hito.
 
-**Progreso global: 37 / 280 h** (núcleo M0–M11) · Hito actual: **M2**
+**Progreso global: 63 / 280 h** (núcleo M0–M11) · Hito actual: **M3**
 
 | Hito | Nombre | Release | Horas est. | Estado |
 | :-- | :-- | :-- | --: | :-- |
 | M0 | Fundaciones (monorepo, CI, diseño base) | v0.0 | 13 | Completado |
 | M1 | Dominio en TypeScript: cuerpo y calce | — | 24 | Completado |
-| M2 | Avatar de frente y probador con mapa de calor | **v0.1** | 26 | Pendiente |
+| M2 | Avatar de frente y probador con mapa de calor | **v0.1** | 26 | Completado |
 | M3 | Almacenamiento local seguro y bóveda cifrada | **v0.2** | 26 | Pendiente |
 | M4 | Clóset local y tallas | **v0.3** | 22 | Pendiente |
 | M5 | Vistas de perfil y de espalda | v0.4 | 22 | Pendiente |
@@ -972,15 +972,15 @@ Planifica con el colchón: estimar siempre se queda corto. El **camino mínimo (
 
 ### M2 · Avatar de frente y probador con mapa de calor (26 h) → **v0.1**
 
-- [ ] T2.1 Formulario de medidas con guía, validación, cm/in y estado reactivo en memoria (Zustand/React; sin persistencia en IDB hasta M3 para evitar retrabajo) (3 h)
-- [ ] T2.2 Avatar SVG de frente desde el `BodyModel` (4 h)
-- [ ] T2.3 Arquitectura de anclajes paramétricos SVG y plantilla de camiseta (frente) (4 h)
-- [ ] T2.4 Plantilla SVG paramétrica de pantalón (frente) (3 h)
-- [ ] T2.5 Panel de prenda temporal con medidas manuales (3 h)
-- [ ] T2.6 Mapa de calor con paleta accesible, etiquetas, patrones y leyenda (4 h)
-- [ ] T2.7 Preferencia de calce, estados vacíos y errores (2 h)
-- [ ] T2.8 PWA base: manifiesto, service worker, instalable y sin conexión (2 h)
-- [ ] T2.9 Prueba e2e: medidas → prenda → mapa de calor (1 h)
+- [x] T2.1 Formulario de medidas con guía, validación, cm/in y estado reactivo en memoria (Zustand/React; sin persistencia en IDB hasta M3 para evitar retrabajo) (3 h)
+- [x] T2.2 Avatar SVG de frente desde el `BodyModel` (4 h)
+- [x] T2.3 Arquitectura de anclajes paramétricos SVG y plantilla de camiseta (frente) (4 h)
+- [x] T2.4 Plantilla SVG paramétrica de pantalón (frente) (3 h)
+- [x] T2.5 Panel de prenda temporal con medidas manuales (3 h)
+- [x] T2.6 Mapa de calor con paleta accesible, etiquetas, patrones y leyenda (4 h)
+- [x] T2.7 Preferencia de calce, estados vacíos y errores (2 h)
+- [x] T2.8 PWA base: manifiesto, service worker, instalable y sin conexión (2 h)
+- [x] T2.9 Prueba e2e: medidas → prenda → mapa de calor (1 h)
 
 **Hecho cuando:** una persona nueva instala la web, ingresa sus medidas, prueba una prenda con medidas manuales y ve el mapa de calor con cifras, incluso sin conexión. **Primer producto usable.**
 

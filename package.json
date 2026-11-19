@@ -10,6 +10,7 @@
     "build": "pnpm --filter @luca/domain build && pnpm --filter web build",
     "test": "pnpm --recursive run test",
     "test:coverage": "pnpm --recursive run test:coverage",
+    "e2e": "pnpm --filter web e2e",
     "typecheck": "pnpm --recursive run typecheck",
     "lint": "pnpm --recursive run lint",
     "format": "prettier --write .",
