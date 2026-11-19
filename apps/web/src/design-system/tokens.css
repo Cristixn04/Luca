@@ -1,0 +1,44 @@
+:root {
+  color-scheme: light dark;
+
+  --bg: light-dark(#faf9f7, #111315);
+  --surface: light-dark(#ffffff, #1a1d20);
+  --ink: light-dark(#1b1f23, #eceef0);
+  --muted: light-dark(#5b6670, #9aa4ad);
+  --accent: light-dark(#1f5f6b, #5fb3c0);
+  --accent-ink: light-dark(#ffffff, #111315);
+  --border: light-dark(#e4e0da, #2a2f34);
+
+  /* Mapa de calor accesible para daltonismo */
+  --fit-tense: #c2410c;
+  --fit-tight: #e0a526;
+  --fit-regular: #2a9d8f;
+  --fit-loose: #5b8def;
+  --fit-oversize: #7c6fd6;
+
+  /* Tipografía y geometría */
+  --font-display: 'Manrope', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+
+  --motion-fast: 150ms;
+  --motion-normal: 220ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:has(> head > meta[name='color-scheme'][content='dark']) {
+    color-scheme: dark;
+  }
+
+  &:has(> head > meta[name='color-scheme'][content='light']) {
+    color-scheme: light;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-normal: 0ms;
+  }
+}
