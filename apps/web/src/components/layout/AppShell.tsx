@@ -64,7 +64,7 @@ export function AppShell({ activeSection, onSelectSection, children }: AppShellP
             >
               Luca
             </a>
-            <Badge variant="accent">v0.0</Badge>
+            <Badge variant="accent">v0.1</Badge>
           </div>
 
           <nav aria-label="Navegación principal" className="hidden md:block">
@@ -163,7 +163,7 @@ export function AppShell({ activeSection, onSelectSection, children }: AppShellP
       <footer className="border-t border-border bg-surface">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-xs text-muted sm:px-6">
           <span>Luca · Datos cifrados solo en tu dispositivo</span>
-          <span className="tabular-nums">Hito M0 · Fundaciones</span>
+          <span className="tabular-nums">Luca v0.1 · PWA local</span>
         </div>
       </footer>
     </div>

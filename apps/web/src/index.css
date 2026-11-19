@@ -66,3 +66,21 @@
 .skip-link:focus {
   inset-block-start: 0.75rem;
 }
+
+dialog:modal {
+  overscroll-behavior: contain;
+  margin: auto;
+  max-inline-size: min(92vw, 38rem);
+  max-block-size: 88dvh;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgb(17 19 21 / 55%);
+}
