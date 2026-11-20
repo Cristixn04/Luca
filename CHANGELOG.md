@@ -6,6 +6,17 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-20
+
+### Added
+- **M4 · Clóset local y tallas (`v0.3` — camino mínimo útil M0–M4 completo)**:
+  - Esquema y casos de uso CRUD cifrados para prendas (`garment`) y tablas de tallas en plano (`size_option`) con estados `owned`/`wishlist` y borrado en cascada (`features/closet/types.ts`, `closetService.ts`, `closetStore.ts`).
+  - Editor de tabla de tallas en plano (`SizeTableEditor`) con soporte `cm`/`in` y formulario modal nativo (`GarmentFormDialog`).
+  - Vista Clóset (`ClosetView`) con grilla fluida, búsqueda, filtros (categoría, estado, formalidad), ordenamiento, estados vacíos y badge en vivo de talla sugerida.
+  - Detalle de prenda (`GarmentDetailView`) con probador integrado, mapa de calor, comparativa ordenada de tallas (`recommendSize`) y acceso directo al Probador.
+  - Registro automático de eventos `garment_added`, `garment_edited` y `garment_deleted` en `INTERACTION_EVENT`.
+  - Endurecimiento de seguridad para producción: fuentes Inter/Manrope autoalojadas (`@fontsource`), CSP estricta en `index.html` sin scripts inline ni orígenes externos (`/theme-init.js`), limpieza de memoria del clóset al bloquear la bóveda, cabeceras de seguridad en FastAPI (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) y suite de auditoría de seguridad/privacidad unitaria y e2e (`security.test.tsx`, `e2e/security.spec.ts`, `e2e/closet.spec.ts`).
+
 ## [0.2.0] - 2026-11-20
 
 ### Added

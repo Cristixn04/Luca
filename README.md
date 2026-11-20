@@ -2,7 +2,7 @@
 
 **Clóset inteligente, probador de calce en tres vistas y asesor de color. Una web instalable que recuerda tus gustos y guarda tus datos solo en tu dispositivo.**
 
-![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M4)-blue)
+![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M5)-blue)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green)
 ![Plataforma](https://img.shields.io/badge/plataforma-PWA-5A0FC8)
 ![Dominio](https://img.shields.io/badge/dominio-TypeScript-3178C6)
@@ -13,7 +13,7 @@ Luca te dice **cuánta holgura tendrá una prenda en cada zona de tu cuerpo** (v
 
 La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu perfil de color, tus gustos y tu historial nunca salen de tu dispositivo**, y se guardan cifrados con una contraseña que solo tú conoces. Los servicios en la nube son una API **sin estado y sin cuentas** que solo procesa lo mínimo, con tu permiso, y no guarda nada.
 
-> **Estado del documento:** hitos M0 a M3 completados (`v0.2` — almacenamiento local seguro y bóveda cifrada); siguiente hito activo: **M4 (`v0.3`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
+> **Estado del documento:** hitos M0 a M4 completados (**`v0.3` — camino mínimo útil completo: medidas cifradas, probador con mapa de calor y clóset local con talla recomendada**); siguiente hito activo: **M5 (`v0.4`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
 
 ---
 
@@ -21,7 +21,7 @@ La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu 
 
 Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada hito.
 
-**Progreso global: 89 / 280 h** (núcleo M0–M11) · Hito actual: **M4**
+**Progreso global: 111 / 280 h** (núcleo M0–M11) · Hito actual: **M5**
 
 | Hito | Nombre | Release | Horas est. | Estado |
 | :-- | :-- | :-- | --: | :-- |
@@ -29,7 +29,7 @@ Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada
 | M1 | Dominio en TypeScript: cuerpo y calce | — | 24 | Completado |
 | M2 | Avatar de frente y probador con mapa de calor | **v0.1** | 26 | Completado |
 | M3 | Almacenamiento local seguro y bóveda cifrada | **v0.2** | 26 | Completado |
-| M4 | Clóset local y tallas | **v0.3** | 22 | Pendiente |
+| M4 | Clóset local y tallas | **v0.3** | 22 | Completado |
 | M5 | Vistas de perfil y de espalda | v0.4 | 22 | Pendiente |
 | M6 | API de servicios e ingesta de fotos | v0.5 | 29 | Pendiente |
 | M7 | Etiquetado y búsqueda | v0.6 | 16 | Pendiente |
@@ -999,13 +999,13 @@ Planifica con el colchón: estimar siempre se queda corto. El **camino mínimo (
 
 ### M4 · Clóset local y tallas (22 h) → **v0.3**
 
-- [ ] T4.1 Esquema de prendas, tallas y estados (propia o deseo) sobre `LocalStore` (3 h)
-- [ ] T4.2 Casos de uso CRUD de prendas (3 h)
-- [ ] T4.3 Editor de tabla de tallas con medidas en plano y guía (4 h)
-- [ ] T4.4 Vista Clóset: grilla, filtros, orden y estados vacíos (4 h)
-- [ ] T4.5 Detalle de prenda con probador y talla recomendada (4 h)
-- [ ] T4.6 Registro de eventos de uso del clóset (agregar, editar, borrar) (2 h)
-- [ ] T4.7 Pruebas de integración y e2e del clóset (2 h)
+- [x] T4.1 Esquema de prendas, tallas y estados (propia o deseo) sobre `LocalStore` (3 h)
+- [x] T4.2 Casos de uso CRUD de prendas (3 h)
+- [x] T4.3 Editor de tabla de tallas con medidas en plano y guía (4 h)
+- [x] T4.4 Vista Clóset: grilla, filtros, orden y estados vacíos (4 h)
+- [x] T4.5 Detalle de prenda con probador y talla recomendada (4 h)
+- [x] T4.6 Registro de eventos de uso del clóset (agregar, editar, borrar) (2 h)
+- [x] T4.7 Pruebas de integración y e2e del clóset (2 h)
 
 **Hecho cuando:** guardas prendas con tallas, reabres la app (desbloqueando) y ves el calce y la talla sugerida. Con esto se completa el **camino mínimo útil**.
 
