@@ -1,0 +1,23 @@
+services:
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    env_file:
+      - path: ./services/api/.env
+        required: false
+    environment:
+      - LUCA_ALLOWED_ORIGINS=http://localhost:8080
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api
+    restart: unless-stopped

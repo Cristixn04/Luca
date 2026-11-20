@@ -2,7 +2,7 @@
 
 **Clóset inteligente, probador de calce en tres vistas y asesor de color. Una web instalable que recuerda tus gustos y guarda tus datos solo en tu dispositivo.**
 
-![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M11)-blue)
+![Estado](https://img.shields.io/badge/estado-v1.0%20completado-brightgreen)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green)
 ![Plataforma](https://img.shields.io/badge/plataforma-PWA-5A0FC8)
 ![Dominio](https://img.shields.io/badge/dominio-TypeScript-3178C6)
@@ -13,7 +13,7 @@ Luca te dice **cuánta holgura tendrá una prenda en cada zona de tu cuerpo** (v
 
 La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu perfil de color, tus gustos y tu historial nunca salen de tu dispositivo**, y se guardan cifrados con una contraseña que solo tú conoces. Los servicios en la nube son una API **sin estado y sin cuentas** que solo procesa lo mínimo, con tu permiso, y no guarda nada.
 
-> **Estado del documento:** hitos M0 a M10 completados (**`v0.9` — Motor de gustos explicable con suavizado de Laplace, decaimiento de 90 días, componente Gusto en outfits, panel Memoria con fijar/vetar/pausar/olvidar y prueba de privacidad de red**); siguiente hito activo: **M11 (`v1.0`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
+> **Estado del documento:** núcleo completo M0 a M11 completado (**`v1.0.0`** — Probador en 3 vistas con 7 categorías de prendas, bóveda cifrada, clóset con fotos y búsqueda local, colorimetría en 12 estaciones, outfits con clima/CPW, memoria de gustos explicable, onboarding, i18n ES/EN, privacidad y despliegue Docker). Hito opcional futuro: **M12 (`v1.1`)**.
 
 ---
 
@@ -21,7 +21,7 @@ La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu 
 
 Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada hito.
 
-**Progreso global: 254 / 280 h** (núcleo M0–M11) · Hito actual: **M11**
+**Progreso global: 280 / 280 h** (núcleo M0–M11 completo) · Versión actual: **`v1.0.0`**
 
 | Hito | Nombre | Release | Horas est. | Estado |
 | :-- | :-- | :-- | --: | :-- |
@@ -36,7 +36,7 @@ Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada
 | M8 | Colorimetría estacional | v0.7 | 26 | Completado |
 | M9 | Outfits, clima, uso y costo por uso | v0.8 | 28 | Completado |
 | M10 | Memoria y gustos | v0.9 | 22 | Completado |
-| M11 | Pulido, accesibilidad y lanzamiento | **v1.0** | 26 | Pendiente |
+| M11 | Pulido, accesibilidad y lanzamiento | **v1.0** | 26 | Completado |
 | M12 | Opcional: asistente, calibración, sincronización (estudio) | v1.1 | 20 | Pendiente |
 
 > **Camino mínimo útil:** M0 a M4 suman **111 h** y ya entregan un producto privado y completo: medidas cifradas, probador con mapa de calor y clóset con talla recomendada. Todo lo demás se suma encima sin rehacer nada.
@@ -1087,13 +1087,13 @@ Planifica con el colchón: estimar siempre se queda corto. El **camino mínimo (
 
 ### M11 · Pulido, accesibilidad y lanzamiento (26 h) → **v1.0**
 
-- [ ] T11.1 Onboarding: bóveda → medidas → color → primera prenda (4 h)
-- [ ] T11.2 Plantillas restantes en tres vistas: manga larga, chaqueta, short, falda y vestido (8 h)
-- [ ] T11.3 i18n español e inglés y selector de unidades (3 h)
-- [ ] T11.4 Auditoría de accesibilidad y rendimiento (axe, Lighthouse) y correcciones (3 h)
-- [ ] T11.5 Política de privacidad y pantalla "Cómo se protegen tus datos" (2 h)
-- [ ] T11.6 Despliegue: hosting estático y API en contenedor, TLS y monitoreo básico sin datos personales (3 h)
-- [ ] T11.7 Documentación final, capturas y `CHANGELOG` (3 h)
+- [x] T11.1 Onboarding: bóveda → medidas → color → primera prenda (4 h)
+- [x] T11.2 Plantillas restantes en tres vistas: manga larga, chaqueta, short, falda y vestido (8 h)
+- [x] T11.3 i18n español e inglés y selector de unidades (3 h)
+- [x] T11.4 Auditoría de accesibilidad y rendimiento (axe, Lighthouse) y correcciones (3 h)
+- [x] T11.5 Política de privacidad y pantalla "Cómo se protegen tus datos" (2 h)
+- [x] T11.6 Despliegue: hosting estático y API en contenedor, TLS y monitoreo básico sin datos personales (3 h)
+- [x] T11.7 Documentación final, capturas y `CHANGELOG` (3 h)
 
 **Hecho cuando:** una persona sin conocimientos técnicos instala la app y la usa siguiendo solo la guía, y todos los RNF verificables pasan.
 

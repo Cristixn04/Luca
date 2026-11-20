@@ -6,6 +6,17 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-20
+
+### Added
+- **M11 · Pulido, accesibilidad y lanzamiento (`v1.0.0`)**:
+  - **7 plantillas SVG paramétricas en 3 vistas** (`Frente`, `Perfil`, `Espalda`): camiseta, manga larga, chaqueta (con solapas y línea frontal), pantalón, short, falda y vestido (con zonas de pecho, cintura y cadera), integradas en Probador, Clóset y Outfits en capas.
+  - **Onboarding guiado** (`OnboardingDialog`): asistente de 3 pasos (medidas → colorimetría → primera prenda o ejemplos) accesible sin bloquear a usuarios avanzados.
+  - **i18n Español / Inglés (`ES` / `EN`)** en `i18nStore.ts` con sincronización de `<html lang>` y selector rápido de unidades (`cm` / `in`) en el encabezado.
+  - **Pantalla "Cómo se protegen tus datos"** (`PrivacyView`) y política de privacidad en `docs/privacy-policy.md`.
+  - **Optimización de rendimiento y accesibilidad**: *code-splitting* (`manualChunks` en `vite.config.ts`), suite de auditoría WCAG (`accessibility.test.tsx`) y flujo E2E de lanzamiento (`e2e/m11-release.spec.ts`).
+  - **Despliegue listo para producción**: `apps/web/Dockerfile`, `apps/web/nginx.conf` (CSP y cabeceras endurecidas + proxy `/v1`), `docker-compose.yml` y guía `docs/deployment.md`.
+
 ## [0.9.0] - 2026-11-20
 
 ### Added
