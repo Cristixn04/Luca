@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   GARMENT_CATEGORIES,
   createBodyModel,
+  evaluateGarmentColorHarmony,
   recommendSize,
   validateBodyMeasurements,
   type GarmentCategory,
@@ -16,6 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/design-system/components/Card';
+import { getActiveSeasonId, useColorStore } from '@/features/color/colorStore';
 import { useFittingStore } from '@/features/fitting/store';
 import { createClosetSearchIndex } from './closetSearch';
 import { useClosetStore, type ClosetSortBy } from './closetStore';
@@ -62,6 +64,10 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
   const bodyMeasurements = useFittingStore((s) => s.bodyMeasurements);
   const fitPreference = useFittingStore((s) => s.fitPreference);
 
+  const colorProfile = useColorStore((s) => s.profile);
+  const colorLoaded = useColorStore((s) => s.loaded);
+  const loadColorProfile = useColorStore((s) => s.loadProfile);
+
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<GarmentWithSizes | null>(null);
 
@@ -70,6 +76,14 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
       void loadCloset();
     }
   }, [loadCloset, loaded]);
+
+  useEffect(() => {
+    if (!colorLoaded) {
+      void loadColorProfile();
+    }
+  }, [colorLoaded, loadColorProfile]);
+
+  const activeSeasonId = useMemo(() => getActiveSeasonId(colorProfile), [colorProfile]);
 
   const bodyModel = useMemo(() => {
     const m = { required: bodyMeasurements };
@@ -324,6 +338,11 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
                   )
                 : null;
 
+            const harmony =
+              activeSeasonId && garment.dominantColorHex
+                ? evaluateGarmentColorHarmony(garment.dominantColorHex, activeSeasonId)
+                : null;
+
             return (
               <Card
                 key={garment.id}
@@ -370,6 +389,17 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
                     <div className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-xs">
                       <span className="text-muted">Talla sugerida</span>
                       <span className="font-semibold text-accent">{rec.recommendedSize}</span>
+                    </div>
+                  )}
+                  {harmony && (
+                    <div
+                      data-testid={`garment-harmony-${garment.id}`}
+                      className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-xs"
+                    >
+                      <span className="text-muted">Afinidad paleta</span>
+                      <span className="tabular-nums font-semibold text-ink">
+                        {harmony.scorePercent} %
+                      </span>
                     </div>
                   )}
 

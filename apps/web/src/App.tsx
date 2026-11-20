@@ -12,13 +12,15 @@ import {
 } from '@/design-system/components/Card';
 import { HEATMAP_TOKENS } from '@/design-system/tokens';
 import { ClosetView } from '@/features/closet/ClosetView';
+import { useClosetStore } from '@/features/closet/closetStore';
+import { ColorView } from '@/features/color/ColorView';
 import { FittingRoom } from '@/features/fitting/FittingRoom';
 import { MemoryVaultPanel } from '@/features/vault/MemoryVaultPanel';
 import { VaultGate } from '@/features/vault/VaultGate';
 import { useVaultStore } from '@/features/vault/vaultStore';
 
 const PLACEHOLDER_SECTIONS: Record<
-  Exclude<NavSection, 'fitting' | 'closet' | 'memory'>,
+  Exclude<NavSection, 'fitting' | 'closet' | 'color' | 'memory'>,
   { title: string; subtitle: string; milestone: string; summary: string }
 > = {
   outfits: {
@@ -27,13 +29,6 @@ const PLACEHOLDER_SECTIONS: Record<
     milestone: 'M9 · v0.8',
     summary:
       'Combinaciones diversas con desglose numérico de color, estilo, calce, ocasión, variedad y gusto.',
-  },
-  color: {
-    title: 'Colorimetría estacional',
-    subtitle: 'Clasificación en 12 estaciones y distancia perceptual CIEDE2000.',
-    milestone: 'M8 · v0.7',
-    summary:
-      'Define tu perfil de color con muestras guiadas y evalúa la armonía de cada prenda con tu paleta.',
   },
 };
 
@@ -103,10 +98,16 @@ export function App() {
       {activeSection === 'closet' && (
         <ClosetView onOpenInFitting={() => setActiveSection('fitting')} />
       )}
-      {activeSection === 'memory' && <MemoryVaultPanel />}
-      {activeSection !== 'fitting' && activeSection !== 'closet' && activeSection !== 'memory' && (
-        <PlaceholderSection section={activeSection} />
+      {activeSection === 'color' && (
+        <ColorView
+          onOpenGarmentInCloset={(garmentId) => {
+            useClosetStore.getState().selectGarment(garmentId);
+            setActiveSection('closet');
+          }}
+        />
       )}
+      {activeSection === 'memory' && <MemoryVaultPanel />}
+      {activeSection === 'outfits' && <PlaceholderSection section={activeSection} />}
     </AppShell>
   );
 }
@@ -114,7 +115,7 @@ export function App() {
 function PlaceholderSection({
   section,
 }: {
-  section: Exclude<NavSection, 'fitting' | 'closet' | 'memory'>;
+  section: Exclude<NavSection, 'fitting' | 'closet' | 'color' | 'memory'>;
 }) {
   const current = PLACEHOLDER_SECTIONS[section];
 

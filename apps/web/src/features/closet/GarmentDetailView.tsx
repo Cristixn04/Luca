@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   createBodyModel,
+  evaluateGarmentColorHarmony,
   fromCm,
   recommendSize,
   validateBodyMeasurements,
@@ -17,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/design-system/components/Card';
+import { getActiveSeasonId, useColorStore } from '@/features/color/colorStore';
 import { useFittingStore, type M2GarmentCategory, type ViewerMode } from '@/features/fitting/store';
 import { AvatarViewer } from '@/features/fitting/svg/AvatarViewer';
 import { FIT_STATE_HEX, FIT_STATE_LABELS } from '@/features/fitting/svg/heatmapMeta';
@@ -79,6 +81,13 @@ export function GarmentDetailView({
   const toggleHeatmap = useFittingStore((s) => s.toggleHeatmap);
   const [detailViewMode, setDetailViewMode] = useState<ViewerMode>('front');
   const [photoSide, setPhotoSide] = useState<'front' | 'back'>('front');
+
+  const colorProfile = useColorStore((s) => s.profile);
+  const activeSeasonId = useMemo(() => getActiveSeasonId(colorProfile), [colorProfile]);
+  const colorHarmony = useMemo(() => {
+    if (!activeSeasonId || !garment.dominantColorHex) return null;
+    return evaluateGarmentColorHarmony(garment.dominantColorHex, activeSeasonId);
+  }, [activeSeasonId, garment.dominantColorHex]);
 
   const similarGarments = useMemo(
     () => findSimilarGarments(item, allItems, 4),
@@ -412,6 +421,67 @@ export function GarmentDetailView({
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {colorHarmony && (
+            <Card data-testid="garment-color-harmony-card">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle>Afinidad con tu paleta</CardTitle>
+                  <Badge variant="accent" className="tabular-nums">
+                    {colorHarmony.scorePercent} %
+                  </Badge>
+                </div>
+                <CardDescription>
+                  Estación activa: {colorHarmony.seasonLabel} · ΔE₀₀{' '}
+                  {colorHarmony.minDeltaE00.toFixed(1)}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3 text-xs">
+                <p className="text-muted">{colorHarmony.reason}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-bg p-2">
+                    <span
+                      className="h-6 w-6 shrink-0 rounded-xs border border-border"
+                      style={{ backgroundColor: colorHarmony.garmentHex }}
+                      aria-hidden="true"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-[11px] text-muted">Prenda</p>
+                      <p className="tabular-nums truncate font-semibold text-ink">
+                        {colorHarmony.garmentHex}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-bg p-2">
+                    <span
+                      className="h-6 w-6 shrink-0 rounded-xs border border-border"
+                      style={{ backgroundColor: colorHarmony.closestColor.hex }}
+                      aria-hidden="true"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-[11px] text-muted">
+                        {colorHarmony.closestColor.name}
+                      </p>
+                      <p className="tabular-nums truncate font-semibold text-ink">
+                        {colorHarmony.closestColor.hex}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 text-[11px] text-muted">
+                  <span className="tabular-nums">
+                    ΔL*: {colorHarmony.breakdown.deltaL >= 0 ? '+' : ''}
+                    {colorHarmony.breakdown.deltaL.toFixed(1)}
+                  </span>
+                  <span>·</span>
+                  <span className="tabular-nums">
+                    ΔC*: {colorHarmony.breakdown.deltaC >= 0 ? '+' : ''}
+                    {colorHarmony.breakdown.deltaC.toFixed(1)}
+                  </span>
                 </div>
               </CardContent>
             </Card>

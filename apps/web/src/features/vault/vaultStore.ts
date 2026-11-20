@@ -2,6 +2,7 @@ import type { OptionalBodyMeasurements, RequiredBodyMeasurements } from '@luca/d
 import { create } from 'zustand';
 import { DEFAULT_BODY_MEASUREMENTS, useFittingStore } from '@/features/fitting/store';
 import { useClosetStore } from '@/features/closet/closetStore';
+import { useColorStore, type PersistedColorProfile } from '@/features/color/colorStore';
 import { DexieLocalStore } from '@/infrastructure/storage/dexieStore';
 import {
   appendInteractionEvent,
@@ -65,6 +66,14 @@ async function hydrateFromVault(): Promise<{ eventCount: number; snapshotCount: 
       optionalMeasurements: saved.optionalCm ? { ...saved.optionalCm } : {},
     });
   }
+
+  const savedColor = await activeVault.getRecord<PersistedColorProfile>('color_profile', 'current');
+  useColorStore.setState({
+    profile: savedColor ?? null,
+    loaded: true,
+    busy: false,
+    error: null,
+  });
 
   const [events, snapshots] = await Promise.all([
     listInteractionEvents(activeVault),
@@ -282,6 +291,7 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
       optionalMeasurements: {},
     });
     useClosetStore.getState().clearMemory();
+    useColorStore.getState().clearMemory();
     set({
       status: activeVault.getStatus(),
       pendingRecoveryKey: null,
@@ -398,6 +408,7 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
       optionalMeasurements: {},
     });
     useClosetStore.getState().clearMemory();
+    useColorStore.getState().clearMemory();
     const persistence = await getStoragePersistenceInfo(undefined);
     set({
       status: 'uninitialized',
