@@ -152,9 +152,9 @@ function EditorialScoreBar({ label, value }: { label: string; value: number }) {
         <span className="text-[var(--rw-muted)]">{label}</span>
         <span className="tabular-nums font-medium text-[var(--rw-ink)]">{value}</span>
       </div>
-      <div className="h-[2px] w-full overflow-hidden bg-[var(--rw-line)]/70">
+      <div className="h-[3px] w-full overflow-hidden rounded-full bg-[var(--glass-divider)]">
         <div
-          className="h-full bg-[var(--rw-ink)] transition-[width] duration-300 ease-[var(--ease-out)]"
+          className="h-full rounded-full bg-[var(--rw-ink)] transition-[width] duration-300 ease-[var(--ease-out)]"
           style={{ width: `${clamped}%` }}
         />
       </div>
@@ -274,6 +274,10 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
       setWeatherNote('Tu navegador no admite geolocalización. Ajusta la temperatura manualmente.');
       return;
     }
+    if (typeof navigator.onLine === 'boolean' && !navigator.onLine) {
+      setWeatherNote('Sin conexión a internet. Ajusta la temperatura manualmente.');
+      return;
+    }
     setWeatherBusy(true);
     setWeatherNote(null);
     navigator.geolocation.getCurrentPosition(
@@ -288,11 +292,17 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
           setWeatherBusy(false);
         }
       },
-      () => {
+      (geoError) => {
         setWeatherBusy(false);
-        setWeatherNote('Permiso de ubicación denegado. Usa el control manual de temperatura.');
+        if (geoError.code === geoError.PERMISSION_DENIED) {
+          setWeatherNote('Permiso de ubicación denegado. Usa el control manual de temperatura.');
+        } else if (geoError.code === geoError.TIMEOUT) {
+          setWeatherNote('Tiempo de espera agotado al detectar tu ubicación. Intenta de nuevo o ajústalo manualmente.');
+        } else {
+          setWeatherNote('No se pudo detectar tu ubicación. Usa el control manual de temperatura.');
+        }
       },
-      { timeout: 6000 },
+      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 600_000 },
     );
   };
 
@@ -353,43 +363,42 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
   const displayedSaved = favoritesOnly ? savedOutfits.filter((o) => o.favorite) : savedOutfits;
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Barra editorial compacta de ocasión y clima */}
+    <div className="flex w-full flex-col gap-5">
+      {/* Barra superior libre y flotante: píldoras de ocasión sin caja + cápsula de clima en vidrio */}
       <section
         aria-label="Filtros de ocasión y temperatura"
-        className="flex flex-col gap-2.5 border border-[var(--rw-line)] bg-[var(--rw-panel)]/88 px-4 py-2.5 backdrop-blur-xs lg:flex-row lg:items-center lg:justify-between lg:gap-6 sm:px-6"
+        className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-6"
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--rw-muted)]">
+        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Seleccionar ocasión">
+          <span className="mr-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--rw-muted)]">
             Ocasión
           </span>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Seleccionar ocasión">
-            {OUTFIT_OCCASIONS.map((occ) => {
-              const active = occasion === occ;
-              return (
-                <button
-                  key={occ}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => {
-                    setOccasion(occ);
-                    setSelectedIndex(0);
-                    setActionNotice(null);
-                  }}
-                  className={`cursor-pointer border px-2.5 py-1 text-xs font-medium transition-colors ${
-                    active
-                      ? 'border-[var(--rw-cta)] bg-[var(--rw-cta)] text-[var(--rw-cta-ink)]'
-                      : 'border-[var(--rw-line)] bg-transparent text-[var(--rw-muted)] hover:border-[var(--rw-ink)] hover:text-[var(--rw-ink)]'
-                  }`}
-                >
-                  {OCCASION_RULES[occ].label}
-                </button>
-              );
-            })}
-          </div>
+          {OUTFIT_OCCASIONS.map((occ) => {
+            const active = occasion === occ;
+            return (
+              <button
+                key={occ}
+                type="button"
+                aria-pressed={active}
+                onClick={() => {
+                  setOccasion(occ);
+                  setSelectedIndex(0);
+                  setActionNotice(null);
+                }}
+                className={`cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
+                  active
+                    ? 'bg-[var(--rw-cta)] text-[var(--rw-cta-ink)] shadow-sm'
+                    : 'luca-glass-pill text-[var(--rw-muted)] hover:text-[var(--rw-ink)]'
+                }`}
+              >
+                {OCCASION_RULES[occ].label}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-[var(--rw-line)]/70 pt-3 lg:min-w-[330px] lg:border-t-0 lg:border-l lg:pl-6 lg:pt-0">
+        {/* Cápsula flotante de vidrio para temperatura y ubicación */}
+        <div className="luca-glass-pill flex flex-col gap-1.5 rounded-2xl px-4 py-2.5 lg:min-w-[380px] xl:min-w-[420px]">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <label
               htmlFor="outfit-temp-input"
@@ -405,7 +414,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
               type="button"
               disabled={weatherBusy}
               onClick={handleUseLocation}
-              className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-medium text-[var(--rw-muted)] transition-colors hover:text-[var(--rw-ink)] disabled:opacity-50"
+              className="inline-flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-[var(--rw-muted)] transition-colors hover:text-[var(--rw-ink)] disabled:opacity-50"
             >
               <LocateFixed className="h-3 w-3" aria-hidden="true" />
               {weatherBusy ? 'Consultando...' : 'Usar ubicación'}
@@ -436,26 +445,26 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                   setWeatherNote(null);
                   setSelectedIndex(0);
                 }}
-                className="cursor-pointer border border-[var(--rw-line)] px-2 py-0.5 text-[10px] text-[var(--rw-muted)] transition-colors hover:border-[var(--rw-ink)] hover:text-[var(--rw-ink)]"
+                className="cursor-pointer rounded-full border border-[var(--glass-border)] px-2.5 py-0.5 text-[10px] text-[var(--rw-muted)] transition-colors hover:border-[var(--rw-ink)]/40 hover:text-[var(--rw-ink)]"
               >
                 {city.label}
               </button>
             ))}
           </div>
-          {weatherNote && <p className="text-[11px] text-[var(--rw-ink)]">{weatherNote}</p>}
+          {weatherNote && <p className="text-[11px] font-medium text-[var(--rw-ink)]">{weatherNote}</p>}
         </div>
       </section>
 
-      {/* Estado vacío o Interfaz Runway Split */}
+      {/* Estado vacío o Escenario abierto con panel lateral de vidrio */}
       {proposals.length === 0 ? (
         <section
           aria-labelledby="outfits-heading"
-          className="flex flex-col items-start gap-5 border border-[var(--rw-line)] bg-[var(--rw-panel)]/90 p-6 sm:p-10"
+          className="luca-glass-panel flex flex-col items-start gap-5 rounded-2xl p-6 sm:p-10"
         >
           <div className="flex flex-col gap-2">
             <h1
               id="outfits-heading"
-              className="font-display text-3xl font-normal tracking-[-0.02em] text-[var(--rw-ink)] sm:text-[42px]"
+              className="font-display text-3xl font-normal tracking-[-0.025em] text-[var(--rw-ink)] sm:text-[44px]"
             >
               Outfits
             </h1>
@@ -468,7 +477,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
             type="button"
             disabled={seedingDemo}
             onClick={() => void handleSeedDemoCloset()}
-            className="inline-flex cursor-pointer items-center gap-2 bg-[var(--rw-cta)] px-5 py-3 text-sm font-medium text-[var(--rw-cta-ink)] transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[var(--rw-cta)] px-5 py-3 text-sm font-medium text-[var(--rw-cta-ink)] transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             <Sparkles className="h-4 w-4" aria-hidden="true" />
             {seedingDemo ? 'Cargando prendas...' : 'Cargar 6 prendas de ejemplo'}
@@ -477,9 +486,9 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
       ) : (
         <section
           aria-labelledby="outfits-heading"
-          className="grid border border-[var(--rw-line)] bg-[var(--rw-stage)]/72 lg:grid-cols-[minmax(0,1fr)_380px]"
+          className="grid w-full items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_390px] xl:grid-cols-[minmax(0,1fr)_420px] xl:gap-8"
         >
-          {/* Columna izquierda: Carrusel 3D Ring Runway */}
+          {/* Columna izquierda: Carrusel 3D flotante (totalmente libre, sin caja) */}
           <OutfitRunwayCarousel
             proposals={proposals}
             selectedIndex={safeSelectedIndex}
@@ -499,10 +508,10 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
             onHighlightItem={setHighlightedItemId}
           />
 
-          {/* Columna derecha: Panel editorial "En este outfit" */}
+          {/* Columna lateral: Panel flotante de vidrio con prendas, desglose y acciones */}
           {activeProposal && (
-            <aside className="flex flex-col border-t border-[var(--rw-line)] bg-[var(--rw-panel)]/92 lg:border-t-0 lg:border-l">
-              <div className="flex items-baseline justify-between gap-3 border-b border-[var(--rw-line)] px-5 py-4 sm:px-6">
+            <aside className="luca-glass-panel flex flex-col rounded-2xl">
+              <div className="flex items-baseline justify-between gap-3 border-b border-[var(--glass-divider)] px-5 py-4 sm:px-6">
                 <h2 className="font-display text-lg font-normal tracking-tight text-[var(--rw-ink)]">
                   En este outfit
                 </h2>
@@ -511,8 +520,8 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                 </span>
               </div>
 
-              {/* Lista de prendas incluidas con miniatura cuadrada y badge numerado */}
-              <ul className="divide-y divide-[var(--rw-line)] px-5 sm:px-6">
+              {/* Lista de prendas incluidas con miniatura limpia y badge numerado */}
+              <ul className="divide-y divide-[var(--glass-divider)] px-5 sm:px-6">
                 {activeProposal.items.map((item, idx) => {
                   const full = itemsById.get(item.id);
                   const isHighlighted = highlightedItemId === item.id;
@@ -524,11 +533,11 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                       onMouseEnter={() => setHighlightedItemId(item.id)}
                       onMouseLeave={() => setHighlightedItemId(null)}
                       className={`py-3.5 transition-colors ${
-                        isHighlighted ? 'bg-[var(--rw-card)]/45 -mx-3 px-3' : ''
+                        isHighlighted ? 'rounded-xl bg-[var(--rw-card)]/45 -mx-2.5 px-2.5' : ''
                       }`}
                     >
                       <div className="flex items-center gap-3.5">
-                        <div className="relative h-16 w-16 shrink-0 bg-[var(--rw-card)] sm:h-[76px] sm:w-[76px]">
+                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[var(--glass-border)] bg-[var(--rw-card)] sm:h-[76px] sm:w-[76px]">
                           {full?.image?.dataUrl ? (
                             <div className="flex h-full w-full items-center justify-center p-1.5">
                               <img
@@ -555,7 +564,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                           )}
                           <span
                             aria-hidden="true"
-                            className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-[var(--rw-line)] bg-[var(--rw-panel)] text-[10px] font-semibold tabular-nums text-[var(--rw-ink)]"
+                            className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-[var(--glass-border)] bg-[var(--rw-panel)]/90 text-[10px] font-semibold tabular-nums text-[var(--rw-ink)] backdrop-blur-xs"
                           >
                             {idx + 1}
                           </span>
@@ -570,7 +579,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                           </p>
                           <p className="mt-1 flex items-center gap-1.5 text-xs text-[var(--rw-muted)]">
                             <span
-                              className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-[var(--rw-line)]"
+                              className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-[var(--glass-border)]"
                               style={{ backgroundColor: item.dominantColorHex ?? '#1F5F6B' }}
                               aria-hidden="true"
                             />
@@ -586,9 +595,9 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                             type="button"
                             onClick={() => onOpenGarmentInCloset(item.id)}
                             aria-label={`Ver ${item.name} en el clóset`}
-                            className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center text-[var(--rw-muted)] transition-colors hover:text-[var(--rw-ink)]"
+                            className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--rw-muted)] transition-colors hover:bg-[var(--glass-divider)] hover:text-[var(--rw-ink)]"
                           >
-                            <Plus className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+                            <Plus className="h-4 w-4" strokeWidth={1.6} aria-hidden="true" />
                           </button>
                         )}
                       </div>
@@ -600,7 +609,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
               {/* Desglose de puntaje + feedback local */}
               <div
                 data-testid="outfit-breakdown-card"
-                className="flex flex-col gap-2.5 border-t border-[var(--rw-line)] px-5 py-4 sm:px-6"
+                className="flex flex-col gap-2.5 border-t border-[var(--glass-divider)] px-5 py-4 sm:px-6"
               >
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                   <EditorialScoreBar label="Color" value={activeProposal.score.color} />
@@ -617,7 +626,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                   <button
                     type="button"
                     onClick={() => void handleFeedback('outfit_liked')}
-                    className="inline-flex cursor-pointer items-center gap-1.5 border border-[var(--rw-line)] px-2.5 py-1.5 text-xs font-medium text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[var(--glass-border)] bg-transparent px-3 py-1.5 text-xs font-medium text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]/45"
                   >
                     <ThumbsUp className="h-3.5 w-3.5" aria-hidden="true" />
                     Me gusta
@@ -625,7 +634,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                   <button
                     type="button"
                     onClick={() => void handleFeedback('outfit_disliked')}
-                    className="inline-flex cursor-pointer items-center gap-1.5 border border-[var(--rw-line)] px-2.5 py-1.5 text-xs font-medium text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[var(--glass-border)] bg-transparent px-3 py-1.5 text-xs font-medium text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]/45"
                   >
                     <ThumbsDown className="h-3.5 w-3.5" aria-hidden="true" />
                     No me gusta
@@ -633,7 +642,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                   <button
                     type="button"
                     onClick={() => void handleFeedback('outfit_dismissed')}
-                    className="inline-flex cursor-pointer items-center gap-1 px-2 py-1.5 text-xs font-medium text-[var(--rw-muted)] transition-colors hover:text-[var(--rw-ink)]"
+                    className="inline-flex cursor-pointer items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium text-[var(--rw-muted)] transition-colors hover:text-[var(--rw-ink)]"
                   >
                     <X className="h-3.5 w-3.5" aria-hidden="true" />
                     Descartar
@@ -641,8 +650,8 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                 </div>
               </div>
 
-              {/* Barra inferior fija de acciones editoriales (estilo "Complete the look") */}
-              <div className="mt-auto flex flex-col gap-2.5 border-t border-[var(--rw-line)] px-5 py-4 sm:px-6">
+              {/* Barra inferior de acciones en vidrio */}
+              <div className="mt-auto flex flex-col gap-2.5 border-t border-[var(--glass-divider)] px-5 py-4 sm:px-6">
                 <div className="flex items-baseline justify-between gap-2">
                   <div className="flex flex-col">
                     <span className="text-xs font-medium text-[var(--rw-ink)]">
@@ -660,7 +669,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                 <button
                   type="button"
                   onClick={() => void handleSave(false)}
-                  className="inline-flex w-full cursor-pointer items-center justify-center gap-2 bg-[var(--rw-cta)] px-4 py-3 text-[13px] font-medium text-[var(--rw-cta-ink)] transition-opacity hover:opacity-90"
+                  className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--rw-cta)] px-4 py-3 text-[13px] font-medium text-[var(--rw-cta-ink)] transition-opacity hover:opacity-90"
                 >
                   <span>Guardar outfit</span>
                   <ArrowRight className="h-4 w-4" strokeWidth={1.6} aria-hidden="true" />
@@ -670,7 +679,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                   <button
                     type="button"
                     onClick={() => void handleSave(true)}
-                    className="inline-flex cursor-pointer items-center justify-center gap-1.5 border border-[var(--rw-line)] bg-transparent px-3 py-2 text-xs font-medium text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]"
+                    className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[var(--glass-border)] bg-transparent px-3 py-2 text-xs font-medium text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]/45"
                   >
                     <Heart className="h-3.5 w-3.5" aria-hidden="true" />
                     Favorito
@@ -678,7 +687,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                   <button
                     type="button"
                     onClick={() => void handleWearProposal()}
-                    className="inline-flex cursor-pointer items-center justify-center gap-1.5 border border-[var(--rw-line)] bg-transparent px-3 py-2 text-xs font-medium text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]"
+                    className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[var(--glass-border)] bg-transparent px-3 py-2 text-xs font-medium text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]/45"
                   >
                     <CalendarCheck className="h-3.5 w-3.5" aria-hidden="true" />
                     Usé este outfit hoy
@@ -696,23 +705,20 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
         </section>
       )}
 
-      {/* Outfits guardados y favoritos */}
+      {/* Outfits guardados y favoritos en tarjetas de vidrio flotantes */}
       {savedOutfits.length > 0 && (
-        <section
-          data-testid="saved-outfits-card"
-          className="flex flex-col gap-4 border border-[var(--rw-line)] bg-[var(--rw-panel)]/90 p-5 sm:p-7"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--rw-line)] pb-4">
+        <section data-testid="saved-outfits-card" className="flex flex-col gap-4 pt-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-display text-lg font-normal text-[var(--rw-ink)]">
               Outfits guardados ({displayedSaved.length})
             </h2>
             <button
               type="button"
               onClick={() => setFavoritesOnly((v) => !v)}
-              className={`inline-flex cursor-pointer items-center gap-1.5 border px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
                 favoritesOnly
-                  ? 'border-[var(--rw-cta)] bg-[var(--rw-cta)] text-[var(--rw-cta-ink)]'
-                  : 'border-[var(--rw-line)] text-[var(--rw-ink)] hover:border-[var(--rw-ink)]'
+                  ? 'bg-[var(--rw-cta)] text-[var(--rw-cta-ink)]'
+                  : 'luca-glass-pill text-[var(--rw-ink)]'
               }`}
             >
               <Heart className="h-3.5 w-3.5" aria-hidden="true" />
@@ -720,11 +726,11 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
             </button>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {displayedSaved.map((saved) => (
               <div
                 key={saved.id}
-                className="flex flex-col justify-between gap-3 border border-[var(--rw-line)] bg-[var(--rw-stage)]/70 p-4"
+                className="luca-glass-panel flex flex-col justify-between gap-3 rounded-2xl p-4"
               >
                 <div className="flex flex-col gap-1">
                   <div className="flex items-start justify-between gap-2">
@@ -745,7 +751,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                       await logOutfitWear(saved.garmentIds, saved.id);
                       setActionNotice(`Uso registrado para "${saved.name}".`);
                     }}
-                    className="inline-flex cursor-pointer items-center gap-1.5 border border-[var(--rw-line)] px-2.5 py-1.5 text-xs font-medium text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[var(--glass-border)] px-3 py-1.5 text-xs font-medium text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]/45"
                   >
                     <CalendarCheck className="h-3.5 w-3.5" aria-hidden="true" />
                     Usé hoy
@@ -754,10 +760,10 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                     type="button"
                     aria-label={saved.favorite ? 'Quitar de favoritos' : 'Marcar favorito'}
                     onClick={() => void toggleFavorite(saved.id)}
-                    className={`inline-flex cursor-pointer items-center justify-center border px-2.5 py-1.5 text-xs transition-colors ${
+                    className={`inline-flex cursor-pointer items-center justify-center rounded-full border px-2.5 py-1.5 text-xs transition-colors ${
                       saved.favorite
                         ? 'border-[var(--rw-cta)] bg-[var(--rw-cta)] text-[var(--rw-cta-ink)]'
-                        : 'border-[var(--rw-line)] text-[var(--rw-ink)] hover:border-[var(--rw-ink)]'
+                        : 'border-[var(--glass-border)] text-[var(--rw-ink)] hover:border-[var(--rw-ink)]/45'
                     }`}
                   >
                     <Heart className="h-3.5 w-3.5" aria-hidden="true" />
@@ -766,7 +772,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                     type="button"
                     aria-label={`Eliminar ${saved.name}`}
                     onClick={() => void deleteSavedOutfit(saved.id)}
-                    className="inline-flex cursor-pointer items-center justify-center px-2 py-1.5 text-xs text-[var(--rw-muted)] transition-colors hover:text-[var(--rw-ink)]"
+                    className="inline-flex cursor-pointer items-center justify-center rounded-full px-2 py-1.5 text-xs text-[var(--rw-muted)] transition-colors hover:text-[var(--rw-ink)]"
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>

@@ -351,12 +351,12 @@ export function OutfitRunwayCarousel({
   const lookNumber = String(safeIndex + 1).padStart(2, '0');
 
   return (
-    <div className="flex flex-col justify-between bg-[var(--rw-stage)]/70">
-      {/* Cabecera editorial superior del escenario */}
-      <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-4 sm:px-7 sm:pt-5">
+    <div className="flex min-w-0 flex-col justify-between bg-transparent">
+      {/* Cabecera flotante sin caja sobre el fondo interactivo */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1 pb-2 pt-1 sm:px-2">
         {isZoomed && activeProposal ? (
           <div className="flex flex-col gap-0.5">
-            <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--rw-muted)]">
+            <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--rw-muted)]">
               Look {lookNumber}
             </span>
             <p className="font-display text-xl font-normal tracking-tight text-[var(--rw-ink)] sm:text-2xl">
@@ -364,10 +364,10 @@ export function OutfitRunwayCarousel({
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-1">
+          <div className="flex items-baseline gap-3">
             <h1
               id="outfits-heading"
-              className="font-display text-3xl font-normal tracking-[-0.02em] text-[var(--rw-ink)] sm:text-[42px] sm:leading-[1.08]"
+              className="font-display text-3xl font-normal tracking-[-0.025em] text-[var(--rw-ink)] sm:text-[44px] sm:leading-[1.05]"
             >
               Outfits
             </h1>
@@ -379,11 +379,11 @@ export function OutfitRunwayCarousel({
         )}
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Selector compacto de ángulo del maniquí */}
+          {/* Cápsula de vidrio flotante para ángulo del maniquí */}
           <div
             role="group"
             aria-label="Vista del maniquí"
-            className="inline-flex border border-[var(--rw-line)] bg-[var(--rw-panel)]/85"
+            className="luca-glass-pill inline-flex items-center gap-0.5 rounded-full p-1"
           >
             {VIEW_OPTIONS.map((opt) => {
               const active = viewMode === opt.id;
@@ -393,7 +393,7 @@ export function OutfitRunwayCarousel({
                   type="button"
                   aria-pressed={active}
                   onClick={() => onChangeViewMode(opt.id)}
-                  className={`cursor-pointer px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                  className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
                     active
                       ? 'bg-[var(--rw-cta)] text-[var(--rw-cta-ink)]'
                       : 'text-[var(--rw-muted)] hover:text-[var(--rw-ink)]'
@@ -405,7 +405,7 @@ export function OutfitRunwayCarousel({
             })}
           </div>
 
-          <label className="inline-flex cursor-pointer items-center gap-1.5 border border-[var(--rw-line)] bg-[var(--rw-panel)]/85 px-2.5 py-1 text-[11px] font-medium text-[var(--rw-ink)]">
+          <label className="luca-glass-pill inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium text-[var(--rw-ink)]">
             <input
               type="checkbox"
               checked={showHeatmap}
@@ -423,7 +423,7 @@ export function OutfitRunwayCarousel({
                 setIsZoomed(false);
                 onHighlightItem(null);
               }}
-              className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-[var(--rw-line)] bg-[var(--rw-panel)] text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]"
+              className="luca-glass-pill inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-[var(--rw-ink)] transition-transform hover:scale-105"
             >
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -431,7 +431,7 @@ export function OutfitRunwayCarousel({
         </div>
       </div>
 
-      {/* Escenario 3D Ring Carousel */}
+      {/* Escenario 3D Ring Carousel flotante sin encerrar */}
       <div
         ref={stageRef}
         tabIndex={0}
@@ -447,17 +447,17 @@ export function OutfitRunwayCarousel({
         onPointerUp={handlePointerUp}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="relative mx-auto flex min-h-[340px] w-full flex-1 select-none items-end justify-center overflow-hidden px-4 pb-3 pt-4 outline-none touch-pan-y focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--accent)] sm:min-h-[410px] lg:min-h-[430px]"
+        className="relative flex min-h-[340px] w-full flex-1 select-none items-end justify-center overflow-hidden px-2 pb-4 pt-4 outline-none touch-pan-y focus-visible:ring-2 focus-visible:ring-[var(--accent)] sm:min-h-[430px] lg:min-h-[475px]"
       >
         {!bodyModel ? (
           <p className="self-center text-sm text-[var(--rw-muted)]">
             Verifica tus medidas en el Probador para ver el maniquí.
           </p>
         ) : viewMode === 'all' && activeProposal ? (
-          <div className="grid w-full max-w-[700px] grid-cols-3 items-end gap-2 self-center py-3 sm:gap-5">
+          <div className="grid w-full max-w-[760px] grid-cols-3 items-end gap-2 self-center py-3 sm:gap-6">
             {(['front', 'side', 'back'] as const).map((angle) => (
               <div key={angle} className="relative flex flex-col items-center gap-2">
-                <div className="relative h-[250px] sm:h-[330px]">
+                <div className="relative h-[250px] sm:h-[360px]">
                   {renderFigureSvg(activeProposal, angle, `all-${activeProposal.id}`)}
                   <span className="rw-floor-shadow" aria-hidden="true" />
                 </div>
@@ -468,7 +468,7 @@ export function OutfitRunwayCarousel({
             ))}
           </div>
         ) : (
-          <div className="relative h-[310px] w-full sm:h-[380px] lg:h-[405px]">
+          <div className="relative h-[320px] w-full sm:h-[400px] lg:h-[445px]">
             {proposals.map((proposal, index) => {
               const delta = getCircularOffset(index, safeIndex, proposals.length);
               const isActive = delta === 0;
@@ -480,7 +480,7 @@ export function OutfitRunwayCarousel({
                   data-runway-item-index={index}
                   data-runway-active={isActive ? 'true' : 'false'}
                   style={ringStyle}
-                  className="rw-actor flex h-[285px] w-[155px] flex-col items-center justify-end sm:h-[355px] sm:w-[195px] lg:h-[385px] lg:w-[210px]"
+                  className="rw-actor flex h-[295px] w-[155px] flex-col items-center justify-end sm:h-[375px] sm:w-[200px] lg:h-[420px] lg:w-[225px]"
                 >
                   <button
                     type="button"
@@ -532,10 +532,10 @@ export function OutfitRunwayCarousel({
                               event.stopPropagation();
                               onHighlightItem(highlighted ? null : item.id);
                             }}
-                            className={`pointer-events-auto absolute flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border text-[11px] font-semibold transition-transform ${
+                            className={`pointer-events-auto absolute flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border text-[11px] font-semibold transition-transform ${
                               highlighted
                                 ? 'scale-115 border-[var(--rw-cta)] bg-[var(--rw-cta)] text-[var(--rw-cta-ink)]'
-                                : 'border-[var(--rw-line)] bg-[var(--rw-panel)] text-[var(--rw-ink)] hover:scale-110'
+                                : 'luca-glass-pill text-[var(--rw-ink)] hover:scale-110'
                             }`}
                           >
                             {itemIdx + 1}
@@ -557,103 +557,105 @@ export function OutfitRunwayCarousel({
         <span ref={cursorRef} className="rw-stage-cursor" aria-hidden="true" />
       </div>
 
-      {/* Barra inferior de controles estilo Runway: ← | ticks 01..N | play/pause | → */}
-      <div className="flex items-center gap-3 border-t border-[var(--rw-line)]/60 px-4 py-4 sm:gap-5 sm:px-7">
-        <button
-          type="button"
-          onClick={goPrev}
-          disabled={proposals.length <= 1}
-          aria-label="Outfit anterior"
-          className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center text-[var(--rw-ink)] transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-30"
-        >
-          <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-        </button>
+      {/* Barra inferior flotante de controles en vidrio */}
+      <div className="mx-auto mt-1 flex w-full max-w-[780px] items-center gap-2.5 px-1 sm:gap-4">
+        <div className="luca-glass-pill flex w-full items-center gap-2 rounded-full px-3 py-2 sm:gap-4 sm:px-5 sm:py-2.5">
+          <button
+            type="button"
+            onClick={goPrev}
+            disabled={proposals.length <= 1}
+            aria-label="Outfit anterior"
+            className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--rw-ink)] transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            <ArrowLeft className="h-4 w-4" strokeWidth={1.6} aria-hidden="true" />
+          </button>
 
-        <div
-          role="tablist"
-          aria-label="Propuestas de outfits"
-          className="flex min-w-0 flex-1 items-start gap-2 sm:gap-3"
-        >
-          {proposals.map((proposal, index) => {
-            const active = index === safeIndex;
-            const num = String(index + 1).padStart(2, '0');
-            return (
-              <button
-                key={proposal.id}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => {
-                  setIsPlaying(false);
-                  onSelectIndex(index);
-                }}
-                className={`group flex min-w-0 cursor-pointer flex-col gap-1.5 pt-1 text-left transition-[flex-grow] duration-300 ${
-                  active ? 'flex-[2.2] sm:flex-[2.6]' : 'flex-1'
-                }`}
-              >
-                <span className="relative block h-[2px] w-full overflow-hidden bg-[var(--rw-line)]">
-                  {active && (
-                    <span
-                      key={`${proposal.id}-${isPlaying ? 'play' : 'static'}`}
-                      className={`rw-tick-progress block h-full w-full bg-[var(--rw-ink)] ${
-                        isPlaying && !isZoomed && !isStageHovered ? 'is-running' : ''
-                      }`}
-                    />
-                  )}
-                </span>
-                <span className="flex items-baseline gap-2 truncate text-[11px] tabular-nums">
-                  <span
-                    className={
-                      active
-                        ? 'font-semibold text-[var(--rw-ink)]'
-                        : 'text-[var(--rw-muted)] group-hover:text-[var(--rw-ink)]'
-                    }
-                  >
-                    {num}
+          <div
+            role="tablist"
+            aria-label="Propuestas de outfits"
+            className="flex min-w-0 flex-1 items-start gap-2 sm:gap-3"
+          >
+            {proposals.map((proposal, index) => {
+              const active = index === safeIndex;
+              const num = String(index + 1).padStart(2, '0');
+              return (
+                <button
+                  key={proposal.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => {
+                    setIsPlaying(false);
+                    onSelectIndex(index);
+                  }}
+                  className={`group flex min-w-0 cursor-pointer flex-col gap-1 pt-1 text-left transition-[flex-grow] duration-300 ${
+                    active ? 'flex-[2.2] sm:flex-[2.6]' : 'flex-1'
+                  }`}
+                >
+                  <span className="relative block h-[2px] w-full overflow-hidden rounded-full bg-[var(--rw-line)]/70">
+                    {active && (
+                      <span
+                        key={`${proposal.id}-${isPlaying ? 'play' : 'static'}`}
+                        className={`rw-tick-progress block h-full w-full rounded-full bg-[var(--rw-ink)] ${
+                          isPlaying && !isZoomed && !isStageHovered ? 'is-running' : ''
+                        }`}
+                      />
+                    )}
                   </span>
-                  {active ? (
-                    <>
-                      <span className="hidden truncate font-medium text-[var(--rw-ink)] sm:inline">
-                        Opción {index + 1}
-                        <span className="text-[var(--rw-muted)]"> · {proposal.score.total}/100</span>
-                      </span>
-                      <span className="sr-only sm:hidden">Opción {index + 1}</span>
-                    </>
-                  ) : (
-                    <span className="sr-only">Opción {index + 1}</span>
-                  )}
-                </span>
-              </button>
-            );
-          })}
+                  <span className="flex items-baseline gap-1.5 truncate text-[11px] tabular-nums">
+                    <span
+                      className={
+                        active
+                          ? 'font-semibold text-[var(--rw-ink)]'
+                          : 'text-[var(--rw-muted)] group-hover:text-[var(--rw-ink)]'
+                      }
+                    >
+                      {num}
+                    </span>
+                    {active ? (
+                      <>
+                        <span className="hidden truncate font-medium text-[var(--rw-ink)] sm:inline">
+                          Opción {index + 1}
+                          <span className="text-[var(--rw-muted)]"> · {proposal.score.total}/100</span>
+                        </span>
+                        <span className="sr-only sm:hidden">Opción {index + 1}</span>
+                      </>
+                    ) : (
+                      <span className="sr-only">Opción {index + 1}</span>
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            disabled={proposals.length <= 1}
+            onClick={() => {
+              setIsZoomed(false);
+              setIsPlaying((prev) => !prev);
+            }}
+            aria-label={isPlaying ? 'Pausar carrusel' : 'Reproducir carrusel'}
+            className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--rw-ink)] transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            {isPlaying ? (
+              <Pause className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden="true" />
+            ) : (
+              <Play className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden="true" />
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={goNext}
+            disabled={proposals.length <= 1}
+            aria-label="Siguiente outfit"
+            className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--rw-ink)] transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            <ArrowRight className="h-4 w-4" strokeWidth={1.6} aria-hidden="true" />
+          </button>
         </div>
-
-        <button
-          type="button"
-          disabled={proposals.length <= 1}
-          onClick={() => {
-            setIsZoomed(false);
-            setIsPlaying((prev) => !prev);
-          }}
-          aria-label={isPlaying ? 'Pausar carrusel' : 'Reproducir carrusel'}
-          className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center text-[var(--rw-ink)] transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-30"
-        >
-          {isPlaying ? (
-            <Pause className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden="true" />
-          ) : (
-            <Play className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden="true" />
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={goNext}
-          disabled={proposals.length <= 1}
-          aria-label="Siguiente outfit"
-          className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center text-[var(--rw-ink)] transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-30"
-        >
-          <ArrowRight className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-        </button>
       </div>
     </div>
   );

@@ -64,7 +64,7 @@ class OpenMeteoWeatherProvider:
         self,
         *,
         ttl_seconds: float = DEFAULT_CACHE_TTL_SECONDS,
-        timeout_seconds: float = 6.0,
+        timeout_seconds: float = 10.0,
         http_client: Any | None = None,
     ) -> None:
         self._ttl_seconds = max(60.0, ttl_seconds)

@@ -75,8 +75,8 @@ export function AppShell({
         {t.header.skipToMain}
       </a>
 
-      <header className="relative z-10 border-b border-border bg-surface/85 backdrop-blur-sm">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+      <header className="relative z-10 border-b border-[var(--glass-divider)] bg-[var(--glass-pill-bg)] backdrop-blur-md">
+        <div className="flex w-full items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-10">
           <div className="flex items-center gap-3">
             <a
               href="#probador"
@@ -213,9 +213,9 @@ export function AppShell({
       {vaultStatus === 'plaintext' && (
         <div
           role="status"
-          className="relative z-10 border-b border-border bg-surface/90 px-4 py-2 text-xs text-muted"
+          className="relative z-10 border-b border-[var(--glass-divider)] bg-[var(--glass-pill-bg)]/80 px-4 py-1.5 text-xs text-muted backdrop-blur-sm sm:px-6 lg:px-10"
         >
-          <div className="mx-auto flex w-full max-w-6xl items-center gap-2 sm:px-2">
+          <div className="flex w-full items-center gap-2">
             <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-[#E0A526]" aria-hidden="true" />
             <span>{t.header.plaintextWarning}</span>
           </div>
@@ -225,15 +225,17 @@ export function AppShell({
       <main
         id="contenido-principal"
         className={cn(
-          'relative z-10 mx-auto w-full flex-1 px-4 py-6 sm:px-6 sm:py-8',
-          activeSection === 'outfits' ? 'max-w-[1360px]' : 'max-w-6xl',
+          'relative z-10 w-full flex-1',
+          activeSection === 'outfits'
+            ? 'px-4 py-4 sm:px-6 sm:py-5 lg:px-10'
+            : 'mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8',
         )}
       >
         {children}
       </main>
 
-      <footer className="relative z-10 border-t border-border bg-surface/85 backdrop-blur-sm">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 text-xs text-muted sm:px-6">
+      <footer className="relative z-10 border-t border-[var(--glass-divider)] bg-[var(--glass-pill-bg)] backdrop-blur-md">
+        <div className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3.5 text-xs text-muted sm:px-6 lg:px-10">
           <span>{t.footer.localPromise}</span>
           <div className="flex flex-wrap items-center gap-3">
             {onOpenOnboarding && (

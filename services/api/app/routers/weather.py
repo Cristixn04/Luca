@@ -31,7 +31,7 @@ def create_weather_router(
         try:
             return await asyncio.wait_for(
                 asyncio.to_thread(weather_provider.get_weather, lat, lon),
-                timeout=8.0,
+                timeout=12.0,
             )
         except Exception as exc:
             raise HTTPException(
