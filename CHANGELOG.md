@@ -6,6 +6,18 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-20
+
+### Added
+- **M9 · Outfits, clima, uso y costo por uso (`v0.8`)**:
+  - Motor de outfits en `@luca/domain` (`packages/domain/src/outfits/`): ocasiones, bandas térmicas, generador por ranuras top-K (`K = 15`), puntaje explicable de 5 componentes (Color 30 %, Calce 25 %, Estilo 20 %, Ocasión/clima 15 %, Variedad 10 %) y selección de 3 propuestas diversas (≥ 2 prendas distintas), verificado con clóset de prueba de 30 prendas.
+  - Puerto `WeatherProvider` en `services/api`, adaptador `OpenMeteoWeatherProvider` con redondeo a ~10 km y caché TTL 30 min, `MockWeatherProvider` para CI, endpoint `GET /v1/weather` y contrato OpenAPI v0.8.0.
+  - Pantalla `OutfitsView` (`features/outfits/`) con selector de ocasión, temperatura manual / ciudades / ubicación aproximada opcional, avatar en capas en 3 vistas (`outfitLayers`), tarjetas con fotos, guardado, favoritos y registro de uso en un clic (`wear_log`, `outfit` cifrados en bóveda).
+  - Métricas de uso, CPW real y proyectado (30 usos), detección de prendas huérfanas y simulación **"Desbloquea N outfits nuevos"** para lista de deseos integradas en `ClosetView` y `GarmentDetailView`, más flujo E2E `e2e/outfits.spec.ts`.
+
+### Changed
+- Limpieza editorial de la interfaz: eliminados subtítulos irrelevantes, fórmulas internas y badges de versión de desarrollo en `AppShell`, `FittingRoom`, `ClosetView`, `GarmentDetailView`, `ColorView` y `MemoryVaultPanel`.
+
 ## [0.7.0] - 2026-11-20
 
 ### Added

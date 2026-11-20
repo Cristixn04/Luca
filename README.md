@@ -2,7 +2,7 @@
 
 **Clóset inteligente, probador de calce en tres vistas y asesor de color. Una web instalable que recuerda tus gustos y guarda tus datos solo en tu dispositivo.**
 
-![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M9)-blue)
+![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M10)-blue)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green)
 ![Plataforma](https://img.shields.io/badge/plataforma-PWA-5A0FC8)
 ![Dominio](https://img.shields.io/badge/dominio-TypeScript-3178C6)
@@ -13,7 +13,7 @@ Luca te dice **cuánta holgura tendrá una prenda en cada zona de tu cuerpo** (v
 
 La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu perfil de color, tus gustos y tu historial nunca salen de tu dispositivo**, y se guardan cifrados con una contraseña que solo tú conoces. Los servicios en la nube son una API **sin estado y sin cuentas** que solo procesa lo mínimo, con tu permiso, y no guarda nada.
 
-> **Estado del documento:** hitos M0 a M8 completados (**`v0.7` — Colorimetría estacional de 12 estaciones, sRGB↔CIELAB D65, CIEDE2000, paletas curadas y afinidad explicable de prendas**); siguiente hito activo: **M9 (`v0.8`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
+> **Estado del documento:** hitos M0 a M9 completados (**`v0.8` — Motor de outfits explicable en 5 componentes, clima con coordenadas redondeadas, tablero en capas en 3 vistas, usos/CPW, huérfanas y simulación de lista de deseos**); siguiente hito activo: **M10 (`v0.9`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
 
 ---
 
@@ -21,7 +21,7 @@ La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu 
 
 Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada hito.
 
-**Progreso global: 204 / 280 h** (núcleo M0–M11) · Hito actual: **M9**
+**Progreso global: 232 / 280 h** (núcleo M0–M11) · Hito actual: **M10**
 
 | Hito | Nombre | Release | Horas est. | Estado |
 | :-- | :-- | :-- | --: | :-- |
@@ -34,7 +34,7 @@ Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada
 | M6 | API de servicios e ingesta de fotos | v0.5 | 29 | Completado |
 | M7 | Etiquetado y búsqueda | v0.6 | 16 | Completado |
 | M8 | Colorimetría estacional | v0.7 | 26 | Completado |
-| M9 | Outfits, clima, uso y costo por uso | v0.8 | 28 | Pendiente |
+| M9 | Outfits, clima, uso y costo por uso | v0.8 | 28 | Completado |
 | M10 | Memoria y gustos | v0.9 | 22 | Pendiente |
 | M11 | Pulido, accesibilidad y lanzamiento | **v1.0** | 26 | Pendiente |
 | M12 | Opcional: asistente, calibración, sincronización (estudio) | v1.1 | 20 | Pendiente |
@@ -1060,15 +1060,15 @@ Planifica con el colchón: estimar siempre se queda corto. El **camino mínimo (
 
 ### M9 · Outfits, clima, uso y costo por uso (28 h) → v0.8
 
-- [ ] T9.1 Modelo de ocasiones, temperatura y formalidad (3 h)
-- [ ] T9.2 Puerto `WeatherProvider`, adaptador, coordenadas redondeadas, caché y alternativa manual (3 h)
-- [ ] T9.3 Generador de combinaciones por ranuras con top-K (4 h)
-- [ ] T9.4 Puntaje de cinco componentes (color, estilo, calce, ocasión, variedad) con desglose (4 h)
-- [ ] T9.5 Selección de 3 propuestas diversas (2 h)
-- [ ] T9.6 Tablero de outfit: avatar en capas en las tres vistas y tarjetas con fotos (4 h)
-- [ ] T9.7 Registro de uso, CPW y favoritos (4 h)
-- [ ] T9.8 Huérfanas, versatilidad y "desbloquea N outfits" para la lista de deseos (3 h)
-- [ ] T9.9 Prueba e2e: sugerir → guardar → registrar uso (1 h)
+- [x] T9.1 Modelo de ocasiones, temperatura y formalidad (3 h)
+- [x] T9.2 Puerto `WeatherProvider`, adaptador, coordenadas redondeadas, caché y alternativa manual (3 h)
+- [x] T9.3 Generador de combinaciones por ranuras con top-K (4 h)
+- [x] T9.4 Puntaje de cinco componentes (color, estilo, calce, ocasión, variedad) con desglose (4 h)
+- [x] T9.5 Selección de 3 propuestas diversas (2 h)
+- [x] T9.6 Tablero de outfit: avatar en capas en las tres vistas y tarjetas con fotos (4 h)
+- [x] T9.7 Registro de uso, CPW y favoritos (4 h)
+- [x] T9.8 Huérfanas, versatilidad y "desbloquea N outfits" para la lista de deseos (3 h)
+- [x] T9.9 Prueba e2e: sugerir → guardar → registrar uso (1 h)
 
 **Hecho cuando:** con un clóset de prueba de 30 prendas se generan 3 outfits diversos con desglose y el CPW se actualiza al registrar usos.
 
