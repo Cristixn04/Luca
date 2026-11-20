@@ -2,7 +2,7 @@
 
 **Clóset inteligente, probador de calce en tres vistas y asesor de color. Una web instalable que recuerda tus gustos y guarda tus datos solo en tu dispositivo.**
 
-![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M8)-blue)
+![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M9)-blue)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green)
 ![Plataforma](https://img.shields.io/badge/plataforma-PWA-5A0FC8)
 ![Dominio](https://img.shields.io/badge/dominio-TypeScript-3178C6)
@@ -13,7 +13,7 @@ Luca te dice **cuánta holgura tendrá una prenda en cada zona de tu cuerpo** (v
 
 La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu perfil de color, tus gustos y tu historial nunca salen de tu dispositivo**, y se guardan cifrados con una contraseña que solo tú conoces. Los servicios en la nube son una API **sin estado y sin cuentas** que solo procesa lo mínimo, con tu permiso, y no guarda nada.
 
-> **Estado del documento:** hitos M0 a M7 completados (**`v0.6` — Etiquetado asistido con Gemini Vision/ManualTagger, búsqueda local MiniSearch, prendas similares, color real en SVG y foto trasera opcional**); siguiente hito activo: **M8 (`v0.7`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
+> **Estado del documento:** hitos M0 a M8 completados (**`v0.7` — Colorimetría estacional de 12 estaciones, sRGB↔CIELAB D65, CIEDE2000, paletas curadas y afinidad explicable de prendas**); siguiente hito activo: **M9 (`v0.8`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
 
 ---
 
@@ -21,7 +21,7 @@ La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu 
 
 Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada hito.
 
-**Progreso global: 178 / 280 h** (núcleo M0–M11) · Hito actual: **M8**
+**Progreso global: 204 / 280 h** (núcleo M0–M11) · Hito actual: **M9**
 
 | Hito | Nombre | Release | Horas est. | Estado |
 | :-- | :-- | :-- | --: | :-- |
@@ -33,7 +33,7 @@ Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada
 | M5 | Vistas de perfil y de espalda | v0.4 | 22 | Completado |
 | M6 | API de servicios e ingesta de fotos | v0.5 | 29 | Completado |
 | M7 | Etiquetado y búsqueda | v0.6 | 16 | Completado |
-| M8 | Colorimetría estacional | v0.7 | 26 | Pendiente |
+| M8 | Colorimetría estacional | v0.7 | 26 | Completado |
 | M9 | Outfits, clima, uso y costo por uso | v0.8 | 28 | Pendiente |
 | M10 | Memoria y gustos | v0.9 | 22 | Pendiente |
 | M11 | Pulido, accesibilidad y lanzamiento | **v1.0** | 26 | Pendiente |
@@ -1047,14 +1047,14 @@ Planifica con el colchón: estimar siempre se queda corto. El **camino mínimo (
 
 ### M8 · Colorimetría estacional (26 h) → v0.7
 
-- [ ] T8.1 sRGB↔Lab y CIEDE2000 con pruebas (3 h)
-- [ ] T8.2 Selector guiado de piel, cabello y ojos, con consejos de luz (4 h)
-- [ ] T8.3 Paletas de 12 a 16 colores × 12 estaciones, con fuentes (4 h)
-- [ ] T8.4 Árbol de decisión de subtono, valor y croma (4 h)
-- [ ] T8.5 Top 2 de estaciones y nivel de confianza (3 h)
-- [ ] T8.6 Puntaje de prenda contra la paleta, con desglose (3 h)
-- [ ] T8.7 Pantalla Color: resultado, paleta, explicación y opción de ignorar (4 h)
-- [ ] T8.8 Validación informal con 8 a 10 personas y ajuste de umbrales (1 h)
+- [x] T8.1 sRGB↔Lab y CIEDE2000 con pruebas (3 h)
+- [x] T8.2 Selector guiado de piel, cabello y ojos, con consejos de luz (4 h)
+- [x] T8.3 Paletas de 12 a 16 colores × 12 estaciones, con fuentes (4 h)
+- [x] T8.4 Árbol de decisión de subtono, valor y croma (4 h)
+- [x] T8.5 Top 2 de estaciones y nivel de confianza (3 h)
+- [x] T8.6 Puntaje de prenda contra la paleta, con desglose (3 h)
+- [x] T8.7 Pantalla Color: resultado, paleta, explicación y opción de ignorar (4 h)
+- [x] T8.8 Validación informal con 8 a 10 personas y ajuste de umbrales (1 h)
 
 **Hecho cuando:** el perfil produce 2 estaciones con confianza y cada prenda muestra su afinidad con la paleta.
 

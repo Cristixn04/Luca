@@ -6,6 +6,20 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-20
+
+### Added
+- **M8 · Colorimetría estacional (`v0.7`)**:
+  - Transformación sRGB ↔ CIELAB (D65) y distancia perceptual **CIEDE2000 ($\Delta E_{00}$)** en `packages/domain/src/color/cielab.ts`, verificada contra 10 pares oficiales de Sharma, Wu y Dalal (2005) (`< 0.0005`).
+  - Paletas curadas de 14 colores × 12 estaciones en `config/color_palettes.json` y `packages/domain/src/color/palettes.ts` con fuentes documentadas (Sci\ART 12-Tone / Munsell) y escalas guiadas para piel, cabello y ojos.
+  - Árbol de decisión de subtono, valor, croma y contraste (`classifier.ts`) con Top 2 de estaciones, nivel de confianza y explicación calibrada sobre 10 perfiles representativos (`docs/colorimetry.md`).
+  - Motor de afinidad cromática `evaluateGarmentColorHarmony` (`A = exp(-ΔE₀₀_mín / 15)`) con desglose ($\Delta L^*$, $\Delta C^*$, tono más cercano de paleta).
+  - Pantalla `ColorView` (`features/color/`) con consejos de luz natural, muestras guiadas, selección manual de estación, opción de **Ignorar colorimetría**, persistencia cifrada en `color_profile` y limpieza en memoria al bloquear la bóveda.
+  - Integración de afinidad de paleta en tarjetas de `ClosetView`, desglose detallado en `GarmentDetailView` y pruebas unitarias + E2E (`e2e/colorimetry.spec.ts`).
+
+### Fixed
+- Desacoplado el recorte de fondo (`POST /v1/vision/analyze`) de los timeouts o saturación (`503 UNAVAILABLE`) del proveedor de etiquetado IA, añadiendo `tagging_warning`, respaldo automático con `ManualTagger`, flood-fill desde los 4 bordes en `SimpleBorderBackgroundRemover` y proxy `/v1` en `vite preview`.
+
 ## [0.6.0] - 2026-11-20
 
 ### Added
