@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DOMAIN_VERSION, cmToInches } from '@luca/domain';
 import { ShieldCheck } from 'lucide-react';
 import { AppShell, type NavSection } from '@/components/layout/AppShell';
@@ -12,9 +12,12 @@ import {
 } from '@/design-system/components/Card';
 import { HEATMAP_TOKENS } from '@/design-system/tokens';
 import { FittingRoom } from '@/features/fitting/FittingRoom';
+import { MemoryVaultPanel } from '@/features/vault/MemoryVaultPanel';
+import { VaultGate } from '@/features/vault/VaultGate';
+import { useVaultStore } from '@/features/vault/vaultStore';
 
 const PLACEHOLDER_SECTIONS: Record<
-  Exclude<NavSection, 'fitting'>,
+  Exclude<NavSection, 'fitting' | 'memory'>,
   { title: string; subtitle: string; milestone: string; summary: string }
 > = {
   closet: {
@@ -38,30 +41,80 @@ const PLACEHOLDER_SECTIONS: Record<
     summary:
       'Define tu perfil de color con muestras guiadas y evalúa la armonía de cada prenda con tu paleta.',
   },
-  memory: {
-    title: 'Memoria y bóveda',
-    subtitle: 'Control total sobre lo aprendido, cifrado AES-GCM y respaldos.',
-    milestone: 'M3 · M10',
-    summary:
-      'Revisa, fija, pausa u olvida cualquier afinidad aprendida. Tus datos nunca salen del dispositivo.',
-  },
 };
 
 export function App() {
   const [activeSection, setActiveSection] = useState<NavSection>('fitting');
 
+  const vaultStatus = useVaultStore((s) => s.status);
+  const vaultMeta = useVaultStore((s) => s.meta);
+  const pendingRecoveryKey = useVaultStore((s) => s.pendingRecoveryKey);
+  const bootstrap = useVaultStore((s) => s.bootstrap);
+  const lock = useVaultStore((s) => s.lock);
+
+  useEffect(() => {
+    void bootstrap();
+  }, [bootstrap]);
+
+  // Bloqueo automático por inactividad cuando la bóveda está cifrada y desbloqueada (T3.3).
+  useEffect(() => {
+    if (vaultStatus !== 'unlocked') {
+      return;
+    }
+    const timeoutMs = Math.max(1, vaultMeta?.autoLockMinutes ?? 15) * 60_000;
+    let timerId = window.setTimeout(() => lock(), timeoutMs);
+
+    const resetTimer = () => {
+      window.clearTimeout(timerId);
+      timerId = window.setTimeout(() => lock(), timeoutMs);
+    };
+
+    const events: Array<keyof WindowEventMap> = ['pointerdown', 'keydown', 'touchstart', 'scroll'];
+    for (const evt of events) {
+      window.addEventListener(evt, resetTimer, { passive: true });
+    }
+
+    return () => {
+      window.clearTimeout(timerId);
+      for (const evt of events) {
+        window.removeEventListener(evt, resetTimer);
+      }
+    };
+  }, [lock, vaultMeta?.autoLockMinutes, vaultStatus]);
+
+  if (vaultStatus === 'loading') {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-bg text-sm text-muted">
+        Inicializando almacenamiento local...
+      </div>
+    );
+  }
+
+  if (vaultStatus === 'uninitialized' || vaultStatus === 'locked' || pendingRecoveryKey !== null) {
+    return (
+      <div className="min-h-dvh bg-bg text-ink">
+        <VaultGate />
+      </div>
+    );
+  }
+
   return (
-    <AppShell activeSection={activeSection} onSelectSection={setActiveSection}>
-      {activeSection === 'fitting' ? (
-        <FittingRoom />
-      ) : (
+    <AppShell
+      activeSection={activeSection}
+      onSelectSection={setActiveSection}
+      vaultStatus={vaultStatus}
+      onLockVault={lock}
+    >
+      {activeSection === 'fitting' && <FittingRoom />}
+      {activeSection === 'memory' && <MemoryVaultPanel />}
+      {activeSection !== 'fitting' && activeSection !== 'memory' && (
         <PlaceholderSection section={activeSection} />
       )}
     </AppShell>
   );
 }
 
-function PlaceholderSection({ section }: { section: Exclude<NavSection, 'fitting'> }) {
+function PlaceholderSection({ section }: { section: Exclude<NavSection, 'fitting' | 'memory'> }) {
   const current = PLACEHOLDER_SECTIONS[section];
 
   return (

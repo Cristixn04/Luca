@@ -2,9 +2,11 @@ import { useId, useState, type ReactNode } from 'react';
 import {
   Brain,
   Layers,
+  Lock,
   Menu,
   Palette,
   Ruler,
+  ShieldAlert,
   Shirt,
   X,
   type LucideIcon,
@@ -13,6 +15,7 @@ import { Badge } from '@/design-system/components/Badge';
 import { Button } from '@/design-system/components/Button';
 import { ThemeToggle } from '@/design-system/components/ThemeToggle';
 import { cn } from '@/design-system/utils';
+import type { UiVaultStatus } from '@/features/vault/vaultStore';
 
 export type NavSection = 'fitting' | 'closet' | 'outfits' | 'color' | 'memory';
 
@@ -33,10 +36,18 @@ export const NAV_ITEMS: readonly NavItem[] = [
 export interface AppShellProps {
   activeSection: NavSection;
   onSelectSection: (section: NavSection) => void;
+  vaultStatus?: UiVaultStatus;
+  onLockVault?: () => void;
   children: ReactNode;
 }
 
-export function AppShell({ activeSection, onSelectSection, children }: AppShellProps) {
+export function AppShell({
+  activeSection,
+  onSelectSection,
+  vaultStatus,
+  onLockVault,
+  children,
+}: AppShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileNavId = useId();
 
@@ -64,7 +75,7 @@ export function AppShell({ activeSection, onSelectSection, children }: AppShellP
             >
               Luca
             </a>
-            <Badge variant="accent">v0.1</Badge>
+            <Badge variant="accent">v0.2</Badge>
           </div>
 
           <nav aria-label="Navegación principal" className="hidden md:block">
@@ -98,6 +109,18 @@ export function AppShell({ activeSection, onSelectSection, children }: AppShellP
           </nav>
 
           <div className="flex items-center gap-2">
+            {vaultStatus === 'unlocked' && onLockVault && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onLockVault}
+                aria-label="Bloquear bóveda"
+              >
+                <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">Bloquear</span>
+              </Button>
+            )}
             <Badge aria-label="Idioma actual: Español">ES</Badge>
             <ThemeToggle />
             <Button
@@ -156,6 +179,20 @@ export function AppShell({ activeSection, onSelectSection, children }: AppShellP
         )}
       </header>
 
+      {vaultStatus === 'plaintext' && (
+        <div
+          role="status"
+          className="border-b border-border bg-surface px-4 py-2 text-xs text-muted"
+        >
+          <div className="mx-auto flex w-full max-w-6xl items-center gap-2 sm:px-2">
+            <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-[#E0A526]" aria-hidden="true" />
+            <span>
+              Modo sin cifrado: tus datos se guardan solo en este dispositivo, pero sin contraseña.
+            </span>
+          </div>
+        </div>
+      )}
+
       <main id="contenido-principal" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
         {children}
       </main>
@@ -163,7 +200,7 @@ export function AppShell({ activeSection, onSelectSection, children }: AppShellP
       <footer className="border-t border-border bg-surface">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-xs text-muted sm:px-6">
           <span>Luca · Datos cifrados solo en tu dispositivo</span>
-          <span className="tabular-nums">Luca v0.1 · PWA local</span>
+          <span className="tabular-nums">Luca v0.2 · Bóveda local</span>
         </div>
       </footer>
     </div>

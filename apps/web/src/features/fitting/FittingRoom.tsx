@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import {
   createBodyModel,
   evaluateGarmentFit,
@@ -8,6 +8,7 @@ import {
 import { AlertCircle } from 'lucide-react';
 import { Badge } from '@/design-system/components/Badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/design-system/components/Card';
+import { useVaultStore } from '@/features/vault/vaultStore';
 import { GarmentPanel } from './GarmentPanel';
 import { MeasurementsPanel } from './MeasurementsPanel';
 import { useFittingStore } from './store';
@@ -29,6 +30,25 @@ export function FittingRoom() {
   );
 
   const validation = useMemo(() => validateBodyMeasurements(measurements), [measurements]);
+
+  const vaultStatus = useVaultStore((s) => s.status);
+  const persistCurrentMeasurements = useVaultStore((s) => s.persistCurrentMeasurements);
+  const lastSavedJsonRef = useRef<string>(JSON.stringify(bodyMeasurements));
+
+  useEffect(() => {
+    if (!validation.valid) return;
+    if (vaultStatus !== 'unlocked' && vaultStatus !== 'plaintext') return;
+
+    const serialized = JSON.stringify(bodyMeasurements);
+    if (serialized === lastSavedJsonRef.current) return;
+
+    const timer = window.setTimeout(() => {
+      lastSavedJsonRef.current = serialized;
+      void persistCurrentMeasurements(bodyMeasurements);
+    }, 200);
+
+    return () => window.clearTimeout(timer);
+  }, [bodyMeasurements, persistCurrentMeasurements, validation.valid, vaultStatus]);
 
   const bodyModel = useMemo(() => {
     if (!validation.valid) {

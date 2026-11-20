@@ -84,3 +84,7 @@ dialog::backdrop {
   overscroll-behavior: contain;
   background: rgb(17 19 21 / 55%);
 }
+
+.vault-input:user-invalid {
+  border-color: #c2410c;
+}
