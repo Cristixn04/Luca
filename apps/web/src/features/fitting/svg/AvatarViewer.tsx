@@ -2,7 +2,7 @@ import { useRef, type TouchEvent } from 'react';
 import type { AvatarView, BodyModel, FitReport } from '@luca/domain';
 import { Button } from '@/design-system/components/Button';
 import { HEATMAP_TOKENS } from '@/design-system/tokens';
-import type { M2GarmentCategory, ViewerMode } from '../store';
+import type { M2GarmentCategory, MannequinSilhouette, ViewerMode } from '../store';
 import { BackAvatarSvg } from './BackAvatarSvg';
 import { FrontAvatarSvg, type OutfitLayerOverlay } from './FrontAvatarSvg';
 import type { GarmentVisualMeta } from './garmentVisuals';
@@ -21,6 +21,7 @@ const VIEW_TABS: readonly { id: ViewerMode; label: string }[] = [
 
 export interface AvatarViewerProps {
   model: BodyModel;
+  silhouette?: MannequinSilhouette;
   garmentCategory: M2GarmentCategory;
   fitReport: FitReport | null;
   showHeatmap: boolean;
@@ -33,6 +34,7 @@ export interface AvatarViewerProps {
 
 export function AvatarViewer({
   model,
+  silhouette = 'female',
   garmentCategory,
   fitReport,
   showHeatmap,
@@ -103,6 +105,7 @@ export function AvatarViewer({
         {(viewMode === 'front' || viewMode === 'all') && (
           <FrontAvatarSvg
             model={model}
+            silhouette={silhouette}
             garmentCategory={garmentCategory}
             fitReport={fitReport}
             showHeatmap={showHeatmap}
@@ -115,6 +118,7 @@ export function AvatarViewer({
         {(viewMode === 'side' || viewMode === 'all') && (
           <SideAvatarSvg
             model={model}
+            silhouette={silhouette}
             garmentCategory={garmentCategory}
             fitReport={fitReport}
             showHeatmap={showHeatmap}
@@ -127,6 +131,7 @@ export function AvatarViewer({
         {(viewMode === 'back' || viewMode === 'all') && (
           <BackAvatarSvg
             model={model}
+            silhouette={silhouette}
             garmentCategory={garmentCategory}
             fitReport={fitReport}
             showHeatmap={showHeatmap}

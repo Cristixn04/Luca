@@ -1,5 +1,4 @@
 import type { FitReport, ZoneFitResult } from '@luca/domain';
-import { clampVisualEaseOffsetPx, type FrontAvatarAnchors } from './anchors';
 import {
   isSafeDataImageUrl,
   resolveGarmentAccentStroke,
@@ -9,11 +8,12 @@ import {
   type GarmentVisualMeta,
 } from './garmentVisuals';
 import { FIT_STATE_HEX, getHeatmapPatternId } from './heatmapMeta';
+import { computeFittedEasePx, type MannequinRig } from './mannequinRig';
 
 export type LowerGarmentVariant = 'pants' | 'shorts' | 'skirt';
 
 export interface PantsTemplateProps {
-  anchors: FrontAvatarAnchors;
+  rig: MannequinRig;
   fitReport: FitReport;
   showHeatmap: boolean;
   garmentColorHex?: string;
@@ -32,7 +32,7 @@ function formatEase(easeCm: number): string {
 }
 
 export function PantsTemplate({
-  anchors,
+  rig,
   fitReport,
   showHeatmap,
   garmentColorHex,
@@ -43,63 +43,73 @@ export function PantsTemplate({
   const waistZone = findZone(fitReport, 'waist');
   const hipZone = findZone(fitReport, 'hip');
 
-  const waistOffset = waistZone ? clampVisualEaseOffsetPx(waistZone.easeCm, anchors.scale) : 3;
-  const hipOffset = hipZone ? clampVisualEaseOffsetPx(hipZone.easeCm, anchors.scale) : 4;
-
   const subtype = resolveLowerSubtype(variant, garmentMeta);
-  const cx = anchors.centerX;
-  const wHalf = Math.max(anchors.waistHalfW * 0.9, anchors.waistHalfW + waistOffset);
-  const hHalf = Math.max(anchors.hipHalfW * 0.92, anchors.hipHalfW + hipOffset);
-  const legLength = anchors.ankleY - anchors.crotchY;
-  const shortHemY = anchors.crotchY + legLength * 0.28;
+  const cx = rig.cx;
+  const wEase = computeFittedEasePx(waistZone?.easeCm, 0.4);
+  const hEase = computeFittedEasePx(hipZone?.easeCm, 0.5);
+  const legEase = Math.max(2.2, hEase * 0.82);
+
+  const wHalf = rig.waistX + wEase;
+  const hHalf = rig.hipX + hEase;
+  const legLen = rig.footY - rig.crotchY;
+
+  const shortHemY = rig.crotchY + legLen * 0.27;
   const skirtHemY =
     subtype === 'skirt_mini'
-      ? anchors.crotchY + legLength * 0.26
+      ? rig.crotchY + legLen * 0.25
       : subtype === 'skirt_maxi'
-        ? anchors.ankleY - 12
-        : anchors.crotchY + legLength * 0.54;
-  const pantsHemY = anchors.ankleY - 6;
-  const ankleOuter = Math.max(anchors.ankleHalfW + 10, hHalf * 0.56);
-  const kneeOuter = Math.max(ankleOuter + 3, hHalf * 0.72);
-  const shortOuter = Math.max(hHalf * 0.88, ankleOuter + 6);
-  const innerGap = 4.5;
-  const skirtFlare = subtype === 'skirt_maxi' ? 16 : subtype === 'skirt_mini' ? 6 : 11;
+        ? rig.footY - 12
+        : rig.crotchY + legLen * 0.54;
+  const pantsHemY = rig.ankleJointY + 3;
+
+  // Contorno de pierna envuelve exactamente muslo -> rodilla -> pantorrilla -> tobillo sin sobresalir
+  const kneeOuter = rig.kneeOuterX + legEase;
+  const calfOuter = Math.max(rig.calfOuterX + legEase, kneeOuter - 0.5);
+  const ankleOuter = Math.max(rig.ankleOuterX + legEase * 1.15, calfOuter * 0.82);
+  const ankleInner = Math.max(3.6, rig.ankleInnerX - 1.6);
+  const kneeInner = Math.max(3.2, rig.kneeInnerX - 1.4);
+  const shortOuter = Math.max(rig.hipX * 0.86 + legEase, kneeOuter + 2);
+  const skirtFlare = subtype === 'skirt_maxi' ? 14 : subtype === 'skirt_mini' ? 5 : 9.5;
 
   const garmentPath =
     variant === 'skirt'
       ? [
-          `M ${cx - wHalf} ${anchors.waistY}`,
-          `Q ${cx} ${anchors.waistY + 3} ${cx + wHalf} ${anchors.waistY}`,
-          `C ${cx + hHalf + 2} ${anchors.hipY - 4}, ${cx + hHalf + skirtFlare} ${skirtHemY - 28}, ${cx + hHalf + skirtFlare} ${skirtHemY}`,
-          `Q ${cx} ${skirtHemY + 6} ${cx - hHalf - skirtFlare} ${skirtHemY}`,
-          `C ${cx - hHalf - skirtFlare} ${skirtHemY - 28}, ${cx - hHalf - 2} ${anchors.hipY - 4}, ${cx - wHalf} ${anchors.waistY}`,
+          `M ${cx - wHalf} ${rig.waistY}`,
+          `Q ${cx} ${rig.waistY + 2.5} ${cx + wHalf} ${rig.waistY}`,
+          `C ${cx + hHalf + 1} ${rig.hipY - 4}, ${cx + hHalf + skirtFlare} ${skirtHemY - 28}, ${cx + hHalf + skirtFlare} ${skirtHemY}`,
+          `Q ${cx} ${skirtHemY + 5.5} ${cx - hHalf - skirtFlare} ${skirtHemY}`,
+          `C ${cx - hHalf - skirtFlare} ${skirtHemY - 28}, ${cx - hHalf - 1} ${rig.hipY - 4}, ${cx - wHalf} ${rig.waistY}`,
           'Z',
         ].join(' ')
       : variant === 'shorts'
         ? [
-            `M ${cx - wHalf} ${anchors.waistY}`,
-            `Q ${cx} ${anchors.waistY + 2.5} ${cx + wHalf} ${anchors.waistY}`,
-            `C ${cx + hHalf + 2} ${anchors.hipY - 4}, ${cx + hHalf + 1} ${anchors.crotchY - 4}, ${cx + hHalf} ${anchors.crotchY}`,
+            `M ${cx - wHalf} ${rig.waistY}`,
+            `Q ${cx} ${rig.waistY + 2} ${cx + wHalf} ${rig.waistY}`,
+            `C ${cx + hHalf + 1} ${rig.hipY - 4}, ${cx + hHalf} ${rig.crotchY - 4}, ${cx + hHalf} ${rig.crotchY}`,
             `L ${cx + shortOuter} ${shortHemY}`,
-            `Q ${cx + (shortOuter + innerGap) * 0.5} ${shortHemY + 2} ${cx + innerGap + 1.5} ${shortHemY}`,
-            `L ${cx} ${anchors.crotchY + 5}`,
-            `L ${cx - innerGap - 1.5} ${shortHemY}`,
-            `Q ${cx - (shortOuter + innerGap) * 0.5} ${shortHemY + 2} ${cx - shortOuter} ${shortHemY}`,
-            `L ${cx - hHalf} ${anchors.crotchY}`,
-            `C ${cx - hHalf - 1} ${anchors.crotchY - 4}, ${cx - hHalf - 2} ${anchors.hipY - 4}, ${cx - wHalf} ${anchors.waistY}`,
+            `Q ${cx + (shortOuter + kneeInner) * 0.5} ${shortHemY + 2} ${cx + kneeInner} ${shortHemY}`,
+            `L ${cx} ${rig.crotchY + 5}`,
+            `L ${cx - kneeInner} ${shortHemY}`,
+            `Q ${cx - (shortOuter + kneeInner) * 0.5} ${shortHemY + 2} ${cx - shortOuter} ${shortHemY}`,
+            `L ${cx - hHalf} ${rig.crotchY}`,
+            `C ${cx - hHalf} ${rig.crotchY - 4}, ${cx - hHalf - 1} ${rig.hipY - 4}, ${cx - wHalf} ${rig.waistY}`,
             'Z',
           ].join(' ')
         : [
-            `M ${cx - wHalf} ${anchors.waistY}`,
-            `Q ${cx} ${anchors.waistY + 2.5} ${cx + wHalf} ${anchors.waistY}`,
-            `C ${cx + hHalf + 2} ${anchors.hipY - 4}, ${cx + hHalf + 1} ${anchors.crotchY - 2}, ${cx + hHalf} ${anchors.crotchY}`,
-            `C ${cx + kneeOuter + 1} ${anchors.kneeY - 20}, ${cx + kneeOuter} ${anchors.kneeY + 12}, ${cx + ankleOuter} ${pantsHemY}`,
-            `Q ${cx + (ankleOuter + innerGap + 4) * 0.5} ${pantsHemY + 2.5} ${cx + innerGap + 4} ${pantsHemY}`,
-            `C ${cx + innerGap + 3} ${anchors.kneeY + 10}, ${cx + innerGap + 1} ${anchors.kneeY - 24}, ${cx} ${anchors.crotchY + 6}`,
-            `C ${cx - innerGap - 1} ${anchors.kneeY - 24}, ${cx - innerGap - 3} ${anchors.kneeY + 10}, ${cx - innerGap - 4} ${pantsHemY}`,
-            `Q ${cx - (ankleOuter + innerGap + 4) * 0.5} ${pantsHemY + 2.5} ${cx - ankleOuter} ${pantsHemY}`,
-            `C ${cx - kneeOuter} ${anchors.kneeY + 12}, ${cx - kneeOuter - 1} ${anchors.kneeY - 20}, ${cx - hHalf} ${anchors.crotchY}`,
-            `C ${cx - hHalf - 1} ${anchors.crotchY - 2}, ${cx - hHalf - 2} ${anchors.hipY - 4}, ${cx - wHalf} ${anchors.waistY}`,
+            `M ${cx - wHalf} ${rig.waistY}`,
+            `Q ${cx} ${rig.waistY + 2} ${cx + wHalf} ${rig.waistY}`,
+            `C ${cx + hHalf + 1} ${rig.hipY - 4}, ${cx + hHalf} ${rig.crotchY - 2}, ${cx + hHalf} ${rig.crotchY}`,
+            `C ${cx + hHalf * 0.96} ${rig.crotchY + 24}, ${cx + kneeOuter + 1} ${rig.kneeY - 12}, ${cx + kneeOuter} ${rig.kneeY}`,
+            `C ${cx + calfOuter} ${rig.calfY - 8}, ${cx + calfOuter} ${rig.calfY + 12}, ${cx + ankleOuter} ${pantsHemY}`,
+            `Q ${cx + (ankleOuter + ankleInner) * 0.5} ${pantsHemY + 2} ${cx + ankleInner} ${pantsHemY}`,
+            `C ${cx + ankleInner} ${rig.calfY + 10}, ${cx + kneeInner} ${rig.kneeY + 6}, ${cx + kneeInner} ${rig.kneeY}`,
+            `C ${cx + kneeInner} ${rig.crotchY + 26}, ${cx + 3} ${rig.crotchY + 8}, ${cx} ${rig.crotchY + 5}`,
+            `C ${cx - 3} ${rig.crotchY + 8}, ${cx - kneeInner} ${rig.crotchY + 26}, ${cx - kneeInner} ${rig.kneeY}`,
+            `C ${cx - kneeInner} ${rig.kneeY + 6}, ${cx - ankleInner} ${rig.calfY + 10}, ${cx - ankleInner} ${pantsHemY}`,
+            `Q ${cx - (ankleOuter + ankleInner) * 0.5} ${pantsHemY + 2} ${cx - ankleOuter} ${pantsHemY}`,
+            `C ${cx - calfOuter} ${rig.calfY + 12}, ${cx - calfOuter} ${rig.calfY - 8}, ${cx - kneeOuter} ${rig.kneeY}`,
+            `C ${cx - kneeOuter - 1} ${rig.kneeY - 12}, ${cx - hHalf * 0.96} ${rig.crotchY + 24}, ${cx - hHalf} ${rig.crotchY}`,
+            `C ${cx - hHalf} ${rig.crotchY - 2}, ${cx - hHalf - 1} ${rig.hipY - 4}, ${cx - wHalf} ${rig.waistY}`,
             'Z',
           ].join(' ');
 
@@ -113,9 +123,9 @@ export function PantsTemplate({
   const hemBottom = variant === 'skirt' ? skirtHemY : variant === 'shorts' ? shortHemY : pantsHemY;
   const maxHalfX = Math.max(hHalf + skirtFlare, hHalf + 4);
   const imgX = cx - maxHalfX;
-  const imgY = anchors.waistY - 2;
+  const imgY = rig.waistY - 2;
   const imgW = maxHalfX * 2;
-  const imgH = hemBottom - anchors.waistY + 10;
+  const imgH = hemBottom - rig.waistY + 10;
 
   const patternId =
     !hasPhoto &&
@@ -133,10 +143,8 @@ export function PantsTemplate({
         </clipPath>
       </defs>
 
-      {/* Capa base de tela */}
-      <path d={garmentPath} fill={baseFill} fillOpacity={showHeatmap ? 0.16 : 0.95} />
+      <path d={garmentPath} fill={baseFill} fillOpacity={showHeatmap ? 0.16 : 0.96} />
 
-      {/* Proyección real de foto subida */}
       {hasPhoto && (
         <image
           href={garmentMeta.imageUrl}
@@ -146,142 +154,132 @@ export function PantsTemplate({
           height={imgH}
           preserveAspectRatio="xMidYMid slice"
           clipPath={`url(#${clipId})`}
-          opacity={showHeatmap ? 0.3 : 0.96}
+          opacity={showHeatmap ? 0.28 : 0.96}
           data-garment-photo="front"
         />
       )}
 
-      {/* Patrón procedural si no hay foto */}
       {patternId && !showHeatmap && (
-        <path d={garmentPath} fill={`url(#${patternId})`} opacity="0.85" />
+        <path d={garmentPath} fill={`url(#${patternId})`} opacity="0.82" />
       )}
 
-      {/* Volumen 3D y sombra natural de caída */}
       {!showHeatmap && (
         <>
-          <path d={garmentPath} fill={`url(#${patternPrefix}-fabric-shade)`} opacity="0.62" />
-          <path d={garmentPath} fill={`url(#${patternPrefix}-fabric-drape)`} opacity="0.48" />
+          <path d={garmentPath} fill={`url(#${patternPrefix}-fabric-shade)`} opacity="0.58" />
+          <path d={garmentPath} fill={`url(#${patternPrefix}-fabric-drape)`} opacity="0.44" />
         </>
       )}
 
-      {/* Contorno de prenda */}
       <path
         d={garmentPath}
         fill="none"
         stroke={strokeColor}
-        strokeWidth="1.35"
+        strokeWidth="1.15"
         strokeLinejoin="round"
       />
 
-      {/* Detalles de sastrería: pretina, bragueta, bolsillos, pliegues */}
       {!showHeatmap && (
         <g pointerEvents="none">
-          {/* Pretina superior */}
           <path
-            d={`M ${cx - wHalf + 1} ${anchors.waistY + 8} Q ${cx} ${anchors.waistY + 10.5} ${cx + wHalf - 1} ${anchors.waistY + 8}`}
+            d={`M ${cx - wHalf + 1} ${rig.waistY + 7.5} Q ${cx} ${rig.waistY + 9.5} ${cx + wHalf - 1} ${rig.waistY + 7.5}`}
             fill="none"
             stroke={seamColor}
-            strokeWidth="1.05"
+            strokeWidth="1"
           />
 
           {variant !== 'skirt' ? (
             <>
-              {/* Botón y bragueta frontal */}
-              <circle cx={cx} cy={anchors.waistY + 4.5} r="1.8" fill={buttonColor} opacity="0.8" />
+              <circle cx={cx} cy={rig.waistY + 4} r="1.6" fill={buttonColor} opacity="0.82" />
               <path
-                d={`M ${cx} ${anchors.waistY + 9} L ${cx} ${anchors.crotchY - 3} Q ${cx - 4} ${anchors.crotchY - 2} ${cx - 5} ${anchors.crotchY - 9}`}
+                d={`M ${cx} ${rig.waistY + 8.5} L ${cx} ${rig.crotchY - 3} Q ${cx - 3.5} ${rig.crotchY - 2} ${cx - 4.5} ${rig.crotchY - 8.5}`}
                 fill="none"
                 stroke={seamColor}
-                strokeWidth="1"
+                strokeWidth="0.95"
               />
-              {/* Bolsillos laterales (curvos en jeans, diagonales en chino/pantalón) */}
               {subtype === 'jeans' ? (
                 <>
                   <path
-                    d={`M ${cx - wHalf + 3} ${anchors.waistY + 9} Q ${cx - wHalf + 11} ${anchors.waistY + 20} ${cx - hHalf + 2} ${anchors.waistY + 23}`}
+                    d={`M ${cx - wHalf + 2.5} ${rig.waistY + 8.5} Q ${cx - wHalf + 9.5} ${rig.waistY + 18.5} ${cx - hHalf + 2} ${rig.waistY + 21.5}`}
                     fill="none"
                     stroke={seamColor}
-                    strokeWidth="1"
+                    strokeWidth="0.95"
                   />
                   <path
-                    d={`M ${cx + wHalf - 3} ${anchors.waistY + 9} Q ${cx + wHalf - 11} ${anchors.waistY + 20} ${cx + hHalf - 2} ${anchors.waistY + 23}`}
+                    d={`M ${cx + wHalf - 2.5} ${rig.waistY + 8.5} Q ${cx + wHalf - 9.5} ${rig.waistY + 18.5} ${cx + hHalf - 2} ${rig.waistY + 21.5}`}
                     fill="none"
                     stroke={seamColor}
-                    strokeWidth="1"
+                    strokeWidth="0.95"
                   />
                 </>
               ) : (
                 <>
                   <line
-                    x1={cx - wHalf + 6}
-                    y1={anchors.waistY + 10}
+                    x1={cx - wHalf + 5}
+                    y1={rig.waistY + 9}
                     x2={cx - hHalf + 3}
-                    y2={anchors.waistY + 27}
+                    y2={rig.waistY + 25}
                     stroke={seamColor}
-                    strokeWidth="1"
+                    strokeWidth="0.95"
                   />
                   <line
-                    x1={cx + wHalf - 6}
-                    y1={anchors.waistY + 10}
+                    x1={cx + wHalf - 5}
+                    y1={rig.waistY + 9}
                     x2={cx + hHalf - 3}
-                    y2={anchors.waistY + 27}
+                    y2={rig.waistY + 25}
                     stroke={seamColor}
-                    strokeWidth="1"
+                    strokeWidth="0.95"
                   />
                 </>
               )}
-              {/* Pliegue sutil de planchado/caída en piernas */}
               {variant === 'pants' && (
                 <>
                   <line
-                    x1={cx - hHalf * 0.52}
-                    y1={anchors.hipY + 8}
-                    x2={cx - (ankleOuter + innerGap) * 0.52}
+                    x1={cx - hHalf * 0.5}
+                    y1={rig.hipY + 8}
+                    x2={cx - (ankleOuter + ankleInner) * 0.5}
                     y2={pantsHemY - 8}
                     stroke={seamColor}
-                    strokeWidth="0.75"
-                    opacity="0.45"
+                    strokeWidth="0.7"
+                    opacity="0.4"
                   />
                   <line
-                    x1={cx + hHalf * 0.52}
-                    y1={anchors.hipY + 8}
-                    x2={cx + (ankleOuter + innerGap) * 0.52}
+                    x1={cx + hHalf * 0.5}
+                    y1={rig.hipY + 8}
+                    x2={cx + (ankleOuter + ankleInner) * 0.5}
                     y2={pantsHemY - 8}
                     stroke={seamColor}
-                    strokeWidth="0.75"
-                    opacity="0.45"
+                    strokeWidth="0.7"
+                    opacity="0.4"
                   />
                 </>
               )}
             </>
           ) : (
-            /* Pliegues verticales naturales de falda */
             <>
               <path
-                d={`M ${cx - wHalf * 0.42} ${anchors.waistY + 12} Q ${cx - hHalf * 0.46} ${anchors.hipY + 18} ${cx - (hHalf + skirtFlare) * 0.46} ${skirtHemY - 4}`}
+                d={`M ${cx - wHalf * 0.42} ${rig.waistY + 11} Q ${cx - hHalf * 0.46} ${rig.hipY + 16} ${cx - (hHalf + skirtFlare) * 0.46} ${skirtHemY - 4}`}
                 fill="none"
                 stroke={seamColor}
-                strokeWidth="0.95"
-                opacity="0.65"
+                strokeWidth="0.9"
+                opacity="0.62"
               />
               <path
-                d={`M ${cx + wHalf * 0.42} ${anchors.waistY + 12} Q ${cx + hHalf * 0.46} ${anchors.hipY + 18} ${cx + (hHalf + skirtFlare) * 0.46} ${skirtHemY - 4}`}
+                d={`M ${cx + wHalf * 0.42} ${rig.waistY + 11} Q ${cx + hHalf * 0.46} ${rig.hipY + 16} ${cx + (hHalf + skirtFlare) * 0.46} ${skirtHemY - 4}`}
                 fill="none"
                 stroke={seamColor}
-                strokeWidth="0.95"
-                opacity="0.65"
+                strokeWidth="0.9"
+                opacity="0.62"
               />
             </>
           )}
         </g>
       )}
 
-      {/* Zona de cintura */}
       {showHeatmap && waistZone && (
         <g data-heatmap-zone="waist" data-fit-state={waistZone.state}>
           <rect
             x={cx - wHalf}
-            y={anchors.waistY - 2}
+            y={rig.waistY - 2}
             width={wHalf * 2}
             height={22}
             rx={6}
@@ -291,7 +289,7 @@ export function PantsTemplate({
           />
           <text
             x={cx}
-            y={anchors.waistY + 13}
+            y={rig.waistY + 13}
             textAnchor="middle"
             fontSize="11"
             fontWeight="700"
@@ -303,12 +301,11 @@ export function PantsTemplate({
         </g>
       )}
 
-      {/* Zona de cadera */}
       {showHeatmap && hipZone && (
         <g data-heatmap-zone="hip" data-fit-state={hipZone.state}>
           <rect
             x={cx - hHalf}
-            y={anchors.hipY - 12}
+            y={rig.hipY - 12}
             width={hHalf * 2}
             height={28}
             rx={8}
@@ -318,7 +315,7 @@ export function PantsTemplate({
           />
           <text
             x={cx}
-            y={anchors.hipY + 6}
+            y={rig.hipY + 6}
             textAnchor="middle"
             fontSize="11"
             fontWeight="700"

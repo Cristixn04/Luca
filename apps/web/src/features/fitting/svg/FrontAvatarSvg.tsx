@@ -1,10 +1,11 @@
 import type { BodyModel, FitReport } from '@luca/domain';
 import { Badge } from '@/design-system/components/Badge';
-import type { M2GarmentCategory } from '../store';
-import { AVATAR_VIEWBOX, computeFrontAvatarAnchors } from './anchors';
+import type { M2GarmentCategory, MannequinSilhouette } from '../store';
+import { AVATAR_VIEWBOX } from './anchors';
 import type { GarmentVisualMeta } from './garmentVisuals';
 import { HeatmapPatternDefs } from './heatmapPatterns';
 import { MannequinDefs } from './MannequinDefs';
+import { computeMannequinRig } from './mannequinRig';
 import { PantsTemplate, type LowerGarmentVariant } from './PantsTemplate';
 import { TshirtTemplate, type UpperGarmentVariant } from './TshirtTemplate';
 
@@ -28,6 +29,7 @@ export function isLowerCategory(category: M2GarmentCategory): category is LowerG
 
 export interface SingleAvatarViewProps {
   model: BodyModel;
+  silhouette?: MannequinSilhouette;
   garmentCategory: M2GarmentCategory;
   fitReport: FitReport | null;
   showHeatmap: boolean;
@@ -41,6 +43,7 @@ export interface SingleAvatarViewProps {
 
 export function FrontAvatarSvg({
   model,
+  silhouette = 'female',
   garmentCategory,
   fitReport,
   showHeatmap,
@@ -51,100 +54,89 @@ export function FrontAvatarSvg({
   frameless = false,
   patternIdSuffix,
 }: SingleAvatarViewProps) {
-  const anchors = computeFrontAvatarAnchors(model);
-  const cx = anchors.centerX;
+  const rig = computeMannequinRig(model, silhouette);
+  const cx = rig.cx;
+  const isFemale = silhouette === 'female';
   const patternPrefix = patternIdSuffix ? `front-${patternIdSuffix}` : 'front';
 
-  // Proporciones anatómicas de cabeza, cuello, extremidades y pies
-  const headRx = anchors.headRadius * 0.78;
-  const headRy = anchors.headRadius * 1.04;
-  const headTopY = anchors.headCenterY - headRy;
-  const chinY = anchors.headCenterY + headRy;
-  const jawY = anchors.headCenterY + headRy * 0.48;
-  const neckBaseY = anchors.shoulderY - 4;
-  const neckHalf = anchors.neckHalfW * 0.96;
-
-  // Cabeza humana esculpida (cráneo -> pómulos -> mandíbula -> mentón)
+  // Cabeza ovalada de taller sin rostro (esbelta y elegante)
   const headPath = [
-    `M ${cx} ${headTopY}`,
-    `C ${cx + headRx * 1.05} ${headTopY}, ${cx + headRx * 1.08} ${anchors.headCenterY - headRy * 0.12}, ${cx + headRx * 0.96} ${jawY}`,
-    `C ${cx + headRx * 0.82} ${chinY - 4}, ${cx + headRx * 0.34} ${chinY}, ${cx} ${chinY}`,
-    `C ${cx - headRx * 0.34} ${chinY}, ${cx - headRx * 0.82} ${chinY - 4}, ${cx - headRx * 0.96} ${jawY}`,
-    `C ${cx - headRx * 1.08} ${anchors.headCenterY - headRy * 0.12}, ${cx - headRx * 1.05} ${headTopY}, ${cx} ${headTopY}`,
+    `M ${cx} ${rig.headTopY}`,
+    `C ${cx + rig.headRx * 1.04} ${rig.headTopY}, ${cx + rig.headRx * 1.05} ${rig.headCenterY - rig.headRy * 0.1}, ${cx + rig.headRx * 0.9} ${rig.headCenterY + rig.headRy * 0.5}`,
+    `C ${cx + rig.headRx * 0.7} ${rig.chinY - 3}, ${cx + rig.headRx * 0.28} ${rig.chinY}, ${cx} ${rig.chinY}`,
+    `C ${cx - rig.headRx * 0.28} ${rig.chinY}, ${cx - rig.headRx * 0.7} ${rig.chinY - 3}, ${cx - rig.headRx * 0.9} ${rig.headCenterY + rig.headRy * 0.5}`,
+    `C ${cx - rig.headRx * 1.05} ${rig.headCenterY - rig.headRy * 0.1}, ${cx - rig.headRx * 1.04} ${rig.headTopY}, ${cx} ${rig.headTopY}`,
     'Z',
   ].join(' ');
 
-  // Cuello y trapecios
+  // Cuello estilizado con transición suave a clavículas
   const neckPath = [
-    `M ${cx - neckHalf} ${chinY - 6}`,
-    `L ${cx + neckHalf} ${chinY - 6}`,
-    `C ${cx + neckHalf} ${neckBaseY - 4}, ${cx + neckHalf + 6} ${neckBaseY + 2}, ${cx + anchors.shoulderHalfW * 0.56} ${anchors.shoulderY + 2}`,
-    `L ${cx - anchors.shoulderHalfW * 0.56} ${anchors.shoulderY + 2}`,
-    `C ${cx - neckHalf - 6} ${neckBaseY + 2}, ${cx - neckHalf} ${neckBaseY - 4}, ${cx - neckHalf} ${chinY - 6}`,
+    `M ${cx - rig.neckHalf} ${rig.chinY - 5}`,
+    `L ${cx + rig.neckHalf} ${rig.chinY - 5}`,
+    `C ${cx + rig.neckHalf} ${rig.neckBaseY}, ${cx + rig.neckHalf + 4} ${rig.shoulderY - 2}, ${cx + rig.shoulderX * 0.52} ${rig.shoulderY + 2}`,
+    `L ${cx - rig.shoulderX * 0.52} ${rig.shoulderY + 2}`,
+    `C ${cx - rig.neckHalf - 4} ${rig.shoulderY - 2}, ${cx - rig.neckHalf} ${rig.neckBaseY}, ${cx - rig.neckHalf} ${rig.chinY - 5}`,
     'Z',
   ].join(' ');
 
-  // Brazos y manos relajadas a los costados (anatómicos)
+  // Brazos esbeltos con manos anatómicas abiertas (pulgar hacia adentro + dedos afinados)
   const buildArmPath = (side: -1 | 1) => {
-    const shX = cx + side * anchors.shoulderHalfW;
-    const armOuterElbowX = cx + side * (anchors.shoulderHalfW + 14);
-    const armInnerElbowX = cx + side * (anchors.chestHalfW + 7);
-    const elbowY = anchors.waistY + 4;
-    const wristOuterX = cx + side * (anchors.shoulderHalfW + 20);
-    const wristInnerX = cx + side * (anchors.shoulderHalfW + 10);
-    const wristY = anchors.hipY + 18;
-    const handTipY = anchors.crotchY + 14;
-    const handOuterX = cx + side * (anchors.shoulderHalfW + 22);
-    const handInnerX = cx + side * (anchors.shoulderHalfW + 11);
+    const a = rig.arm;
+    const s = side;
+    const wOutX = cx + s * a.wrist.outerX;
+    const wInX = cx + s * a.wrist.innerX;
+    const wY = a.wrist.y;
+    const handTipY = a.handTipY;
+    const thumbTipX = cx + s * (a.wrist.innerX - 3.2);
+    const thumbTipY = wY + 12.5;
+    const palmInX = cx + s * (a.wrist.innerX + 0.8);
+    const fingerOutX = cx + s * (a.wrist.outerX + 2.2);
+    const fingerTipX = cx + s * (a.wrist.innerX + 2.4);
 
     return [
-      `M ${shX - side * 5} ${anchors.shoulderY + 2}`,
-      `C ${shX + side * 8} ${anchors.shoulderY + 6}, ${armOuterElbowX + side * 2} ${anchors.chestY + 16}, ${armOuterElbowX} ${elbowY}`,
-      `C ${armOuterElbowX + side * 4} ${anchors.hipY - 8}, ${wristOuterX + side * 2} ${wristY - 8}, ${wristOuterX} ${wristY}`,
-      `C ${handOuterX + side * 2} ${wristY + 10}, ${handOuterX} ${handTipY - 4}, ${handOuterX - side * 3.5} ${handTipY}`,
-      `C ${handInnerX + side * 2} ${handTipY + 1}, ${handInnerX - side * 1} ${wristY + 11}, ${wristInnerX} ${wristY + 2}`,
-      `C ${armInnerElbowX + side * 2} ${anchors.hipY - 12}, ${armInnerElbowX} ${elbowY + 4}, ${armInnerElbowX} ${elbowY}`,
-      `C ${cx + side * (anchors.chestHalfW + 3)} ${anchors.chestY + 18}, ${cx + side * anchors.chestHalfW} ${anchors.chestY + 4}, ${shX - side * 5} ${anchors.shoulderY + 2}`,
+      `M ${cx + s * (rig.shoulderX - 3)} ${rig.shoulderY + 1}`,
+      `C ${cx + s * (a.deltoid.outerX + 1.5)} ${a.deltoid.y + 4}, ${cx + s * (a.bicep.outerX + 0.5)} ${a.bicep.y - 4}, ${cx + s * a.bicep.outerX} ${a.bicep.y}`,
+      `C ${cx + s * a.elbow.outerX} ${a.elbow.y - 6}, ${cx + s * a.elbow.outerX} ${a.elbow.y + 4}, ${cx + s * a.forearm.outerX} ${a.forearm.y}`,
+      `C ${cx + s * (a.forearm.outerX + 1)} ${wY - 10}, ${wOutX + s * 0.8} ${wY - 4}, ${wOutX} ${wY}`,
+      `C ${fingerOutX} ${wY + 7}, ${fingerOutX - s * 0.5} ${handTipY - 7}, ${fingerTipX} ${handTipY}`,
+      `C ${palmInX + s * 1} ${handTipY - 1}, ${palmInX} ${wY + 13}, ${palmInX - s * 0.8} ${wY + 9}`,
+      `L ${thumbTipX} ${thumbTipY}`,
+      `C ${thumbTipX - s * 1.4} ${wY + 10}, ${wInX - s * 1.2} ${wY + 5}, ${wInX} ${wY}`,
+      `C ${cx + s * a.forearm.innerX} ${a.forearm.y + 4}, ${cx + s * a.elbow.innerX} ${a.elbow.y + 3}, ${cx + s * a.elbow.innerX} ${a.elbow.y}`,
+      `C ${cx + s * a.bicep.innerX} ${a.bicep.y + 2}, ${cx + s * (rig.armpitX + 1)} ${rig.armpitY + 4}, ${cx + s * rig.armpitX} ${rig.armpitY}`,
+      `L ${cx + s * (rig.shoulderX - 3)} ${rig.shoulderY + 1}`,
       'Z',
     ].join(' ');
   };
 
-  // Torso, piernas esculpidas (muslo -> rodilla -> pantorrilla -> tobillo -> pie)
-  const calfY = anchors.kneeY + (anchors.ankleY - anchors.kneeY) * 0.34;
-  const ankleJointY = anchors.ankleY - 12;
-  const kneeOuterX = anchors.hipHalfW * 0.65;
-  const calfOuterX = anchors.hipHalfW * 0.68;
-  const ankleOuterX = anchors.ankleHalfW + 13;
-  const ankleInnerX = 7.5;
-  const kneeInnerX = 5.5;
-  const calfInnerX = 6.5;
-  const footOuterX = ankleOuterX + 5.5;
-  const footInnerX = ankleInnerX - 2.5;
+  // Torso y piernas estilizadas (siguiendo exactamente MannequinRig)
+  const footOuterX = rig.ankleOuterX + 4.8;
+  const footInnerX = Math.max(3.5, rig.ankleInnerX - 2.6);
 
   const torsoAndLegsPath = [
-    `M ${cx - neckHalf - 2} ${anchors.shoulderY - 2}`,
-    `C ${cx - anchors.shoulderHalfW * 0.62} ${anchors.shoulderY - 1}, ${cx - anchors.shoulderHalfW} ${anchors.shoulderY + 1}, ${cx - anchors.shoulderHalfW} ${anchors.shoulderY + 7}`,
-    `C ${cx - anchors.shoulderHalfW} ${anchors.chestY - 10}, ${cx - anchors.chestHalfW - 1} ${anchors.chestY - 4}, ${cx - anchors.chestHalfW} ${anchors.chestY + 4}`,
-    `C ${cx - anchors.chestHalfW + 1} ${anchors.waistY - 16}, ${cx - anchors.waistHalfW} ${anchors.waistY - 8}, ${cx - anchors.waistHalfW} ${anchors.waistY}`,
-    `C ${cx - anchors.waistHalfW} ${anchors.hipY - 16}, ${cx - anchors.hipHalfW} ${anchors.hipY - 10}, ${cx - anchors.hipHalfW} ${anchors.hipY}`,
-    `C ${cx - anchors.hipHalfW} ${anchors.crotchY - 2}, ${cx - anchors.hipHalfW * 0.9} ${anchors.crotchY + 14}, ${cx - kneeOuterX} ${anchors.kneeY}`,
-    `C ${cx - calfOuterX} ${calfY - 8}, ${cx - calfOuterX} ${calfY + 12}, ${cx - ankleOuterX} ${ankleJointY}`,
-    `C ${cx - footOuterX} ${anchors.ankleY - 4}, ${cx - footOuterX} ${anchors.ankleY}, ${cx - ankleOuterX + 2} ${anchors.ankleY}`,
-    `L ${cx - footInnerX} ${anchors.ankleY}`,
-    `C ${cx - footInnerX - 1} ${anchors.ankleY - 4}, ${cx - ankleInnerX} ${ankleJointY + 2}, ${cx - ankleInnerX} ${ankleJointY}`,
-    `C ${cx - calfInnerX} ${calfY + 8}, ${cx - calfInnerX - 2} ${calfY - 10}, ${cx - kneeInnerX} ${anchors.kneeY}`,
-    `C ${cx - kneeInnerX - 2} ${anchors.crotchY + 34}, ${cx - 4} ${anchors.crotchY + 8}, ${cx} ${anchors.crotchY + 4}`,
-    `C ${cx + 4} ${anchors.crotchY + 8}, ${cx + kneeInnerX + 2} ${anchors.crotchY + 34}, ${cx + kneeInnerX} ${anchors.kneeY}`,
-    `C ${cx + calfInnerX + 2} ${calfY - 10}, ${cx + calfInnerX} ${calfY + 8}, ${cx + ankleInnerX} ${ankleJointY}`,
-    `C ${cx + ankleInnerX} ${ankleJointY + 2}, ${cx + footInnerX + 1} ${anchors.ankleY - 4}, ${cx + footInnerX} ${anchors.ankleY}`,
-    `L ${cx + ankleOuterX - 2} ${anchors.ankleY}`,
-    `C ${cx + footOuterX} ${anchors.ankleY}, ${cx + footOuterX} ${anchors.ankleY - 4}, ${cx + ankleOuterX} ${ankleJointY}`,
-    `C ${cx + calfOuterX} ${calfY + 12}, ${cx + calfOuterX} ${calfY - 8}, ${cx + kneeOuterX} ${anchors.kneeY}`,
-    `C ${cx + anchors.hipHalfW * 0.9} ${anchors.crotchY + 14}, ${cx + anchors.hipHalfW} ${anchors.crotchY - 2}, ${cx + anchors.hipHalfW} ${anchors.hipY}`,
-    `C ${cx + anchors.hipHalfW} ${anchors.hipY - 10}, ${cx + anchors.waistHalfW} ${anchors.hipY - 16}, ${cx + anchors.waistHalfW} ${anchors.waistY}`,
-    `C ${cx + anchors.waistHalfW} ${anchors.waistY - 8}, ${cx + anchors.chestHalfW - 1} ${anchors.waistY - 16}, ${cx + anchors.chestHalfW} ${anchors.chestY + 4}`,
-    `C ${cx + anchors.chestHalfW + 1} ${anchors.chestY - 4}, ${cx + anchors.shoulderHalfW} ${anchors.chestY - 10}, ${cx + anchors.shoulderHalfW} ${anchors.shoulderY + 7}`,
-    `C ${cx + anchors.shoulderHalfW} ${anchors.shoulderY + 1}, ${cx + anchors.shoulderHalfW * 0.62} ${anchors.shoulderY - 1}, ${cx + neckHalf + 2} ${anchors.shoulderY - 2}`,
+    `M ${cx - rig.neckHalf - 2} ${rig.shoulderY - 2}`,
+    `C ${cx - rig.shoulderX * 0.65} ${rig.shoulderY - 1}, ${cx - rig.shoulderX + 1} ${rig.shoulderY}, ${cx - rig.shoulderX} ${rig.shoulderY + 5}`,
+    `C ${cx - rig.armpitX - 2} ${rig.armpitY - 8}, ${cx - rig.armpitX} ${rig.armpitY - 2}, ${cx - rig.chestX} ${rig.chestY + 4}`,
+    `C ${cx - rig.chestX} ${rig.waistY - 14}, ${cx - rig.waistX} ${rig.waistY - 8}, ${cx - rig.waistX} ${rig.waistY}`,
+    `C ${cx - rig.waistX} ${rig.hipY - 16}, ${cx - rig.hipX} ${rig.hipY - 12}, ${cx - rig.hipX} ${rig.hipY}`,
+    `C ${cx - rig.hipX} ${rig.crotchY + 4}, ${cx - rig.hipX * 0.9} ${rig.crotchY + 24}, ${cx - rig.kneeOuterX} ${rig.kneeY}`,
+    `C ${cx - rig.calfOuterX - 0.8} ${rig.calfY - 8}, ${cx - rig.calfOuterX} ${rig.calfY + 12}, ${cx - rig.ankleOuterX} ${rig.ankleJointY}`,
+    `C ${cx - footOuterX} ${rig.footY - 4}, ${cx - footOuterX} ${rig.footY + 0.5}, ${cx - rig.ankleOuterX + 1} ${rig.footY}`,
+    `L ${cx - footInnerX} ${rig.footY}`,
+    `C ${cx - footInnerX - 1.5} ${rig.footY - 4}, ${cx - rig.ankleInnerX} ${rig.ankleJointY + 2}, ${cx - rig.ankleInnerX} ${rig.ankleJointY}`,
+    `C ${cx - rig.calfInnerX} ${rig.calfY + 10}, ${cx - rig.calfInnerX - 1.5} ${rig.calfY - 10}, ${cx - rig.kneeInnerX} ${rig.kneeY}`,
+    `C ${cx - rig.kneeInnerX - 1.5} ${rig.crotchY + 34}, ${cx - 3.5} ${rig.crotchY + 10}, ${cx} ${rig.crotchY + 3}`,
+    `C ${cx + 3.5} ${rig.crotchY + 10}, ${cx + rig.kneeInnerX + 1.5} ${rig.crotchY + 34}, ${cx + rig.kneeInnerX} ${rig.kneeY}`,
+    `C ${cx + rig.calfInnerX + 1.5} ${rig.calfY - 10}, ${cx + rig.calfInnerX} ${rig.calfY + 10}, ${cx + rig.ankleInnerX} ${rig.ankleJointY}`,
+    `C ${cx + rig.ankleInnerX} ${rig.ankleJointY + 2}, ${cx + footInnerX + 1.5} ${rig.footY - 4}, ${cx + footInnerX} ${rig.footY}`,
+    `L ${cx + rig.ankleOuterX - 1} ${rig.footY}`,
+    `C ${cx + footOuterX} ${rig.footY + 0.5}, ${cx + footOuterX} ${rig.footY - 4}, ${cx + rig.ankleOuterX} ${rig.ankleJointY}`,
+    `C ${cx + rig.calfOuterX} ${rig.calfY + 12}, ${cx + rig.calfOuterX + 0.8} ${rig.calfY - 8}, ${cx + rig.kneeOuterX} ${rig.kneeY}`,
+    `C ${cx + rig.hipX * 0.9} ${rig.crotchY + 24}, ${cx + rig.hipX} ${rig.crotchY + 4}, ${cx + rig.hipX} ${rig.hipY}`,
+    `C ${cx + rig.hipX} ${rig.hipY - 12}, ${cx + rig.waistX} ${rig.hipY - 16}, ${cx + rig.waistX} ${rig.waistY}`,
+    `C ${cx + rig.waistX} ${rig.waistY - 8}, ${cx + rig.chestX} ${rig.waistY - 14}, ${cx + rig.chestX} ${rig.chestY + 4}`,
+    `C ${cx + rig.armpitX} ${rig.armpitY - 2}, ${cx + rig.armpitX + 2} ${rig.armpitY - 8}, ${cx + rig.shoulderX} ${rig.shoulderY + 5}`,
+    `C ${cx + rig.shoulderX - 1} ${rig.shoulderY}, ${cx + rig.shoulderX * 0.65} ${rig.shoulderY - 1}, ${cx + rig.neckHalf + 2} ${rig.shoulderY - 2}`,
     'Z',
   ].join(' ');
 
@@ -160,21 +152,13 @@ export function FrontAvatarSvg({
       <HeatmapPatternDefs prefix={patternPrefix} />
       <MannequinDefs prefix={patternPrefix} />
 
-      {!frameless && (
-        <line
-          x1={cx}
-          y1={AVATAR_VIEWBOX.topPadding}
-          x2={cx}
-          y2={anchors.ankleY}
-          stroke="var(--border)"
-          strokeWidth="1"
-          strokeDasharray="4 4"
-          opacity="0.55"
-        />
-      )}
-
       {/* Brazos y manos anatómicas */}
-      <g fill={`url(#${patternPrefix}-limb-grad)`} stroke="var(--mannequin-stroke)" strokeWidth="1.15" strokeLinejoin="round">
+      <g
+        fill={`url(#${patternPrefix}-limb-grad)`}
+        stroke="var(--mannequin-stroke)"
+        strokeWidth="1.05"
+        strokeLinejoin="round"
+      >
         <path d={buildArmPath(-1)} />
         <path d={buildArmPath(1)} />
       </g>
@@ -184,76 +168,126 @@ export function FrontAvatarSvg({
         d={neckPath}
         fill={`url(#${patternPrefix}-body-grad)`}
         stroke="var(--mannequin-stroke)"
-        strokeWidth="1.1"
+        strokeWidth="1"
       />
-      {/* Sombra sutil bajo el mentón */}
       <ellipse
         cx={cx}
-        cy={chinY + 2}
-        rx={neckHalf * 0.92}
-        ry={5}
+        cy={rig.chinY + 2.5}
+        rx={rig.neckHalf * 0.9}
+        ry={4.5}
         fill={`url(#${patternPrefix}-neck-shadow)`}
       />
 
-      {/* Torso y piernas esculpidas */}
+      {/* Cuerpo principal y piernas */}
       <path
         d={torsoAndLegsPath}
         fill={`url(#${patternPrefix}-body-grad)`}
         stroke="var(--mannequin-stroke)"
-        strokeWidth="1.2"
+        strokeWidth="1.05"
         strokeLinejoin="round"
         data-avatar-body="front"
       />
 
-      {/* Detalles anatómicos sutiles (clavículas, rodillas) */}
-      <g fill="none" stroke="var(--mannequin-detail)" strokeWidth="0.95" strokeLinecap="round">
-        <path
-          d={`M ${cx - anchors.shoulderHalfW * 0.52} ${anchors.shoulderY + 9} Q ${cx - 10} ${anchors.shoulderY + 13} ${cx - 3} ${anchors.shoulderY + 10}`}
-        />
-        <path
-          d={`M ${cx + anchors.shoulderHalfW * 0.52} ${anchors.shoulderY + 9} Q ${cx + 10} ${anchors.shoulderY + 13} ${cx + 3} ${anchors.shoulderY + 10}`}
-        />
-        <path
-          d={`M ${cx - kneeOuterX + 5} ${anchors.kneeY + 1} Q ${cx - (kneeOuterX + kneeInnerX) * 0.5} ${anchors.kneeY + 5} ${cx - kneeInnerX - 4} ${anchors.kneeY + 1}`}
-        />
-        <path
-          d={`M ${cx + kneeInnerX + 4} ${anchors.kneeY + 1} Q ${cx + (kneeOuterX + kneeInnerX) * 0.5} ${anchors.kneeY + 5} ${cx + kneeOuterX - 5} ${anchors.kneeY + 1}`}
-        />
+      {/* Costuras de taller de moda y sombreado anatómico sutil (referencia atelier) */}
+      <g pointerEvents="none">
+        {/* Línea central vertical + línea de cuello + cortes princesa */}
+        <g fill="none" stroke="var(--mannequin-detail)" strokeWidth="0.65">
+          <path d={`M ${cx - rig.neckHalf - 1} ${rig.shoulderY - 1} Q ${cx} ${rig.shoulderY + 5} ${cx + rig.neckHalf + 1} ${rig.shoulderY - 1}`} />
+          <line x1={cx} y1={rig.shoulderY + 2} x2={cx} y2={rig.crotchY + 1} />
+          <path
+            d={`M ${cx - rig.shoulderX * 0.55} ${rig.shoulderY + 1} C ${cx - rig.chestX * 0.56} ${rig.chestY}, ${cx - rig.waistX * 0.62} ${rig.waistY}, ${cx - rig.hipX * 0.64} ${rig.hipY - 4}`}
+          />
+          <path
+            d={`M ${cx + rig.shoulderX * 0.55} ${rig.shoulderY + 1} C ${cx + rig.chestX * 0.56} ${rig.chestY}, ${cx + rig.waistX * 0.62} ${rig.waistY}, ${cx + rig.hipX * 0.64} ${rig.hipY - 4}`}
+          />
+          {/* Línea de sisa de hombro */}
+          <path d={`M ${cx - rig.shoulderX + 3} ${rig.shoulderY + 2} Q ${cx - rig.armpitX - 1} ${rig.chestY - 8} ${cx - rig.armpitX} ${rig.armpitY}`} />
+          <path d={`M ${cx + rig.shoulderX - 3} ${rig.shoulderY + 2} Q ${cx + rig.armpitX + 1} ${rig.chestY - 8} ${cx + rig.armpitX} ${rig.armpitY}`} />
+          {/* Línea pélvica de maniquí */}
+          <path
+            d={`M ${cx - rig.hipX + 1} ${rig.hipY - 8} Q ${cx - rig.hipX * 0.42} ${rig.crotchY - 14} ${cx} ${rig.crotchY + 2} Q ${cx + rig.hipX * 0.42} ${rig.crotchY - 14} ${cx + rig.hipX - 1} ${rig.hipY - 8}`}
+          />
+        </g>
+
+        {/* Contorno de busto femenino o pectoral masculino */}
+        {isFemale ? (
+          <>
+            <path
+              d={`M ${cx - rig.chestX + 2} ${rig.chestY + 2} Q ${cx - rig.chestX * 0.46} ${rig.bustUnderY + 4} ${cx - 2.5} ${rig.chestY + 3}`}
+              fill="none"
+              stroke="var(--mannequin-stroke)"
+              strokeWidth="0.85"
+              opacity="0.55"
+            />
+            <path
+              d={`M ${cx + 2.5} ${rig.chestY + 3} Q ${cx + rig.chestX * 0.46} ${rig.bustUnderY + 4} ${cx + rig.chestX - 2} ${rig.chestY + 2}`}
+              fill="none"
+              stroke="var(--mannequin-stroke)"
+              strokeWidth="0.85"
+              opacity="0.55"
+            />
+            <path
+              d={`M ${cx - rig.chestX + 3} ${rig.chestY + 3} Q ${cx - rig.chestX * 0.46} ${rig.bustUnderY + 7} ${cx - 2.5} ${rig.chestY + 4} Q ${cx - rig.chestX * 0.46} ${rig.bustUnderY + 2} ${cx - rig.chestX + 3} ${rig.chestY + 3} Z`}
+              fill="var(--mannequin-shade-deep)"
+            />
+            <path
+              d={`M ${cx + 2.5} ${rig.chestY + 4} Q ${cx + rig.chestX * 0.46} ${rig.bustUnderY + 7} ${cx + rig.chestX - 3} ${rig.chestY + 3} Q ${cx + rig.chestX * 0.46} ${rig.bustUnderY + 2} ${cx + 2.5} ${rig.chestY + 4} Z`}
+              fill="var(--mannequin-shade-deep)"
+            />
+          </>
+        ) : (
+          <path
+            d={`M ${cx - rig.chestX + 4} ${rig.chestY + 4} Q ${cx - rig.chestX * 0.45} ${rig.chestY + 8} ${cx - 2} ${rig.chestY + 5} M ${cx + 2} ${rig.chestY + 5} Q ${cx + rig.chestX * 0.45} ${rig.chestY + 8} ${cx + rig.chestX - 4} ${rig.chestY + 4}`}
+            fill="none"
+            stroke="var(--mannequin-detail)"
+            strokeWidth="0.95"
+          />
+        )}
+
+        {/* Sombreado sutil de rótulas (rodillas) */}
+        <g fill="none" stroke="var(--mannequin-detail)" strokeWidth="0.8" strokeLinecap="round">
+          <path
+            d={`M ${cx - rig.kneeOuterX + 4} ${rig.kneeY - 1} Q ${cx - (rig.kneeOuterX + rig.kneeInnerX) * 0.5} ${rig.kneeY + 4.5} ${cx - rig.kneeInnerX - 3} ${rig.kneeY - 1}`}
+          />
+          <path
+            d={`M ${cx + rig.kneeInnerX + 3} ${rig.kneeY - 1} Q ${cx + (rig.kneeOuterX + rig.kneeInnerX) * 0.5} ${rig.kneeY + 4.5} ${cx + rig.kneeOuterX - 4} ${rig.kneeY - 1}`}
+          />
+        </g>
       </g>
 
-      {/* Orejas sutiles + Cabeza escultórica */}
+      {/* Orejas finas y cabeza esculpida */}
       <ellipse
-        cx={cx - headRx * 0.98}
-        cy={anchors.headCenterY + 2}
-        rx={2.6}
-        ry={5.2}
+        cx={cx - rig.headRx * 0.96}
+        cy={rig.headCenterY + 2}
+        rx={2.1}
+        ry={5}
         fill={`url(#${patternPrefix}-limb-grad)`}
         stroke="var(--mannequin-stroke)"
-        strokeWidth="0.95"
+        strokeWidth="0.9"
       />
       <ellipse
-        cx={cx + headRx * 0.98}
-        cy={anchors.headCenterY + 2}
-        rx={2.6}
-        ry={5.2}
+        cx={cx + rig.headRx * 0.96}
+        cy={rig.headCenterY + 2}
+        rx={2.1}
+        ry={5}
         fill={`url(#${patternPrefix}-limb-grad)`}
         stroke="var(--mannequin-stroke)"
-        strokeWidth="0.95"
+        strokeWidth="0.9"
       />
       <path
         d={headPath}
         fill={`url(#${patternPrefix}-head-grad)`}
         stroke="var(--mannequin-stroke)"
-        strokeWidth="1.2"
+        strokeWidth="1.05"
         strokeLinejoin="round"
       />
 
-      {/* Prendas en capas */}
+      {/* Prendas ajustadas exactamente al MannequinRig */}
       {outfitLayers ? (
         <>
           {outfitLayers.bottomFitReport && (
             <PantsTemplate
-              anchors={anchors}
+              rig={rig}
               fitReport={outfitLayers.bottomFitReport}
               showHeatmap={showHeatmap}
               patternPrefix={patternPrefix}
@@ -264,7 +298,7 @@ export function FrontAvatarSvg({
           )}
           {outfitLayers.topFitReport && (
             <TshirtTemplate
-              anchors={anchors}
+              rig={rig}
               fitReport={outfitLayers.topFitReport}
               showHeatmap={showHeatmap}
               patternPrefix={patternPrefix}
@@ -275,7 +309,7 @@ export function FrontAvatarSvg({
           )}
           {outfitLayers.outerwearFitReport && (
             <TshirtTemplate
-              anchors={anchors}
+              rig={rig}
               fitReport={outfitLayers.outerwearFitReport}
               showHeatmap={showHeatmap}
               patternPrefix={patternPrefix}
@@ -289,7 +323,7 @@ export function FrontAvatarSvg({
         <>
           {fitReport && !isLowerCategory(garmentCategory) && (
             <TshirtTemplate
-              anchors={anchors}
+              rig={rig}
               fitReport={fitReport}
               showHeatmap={showHeatmap}
               patternPrefix={patternPrefix}
@@ -300,7 +334,7 @@ export function FrontAvatarSvg({
           )}
           {fitReport && isLowerCategory(garmentCategory) && (
             <PantsTemplate
-              anchors={anchors}
+              rig={rig}
               fitReport={fitReport}
               showHeatmap={showHeatmap}
               patternPrefix={patternPrefix}
@@ -321,6 +355,7 @@ export function FrontAvatarSvg({
   return (
     <div
       data-avatar-view="front"
+      data-mannequin-silhouette={silhouette}
       className={`flex flex-col items-center gap-2 rounded-[var(--radius-md)] border border-border bg-bg p-3 ${compact ? 'w-full' : 'w-full max-w-[320px]'}`}
     >
       <div className="flex w-full items-center justify-between gap-2 text-xs">

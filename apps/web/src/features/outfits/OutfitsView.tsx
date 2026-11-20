@@ -175,6 +175,8 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
   const bodyMeasurements = useFittingStore((s) => s.bodyMeasurements);
   const optionalMeasurements = useFittingStore((s) => s.optionalMeasurements);
   const fitPreference = useFittingStore((s) => s.fitPreference);
+  const mannequinSilhouette = useFittingStore((s) => s.mannequinSilhouette);
+  const setMannequinSilhouette = useFittingStore((s) => s.setMannequinSilhouette);
 
   const savedOutfits = useOutfitsStore((s) => s.savedOutfits);
   const wearLogs = useOutfitsStore((s) => s.wearLogs);
@@ -499,6 +501,8 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
               setActionNotice(null);
             }}
             bodyModel={bodyModel}
+            silhouette={mannequinSilhouette}
+            onChangeSilhouette={setMannequinSilhouette}
             occasionLabel={OCCASION_RULES[occasion].label}
             temperatureC={temperatureC}
             viewMode={viewMode}

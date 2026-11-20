@@ -12,6 +12,19 @@ import { create } from 'zustand';
 export type M2GarmentCategory = GarmentCategory;
 export type ViewerMode = AvatarView | 'all';
 export type FittingGarmentSource = 'closet' | 'quick';
+export type MannequinSilhouette = 'female' | 'male';
+
+const SILHOUETTE_STORAGE_KEY = 'luca-mannequin-silhouette';
+
+function readStoredSilhouette(): MannequinSilhouette {
+  try {
+    const raw = window.localStorage.getItem(SILHOUETTE_STORAGE_KEY);
+    if (raw === 'female' || raw === 'male') return raw;
+  } catch {
+    // Entorno sin almacenamiento disponible
+  }
+  return 'female';
+}
 
 export const DEFAULT_BODY_MEASUREMENTS: RequiredBodyMeasurements = {
   height: 175,
@@ -78,6 +91,7 @@ export const DEFAULT_GARMENT_PRESETS: Record<
 export interface FittingState {
   unit: MeasurementUnit;
   hideNumbers: boolean;
+  mannequinSilhouette: MannequinSilhouette;
   bodyMeasurements: RequiredBodyMeasurements;
   optionalMeasurements: OptionalBodyMeasurements;
   viewMode: ViewerMode;
@@ -95,6 +109,7 @@ export interface FittingState {
 
   setUnit: (unit: MeasurementUnit) => void;
   toggleHideNumbers: () => void;
+  setMannequinSilhouette: (silhouette: MannequinSilhouette) => void;
   setBodyMeasure: (field: keyof RequiredBodyMeasurements, valueCm: number) => void;
   setOptionalMeasure: (field: keyof OptionalBodyMeasurements, valueCm: number | undefined) => void;
   resetBodyMeasures: () => void;
@@ -115,6 +130,7 @@ export interface FittingState {
 export const useFittingStore = create<FittingState>((set) => ({
   unit: 'cm',
   hideNumbers: false,
+  mannequinSilhouette: readStoredSilhouette(),
   bodyMeasurements: { ...DEFAULT_BODY_MEASUREMENTS },
   optionalMeasurements: {},
   viewMode: 'front',
@@ -132,6 +148,14 @@ export const useFittingStore = create<FittingState>((set) => ({
 
   setUnit: (unit) => set({ unit }),
   toggleHideNumbers: () => set((state) => ({ hideNumbers: !state.hideNumbers })),
+  setMannequinSilhouette: (mannequinSilhouette) => {
+    try {
+      window.localStorage.setItem(SILHOUETTE_STORAGE_KEY, mannequinSilhouette);
+    } catch {
+      // Ignora error si almacenamiento está bloqueado
+    }
+    set({ mannequinSilhouette });
+  },
   setBodyMeasure: (field, valueCm) =>
     set((state) => ({
       bodyMeasurements: {

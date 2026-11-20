@@ -208,4 +208,29 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
 
     expect(container.querySelector('[data-garment-photo="front"]')).toBeNull();
   });
+
+  it('permite alternar entre maniquí Mujer y Hombre en las 3 vistas manteniendo el calce', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<FittingRoom />);
+
+    expect(
+      container.querySelector('[data-avatar-view="front"]')?.getAttribute('data-mannequin-silhouette'),
+    ).toBe('female');
+
+    await user.click(screen.getByRole('button', { name: 'Hombre' }));
+    expect(
+      container.querySelector('[data-avatar-view="front"]')?.getAttribute('data-mannequin-silhouette'),
+    ).toBe('male');
+    expect(
+      container.querySelector('[data-avatar-view="side"]')?.getAttribute('data-mannequin-silhouette'),
+    ).toBe('male');
+    expect(
+      container.querySelector('[data-avatar-view="back"]')?.getAttribute('data-mannequin-silhouette'),
+    ).toBe('male');
+
+    await user.click(screen.getByRole('button', { name: 'Mujer' }));
+    expect(
+      container.querySelector('[data-avatar-view="front"]')?.getAttribute('data-mannequin-silhouette'),
+    ).toBe('female');
+  });
 });

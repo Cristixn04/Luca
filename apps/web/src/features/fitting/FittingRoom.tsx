@@ -20,6 +20,8 @@ export function FittingRoom() {
   const t = useT();
   const bodyMeasurements = useFittingStore((s) => s.bodyMeasurements);
   const optionalMeasurements = useFittingStore((s) => s.optionalMeasurements);
+  const mannequinSilhouette = useFittingStore((s) => s.mannequinSilhouette);
+  const setMannequinSilhouette = useFittingStore((s) => s.setMannequinSilhouette);
   const viewMode = useFittingStore((s) => s.viewMode);
   const setViewMode = useFittingStore((s) => s.setViewMode);
   const garmentEnabled = useFittingStore((s) => s.garmentEnabled);
@@ -140,8 +142,34 @@ export function FittingRoom() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
+              <div className="flex items-center gap-2.5">
                 <CardTitle>Avatar</CardTitle>
+                <div
+                  role="group"
+                  aria-label="Tipo de maniquí"
+                  className="inline-flex rounded-[var(--radius-sm)] border border-border bg-bg p-0.5"
+                >
+                  {(
+                    [
+                      { id: 'female', label: 'Mujer' },
+                      { id: 'male', label: 'Hombre' },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      aria-pressed={mannequinSilhouette === opt.id}
+                      onClick={() => setMannequinSilhouette(opt.id)}
+                      className={`cursor-pointer rounded-[6px] px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                        mannequinSilhouette === opt.id
+                          ? 'bg-accent text-accent-ink'
+                          : 'text-muted hover:text-ink'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-ink">
                 <input
@@ -159,6 +187,7 @@ export function FittingRoom() {
             {bodyModel ? (
               <AvatarViewer
                 model={bodyModel}
+                silhouette={mannequinSilhouette}
                 garmentCategory={garmentCategory}
                 fitReport={fitReport}
                 showHeatmap={showHeatmap}

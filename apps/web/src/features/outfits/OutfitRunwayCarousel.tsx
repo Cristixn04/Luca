@@ -15,7 +15,7 @@ import {
 } from '@luca/domain';
 import { ArrowLeft, ArrowRight, Pause, Play, X } from 'lucide-react';
 import type { GarmentWithSizes } from '@/features/closet/types';
-import type { ViewerMode } from '@/features/fitting/store';
+import type { MannequinSilhouette, ViewerMode } from '@/features/fitting/store';
 import { BackAvatarSvg } from '@/features/fitting/svg/BackAvatarSvg';
 import { FrontAvatarSvg, type OutfitLayerOverlay } from '@/features/fitting/svg/FrontAvatarSvg';
 import type { GarmentVisualMeta } from '@/features/fitting/svg/garmentVisuals';
@@ -208,6 +208,8 @@ export interface OutfitRunwayCarouselProps {
   selectedIndex: number;
   onSelectIndex: (index: number) => void;
   bodyModel: BodyModel | null;
+  silhouette: MannequinSilhouette;
+  onChangeSilhouette: (silhouette: MannequinSilhouette) => void;
   occasionLabel: string;
   temperatureC: number;
   viewMode: ViewerMode;
@@ -224,6 +226,8 @@ export function OutfitRunwayCarousel({
   selectedIndex,
   onSelectIndex,
   bodyModel,
+  silhouette,
+  onChangeSilhouette,
   occasionLabel,
   temperatureC,
   viewMode,
@@ -361,6 +365,7 @@ export function OutfitRunwayCarousel({
     const layers = layersByProposalId.get(proposal.id);
     const commonProps = {
       model: bodyModel,
+      silhouette,
       garmentCategory: 'tshirt' as const,
       fitReport: null,
       showHeatmap,
@@ -406,6 +411,37 @@ export function OutfitRunwayCarousel({
         )}
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Selector de maniquí Mujer / Hombre en cápsula de vidrio */}
+          <div
+            role="group"
+            aria-label="Tipo de maniquí"
+            className="luca-glass-pill inline-flex items-center gap-0.5 rounded-full p-1"
+          >
+            {(
+              [
+                { id: 'female', label: 'Mujer' },
+                { id: 'male', label: 'Hombre' },
+              ] as const
+            ).map((opt) => {
+              const active = silhouette === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => onChangeSilhouette(opt.id)}
+                  className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
+                    active
+                      ? 'bg-[var(--rw-cta)] text-[var(--rw-cta-ink)]'
+                      : 'text-[var(--rw-muted)] hover:text-[var(--rw-ink)]'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+
           {/* Cápsula de vidrio flotante para ángulo del maniquí */}
           <div
             role="group"
