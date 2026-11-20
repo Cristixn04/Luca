@@ -40,4 +40,12 @@ export default defineConfig({
       '@': resolve(import.meta.dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      '/v1': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+    },
+  },
 });

@@ -241,6 +241,30 @@ export function GarmentDetailView({
         </Card>
 
         <div className="flex flex-col gap-5">
+          {item.image?.dataUrl && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>Foto guardada</CardTitle>
+                <CardDescription>
+                  {item.image.source === 'api'
+                    ? 'Fondo recortado vía API · guardada cifrada en tu dispositivo'
+                    : 'Recorte manual local · guardada cifrada en tu dispositivo'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex h-44 w-full items-center justify-center overflow-hidden rounded-[var(--radius-sm)] border border-border bg-bg p-2">
+                  <img
+                    src={item.image.dataUrl}
+                    alt={`Foto de ${garment.name}`}
+                    className="max-h-full max-w-full object-contain"
+                    onError={(event) => {
+                      event.currentTarget.style.display = 'none';
+                    }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
           {activeEvaluation && (
             <Card>
               <CardHeader className="pb-3">

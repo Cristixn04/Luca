@@ -3,6 +3,7 @@ import { appendInteractionEvent } from '@/infrastructure/storage/eventLog';
 import type { VaultService } from '@/infrastructure/vault/vaultService';
 import type {
   GarmentDraft,
+  GarmentImageRecord,
   GarmentRecord,
   GarmentWithSizes,
   SizeOptionDraft,
@@ -96,9 +97,10 @@ export function validateGarmentDraft(draft: GarmentDraft): string[] {
 }
 
 export async function listGarmentsWithSizes(vault: VaultService): Promise<GarmentWithSizes[]> {
-  const [garments, allSizes] = await Promise.all([
+  const [garments, allSizes, allImages] = await Promise.all([
     vault.listRecords<GarmentRecord>('garment'),
     vault.listRecords<SizeOptionRecord>('size_option'),
+    vault.listRecords<GarmentImageRecord>('garment_image'),
   ]);
 
   const sizesByGarment = new Map<string, SizeOptionRecord[]>();
@@ -108,13 +110,22 @@ export async function listGarmentsWithSizes(vault: VaultService): Promise<Garmen
     sizesByGarment.set(size.garmentId, bucket);
   }
 
+  const imageByGarment = new Map<string, GarmentImageRecord>();
+  for (const image of allImages) {
+    imageByGarment.set(image.garmentId, image);
+  }
+
   return garments
-    .map((garment) => ({
-      garment,
-      sizes: (sizesByGarment.get(garment.id) ?? []).sort((a, b) =>
-        a.createdAt.localeCompare(b.createdAt),
-      ),
-    }))
+    .map((garment) => {
+      const image = imageByGarment.get(garment.id);
+      return {
+        garment,
+        sizes: (sizesByGarment.get(garment.id) ?? []).sort((a, b) =>
+          a.createdAt.localeCompare(b.createdAt),
+        ),
+        ...(image ? { image } : {}),
+      };
+    })
     .sort((a, b) => b.garment.updatedAt.localeCompare(a.garment.updatedAt));
 }
 
@@ -173,6 +184,20 @@ export async function createGarment(
     await vault.putRecord('size_option', size.id, size);
   }
 
+  let savedImage: GarmentImageRecord | undefined;
+  if (draft.image?.dataUrl) {
+    savedImage = {
+      id: garment.id,
+      garmentId: garment.id,
+      dataUrl: draft.image.dataUrl,
+      width: draft.image.width ?? 0,
+      height: draft.image.height ?? 0,
+      source: draft.image.source,
+      createdAt: now,
+    };
+    await vault.putRecord('garment_image', savedImage.id, savedImage);
+  }
+
   await appendInteractionEvent(vault, {
     type: 'garment_added',
     payload: {
@@ -180,10 +205,11 @@ export async function createGarment(
       category: garment.category,
       status: garment.status,
       sizeCount: sizes.length,
+      hasPhoto: Boolean(savedImage),
     },
   });
 
-  return { garment, sizes };
+  return { garment, sizes, ...(savedImage ? { image: savedImage } : {}) };
 }
 
 export async function updateGarment(
@@ -236,6 +262,23 @@ export async function updateGarment(
     await vault.putRecord('size_option', size.id, size);
   }
 
+  let savedImage = await vault.getRecord<GarmentImageRecord>('garment_image', garmentId);
+  if (draft.image === null) {
+    await vault.deleteRecord('garment_image', garmentId);
+    savedImage = undefined;
+  } else if (draft.image?.dataUrl) {
+    savedImage = {
+      id: garmentId,
+      garmentId,
+      dataUrl: draft.image.dataUrl,
+      width: draft.image.width ?? 0,
+      height: draft.image.height ?? 0,
+      source: draft.image.source,
+      createdAt: now,
+    };
+    await vault.putRecord('garment_image', savedImage.id, savedImage);
+  }
+
   await appendInteractionEvent(vault, {
     type: 'garment_edited',
     payload: {
@@ -246,7 +289,7 @@ export async function updateGarment(
     },
   });
 
-  return { garment: updated, sizes: nextSizes };
+  return { garment: updated, sizes: nextSizes, ...(savedImage ? { image: savedImage } : {}) };
 }
 
 export async function deleteGarment(vault: VaultService, garmentId: string): Promise<void> {
@@ -261,6 +304,7 @@ export async function deleteGarment(vault: VaultService, garmentId: string): Pro
   for (const size of ownedSizes) {
     await vault.deleteRecord('size_option', size.id);
   }
+  await vault.deleteRecord('garment_image', garmentId);
   await vault.deleteRecord('garment', garmentId);
 
   await appendInteractionEvent(vault, {

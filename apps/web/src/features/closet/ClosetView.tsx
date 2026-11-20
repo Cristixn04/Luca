@@ -355,6 +355,18 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
                 </CardHeader>
 
                 <CardContent className="flex flex-col gap-3">
+                  {item.image?.dataUrl && (
+                    <div className="flex h-32 w-full items-center justify-center overflow-hidden rounded-[var(--radius-sm)] border border-border bg-bg p-2">
+                      <img
+                        src={item.image.dataUrl}
+                        alt={`Foto de ${garment.name}`}
+                        className="max-h-full max-w-full object-contain"
+                        onError={(event) => {
+                          event.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
                   {rec && (
                     <div className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-xs">
                       <span className="text-muted">Talla sugerida</span>

@@ -1,0 +1,301 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Luca API",
+    "description": "API sin estado para servicios auxiliares de Luca (visión, etiquetado y clima).",
+    "version": "0.5.0"
+  },
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "operationId": "health_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vision/analyze": {
+      "post": {
+        "tags": [
+          "vision"
+        ],
+        "summary": "Recorta el fondo y calcula el color dominante en CIELAB",
+        "operationId": "analyze_garment_photo_v1_vision_analyze_post",
+        "parameters": [
+          {
+            "name": "X-Luca-Install-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Luca-Install-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_analyze_garment_photo_v1_vision_analyze_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisionAnalyzeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_analyze_garment_photo_v1_vision_analyze_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "Foto reducida de la prenda sin EXIF"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_analyze_garment_photo_v1_vision_analyze_post"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          },
+          "service": {
+            "type": "string",
+            "const": "luca-api",
+            "title": "Service"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "vision_provider": {
+            "type": "string",
+            "title": "Vision Provider"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "version",
+          "vision_provider"
+        ],
+        "title": "HealthResponse"
+      },
+      "LabColorSchema": {
+        "properties": {
+          "l": {
+            "type": "number",
+            "title": "L",
+            "description": "Luminosidad CIELAB L* (0..100)"
+          },
+          "a": {
+            "type": "number",
+            "title": "A",
+            "description": "Eje verde-rojo CIELAB a*"
+          },
+          "b": {
+            "type": "number",
+            "title": "B",
+            "description": "Eje azul-amarillo CIELAB b*"
+          }
+        },
+        "type": "object",
+        "required": [
+          "l",
+          "a",
+          "b"
+        ],
+        "title": "LabColorSchema"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VisionAnalyzeResponse": {
+        "properties": {
+          "cutout_png_base64": {
+            "type": "string",
+            "title": "Cutout Png Base64",
+            "description": "Imagen PNG RGBA recortada codificada en Base64"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Height"
+          },
+          "dominant_color_hex": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "title": "Dominant Color Hex"
+          },
+          "dominant_color_lab": {
+            "$ref": "#/components/schemas/LabColorSchema"
+          },
+          "palette_hex": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Palette Hex"
+          },
+          "coverage": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Coverage"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "processing_ms": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Processing Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cutout_png_base64",
+          "width",
+          "height",
+          "dominant_color_hex",
+          "dominant_color_lab",
+          "palette_hex",
+          "coverage",
+          "provider",
+          "processing_ms"
+        ],
+        "title": "VisionAnalyzeResponse"
+      }
+    }
+  }
+}

@@ -30,9 +30,27 @@ export interface SizeOptionRecord {
   readonly updatedAt: string;
 }
 
+export interface GarmentImageRecord {
+  readonly id: string;
+  readonly garmentId: string;
+  readonly dataUrl: string;
+  readonly width: number;
+  readonly height: number;
+  readonly source: 'api' | 'manual';
+  readonly createdAt: string;
+}
+
+export interface GarmentImageDraft {
+  readonly dataUrl: string;
+  readonly width?: number;
+  readonly height?: number;
+  readonly source: 'api' | 'manual';
+}
+
 export interface GarmentWithSizes {
   readonly garment: GarmentRecord;
   readonly sizes: readonly SizeOptionRecord[];
+  readonly image?: GarmentImageRecord;
 }
 
 export interface SizeOptionDraft {
@@ -53,6 +71,7 @@ export interface GarmentDraft {
   readonly tags: readonly string[];
   readonly dominantColorHex?: string;
   readonly notes?: string;
+  readonly image?: GarmentImageDraft | null;
   readonly sizes: readonly SizeOptionDraft[];
 }
 

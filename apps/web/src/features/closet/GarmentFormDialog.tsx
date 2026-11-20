@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { Button } from '@/design-system/components/Button';
 import { useFittingStore } from '@/features/fitting/store';
 import { validateGarmentDraft } from './closetService';
+import { PhotoIngestSection, type PhotoIngestValue } from './PhotoIngestSection';
 import { SizeTableEditor } from './SizeTableEditor';
 import {
   CATEGORY_LABELS,
@@ -58,6 +59,7 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
   const [formality, setFormality] = useState<FormalityLevel>(2);
   const [tagsText, setTagsText] = useState('');
   const [dominantColorHex, setDominantColorHex] = useState('#1F5F6B');
+  const [photo, setPhoto] = useState<PhotoIngestValue>({ dominantColorHex: '#1F5F6B' });
   const [sizes, setSizes] = useState<SizeOptionDraft[]>(() => defaultSizesForCategory('tshirt'));
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -74,7 +76,19 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
       setElasticityPct(String(Math.round(editing.garment.elasticity * 100)));
       setFormality(editing.garment.formality);
       setTagsText(editing.garment.tags.join(', '));
-      setDominantColorHex(editing.garment.dominantColorHex ?? '#1F5F6B');
+      const colorHex = editing.garment.dominantColorHex ?? '#1F5F6B';
+      setDominantColorHex(colorHex);
+      setPhoto({
+        dominantColorHex: colorHex,
+        ...(editing.image
+          ? {
+              dataUrl: editing.image.dataUrl,
+              width: editing.image.width,
+              height: editing.image.height,
+              source: editing.image.source,
+            }
+          : {}),
+      });
       setSizes(
         editing.sizes.map((s) => ({
           id: s.id,
@@ -92,6 +106,7 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
       setFormality(2);
       setTagsText('');
       setDominantColorHex('#1F5F6B');
+      setPhoto({ dominantColorHex: '#1F5F6B' });
       setSizes(defaultSizesForCategory('tshirt'));
     }
     setErrors([]);
@@ -141,6 +156,16 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
         .map((t) => t.trim())
         .filter(Boolean),
       dominantColorHex,
+      image: photo.dataUrl
+        ? {
+            dataUrl: photo.dataUrl,
+            width: photo.width,
+            height: photo.height,
+            source: photo.source ?? 'manual',
+          }
+        : editing?.image
+          ? null
+          : undefined,
       sizes,
     };
 
@@ -339,6 +364,14 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
               className="rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
             />
           </div>
+
+          <PhotoIngestSection
+            value={{ ...photo, dominantColorHex }}
+            onChange={(next) => {
+              setPhoto(next);
+              setDominantColorHex(next.dominantColorHex);
+            }}
+          />
 
           <SizeTableEditor category={category} unit={unit} sizes={sizes} onChange={setSizes} />
 
