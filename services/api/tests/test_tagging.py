@@ -133,3 +133,62 @@ def test_vision_analyze_succeeds_even_if_ai_tagger_fails() -> None:
     assert body["dominant_color_hex"].startswith("#")
     assert body["tagging"] is None
     assert body["tagging_warning"] is not None
+
+
+def test_gemini_vision_tagger_parses_surgical_visual_spec_and_sends_system_instruction() -> None:
+    captured_kwargs: dict[str, Any] = {}
+
+    class FakeInteractions:
+        def create(self, **kwargs: Any) -> SimpleNamespace:
+            captured_kwargs.update(kwargs)
+            return SimpleNamespace(
+                output_text=json.dumps(
+                    {
+                        "category": "jacket",
+                        "category_confidence": 0.96,
+                        "pattern": "solid",
+                        "pattern_confidence": 0.93,
+                        "style": "streetwear",
+                        "style_confidence": 0.9,
+                        "formality": 2,
+                        "formality_confidence": 0.85,
+                        "seasons": ["autumn", "winter"],
+                        "seasons_confidence": 0.92,
+                        "suggested_tags": ["sudadera", "capucha", "algodón grueso"],
+                        "overall_confidence": 0.92,
+                        "visual_spec": {
+                            "neckline": "hood",
+                            "sleeve_length": "long",
+                            "garment_length": "hip",
+                            "fit_cut": "oversized",
+                            "closure": "zipper",
+                            "pockets": "kangaroo",
+                            "has_hood": True,
+                            "has_ribbed_trim": True,
+                            "has_lapels": False,
+                            "has_pleats": False,
+                            "secondary_color_hex": "#1F2937",
+                            "accent_color_hex": "#E5E7EB",
+                            "graphic_position": "chest_left",
+                            "fabric_texture": "fleece",
+                        },
+                    }
+                )
+            )
+
+    fake_client = SimpleNamespace(interactions=FakeInteractions())
+    tagger = GeminiVisionTagger(api_key="test-key", client=fake_client)
+    front = make_garment_photo((30, 40, 50), fmt="PNG")
+
+    result = tagger.tag_garment(front)
+
+    assert "system_instruction" in captured_kwargs
+    assert "visual_spec" in captured_kwargs["system_instruction"]
+    assert result.visual_spec is not None
+    assert result.visual_spec.neckline == "hood"
+    assert result.visual_spec.closure == "zipper"
+    assert result.visual_spec.pockets == "kangaroo"
+    assert result.visual_spec.has_hood is True
+    assert result.visual_spec.has_ribbed_trim is True
+    assert result.visual_spec.secondary_color_hex == "#1F2937"
+    assert result.visual_spec.fabric_texture == "fleece"

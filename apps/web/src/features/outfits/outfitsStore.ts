@@ -32,6 +32,24 @@ export interface SavedOutfitRecord {
   readonly updatedAt: string;
 }
 
+export interface OutfitRenderRecord {
+  readonly id: string;
+  readonly silhouette: 'female' | 'male';
+  readonly garmentIds: readonly string[];
+  readonly dataUrl: string;
+  readonly width: number;
+  readonly height: number;
+  readonly provider: string;
+  readonly createdAt: string;
+}
+
+export function makeOutfitRenderKey(
+  silhouette: 'female' | 'male',
+  garmentIds: readonly string[],
+): string {
+  return `${silhouette}:${[...garmentIds].sort().join('+')}`;
+}
+
 function createId(prefix: string): string {
   if (typeof globalThis.crypto?.randomUUID === 'function') {
     return `${prefix}-${globalThis.crypto.randomUUID()}`;
@@ -109,6 +127,7 @@ export function toOutfitGarmentInputs(
 export interface OutfitsStoreState {
   savedOutfits: SavedOutfitRecord[];
   wearLogs: WearLogRecord[];
+  rendersByKey: Record<string, OutfitRenderRecord>;
   loaded: boolean;
   busy: boolean;
   error: string | null;
@@ -120,6 +139,8 @@ export interface OutfitsStoreState {
     temperatureC: number,
     options?: { favorite?: boolean; name?: string },
   ) => Promise<SavedOutfitRecord>;
+  saveOutfitRender: (record: OutfitRenderRecord) => Promise<OutfitRenderRecord>;
+  deleteOutfitRender: (renderKey: string) => Promise<void>;
   toggleFavorite: (outfitId: string) => Promise<void>;
   deleteSavedOutfit: (outfitId: string) => Promise<void>;
   logGarmentWear: (garmentId: string, wornOn?: string, outfitId?: string) => Promise<WearLogRecord>;
@@ -130,6 +151,7 @@ export interface OutfitsStoreState {
 export const useOutfitsStore = create<OutfitsStoreState>((set, get) => ({
   savedOutfits: [],
   wearLogs: [],
+  rendersByKey: {},
   loaded: false,
   busy: false,
   error: null,
@@ -137,19 +159,24 @@ export const useOutfitsStore = create<OutfitsStoreState>((set, get) => ({
   loadAll: async () => {
     const vault = getVaultServiceInstance();
     if (!canAccessVault()) {
-      set({ savedOutfits: [], wearLogs: [], loaded: false });
+      set({ savedOutfits: [], wearLogs: [], rendersByKey: {}, loaded: false });
       return;
     }
 
     set({ busy: true, error: null });
     try {
-      const [outfits, logs] = await Promise.all([
+      const [outfits, logs, renders] = await Promise.all([
         vault.listRecords<SavedOutfitRecord>('outfit'),
         vault.listRecords<WearLogRecord>('wear_log'),
+        vault.listRecords<OutfitRenderRecord>('outfit_render'),
       ]);
       outfits.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
       logs.sort((a, b) => b.wornOn.localeCompare(a.wornOn));
-      set({ savedOutfits: outfits, wearLogs: logs, loaded: true, busy: false });
+      const rendersByKey: Record<string, OutfitRenderRecord> = {};
+      for (const render of renders) {
+        rendersByKey[render.id] = render;
+      }
+      set({ savedOutfits: outfits, wearLogs: logs, rendersByKey, loaded: true, busy: false });
     } catch (err) {
       set({
         busy: false,
@@ -198,6 +225,32 @@ export const useOutfitsStore = create<OutfitsStoreState>((set, get) => ({
       savedOutfits: [record, ...state.savedOutfits.filter((o) => o.id !== record.id)],
     }));
     return record;
+  },
+
+  saveOutfitRender: async (record) => {
+    const vault = getVaultServiceInstance();
+    if (canAccessVault()) {
+      await vault.putRecord('outfit_render', record.id, record);
+    }
+    set((state) => ({
+      rendersByKey: {
+        ...state.rendersByKey,
+        [record.id]: record,
+      },
+    }));
+    return record;
+  },
+
+  deleteOutfitRender: async (renderKey) => {
+    const vault = getVaultServiceInstance();
+    if (canAccessVault()) {
+      await vault.deleteRecord('outfit_render', renderKey);
+    }
+    set((state) => {
+      const next = { ...state.rendersByKey };
+      delete next[renderKey];
+      return { rendersByKey: next };
+    });
   },
 
   toggleFavorite: async (outfitId) => {
@@ -270,6 +323,7 @@ export const useOutfitsStore = create<OutfitsStoreState>((set, get) => ({
     set({
       savedOutfits: [],
       wearLogs: [],
+      rendersByKey: {},
       loaded: false,
       busy: false,
       error: null,

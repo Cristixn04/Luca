@@ -1,6 +1,7 @@
 import { Badge } from '@/design-system/components/Badge';
 import { AVATAR_VIEWBOX } from './anchors';
 import { isLowerCategory, type SingleAvatarViewProps } from './FrontAvatarSvg';
+import { resolveUpperBlueprint } from './garmentVisuals';
 import { HeatmapPatternDefs } from './heatmapPatterns';
 import { MannequinDefs } from './MannequinDefs';
 import { computeMannequinRig } from './mannequinRig';
@@ -91,11 +92,25 @@ export function SideAvatarSvg({
     'Z',
   ].join(' ');
 
-  const activeUpperIsLongSleeve = outfitLayers
-    ? Boolean(outfitLayers.outerwearFitReport) ||
-      outfitLayers.topVariant === 'long_sleeve' ||
-      outfitLayers.topVariant === 'jacket'
-    : garmentCategory === 'long_sleeve' || garmentCategory === 'jacket';
+  const activeUpperIsLongSleeve = (() => {
+    if (outfitLayers) {
+      if (outfitLayers.outerwearFitReport) {
+        const outerSleeve = resolveUpperBlueprint('jacket', outfitLayers.outerwearMeta).sleeveLength;
+        if (outerSleeve === 'long' || outerSleeve === 'three_quarter') return true;
+      }
+      if (outfitLayers.topFitReport) {
+        const topSleeve = resolveUpperBlueprint(
+          outfitLayers.topVariant ?? 'tshirt',
+          outfitLayers.topMeta,
+        ).sleeveLength;
+        return topSleeve === 'long' || topSleeve === 'three_quarter';
+      }
+      return false;
+    }
+    if (isLowerCategory(garmentCategory)) return false;
+    const singleSleeve = resolveUpperBlueprint(garmentCategory, garmentMeta).sleeveLength;
+    return singleSleeve === 'long' || singleSleeve === 'three_quarter';
+  })();
 
   const overlayLimbPath = activeUpperIsLongSleeve ? profileHandPath : profileForearmAndHandPath;
 

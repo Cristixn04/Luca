@@ -2,7 +2,7 @@ import type { FitReport } from '@luca/domain';
 import {
   resolveGarmentAccentStroke,
   resolveGarmentSeamColor,
-  resolveLowerSubtype,
+  resolveLowerBlueprint,
   type GarmentVisualMeta,
 } from './garmentVisuals';
 import { FIT_STATE_HEX, getHeatmapPatternId } from './heatmapMeta';
@@ -36,10 +36,11 @@ export function SidePantsTemplate({
   const waistZone = fitReport.evaluatedZones.find((item) => item.zone === 'waist');
   const hipZone = fitReport.evaluatedZones.find((item) => item.zone === 'hip');
 
-  const subtype = resolveLowerSubtype(variant, garmentMeta);
+  const bp = resolveLowerBlueprint(variant, garmentMeta);
+  const { garmentLength, fitCut } = bp;
   const wEase = computeFittedEasePx(waistZone?.easeCm, 0.4);
   const hEase = computeFittedEasePx(hipZone?.easeCm, 0.5);
-  const legEase = Math.max(2.2, hEase * 0.8);
+  const legEase = Math.max(1.4, hEase * 0.8 + bp.legWidthBoostPx * 0.65);
 
   const s = rig.side;
   const wBack = s.waistBackX - wEase;
@@ -52,20 +53,29 @@ export function SidePantsTemplate({
   const kneeFront = s.kneeFrontX + legEase;
   const calfBack = s.calfBackX - legEase;
   const calfFront = s.calfFrontX + legEase;
-  const ankleBack = Math.min(s.ankleBackX - legEase * 1.1, calfBack + 3);
-  const ankleFront = Math.max(s.ankleFrontX + legEase * 1.1, calfFront + 1);
+  const flareAdd = fitCut === 'flared' ? 4.5 : fitCut === 'wide_leg' || fitCut === 'oversized' ? 3 : 0;
+  const ankleBack = Math.min(s.ankleBackX - legEase * 1.1 - flareAdd, calfBack + 3);
+  const ankleFront = Math.max(s.ankleFrontX + legEase * 1.1 + flareAdd, calfFront + 1);
 
   const legLen = rig.footY - rig.crotchY;
   const hemY =
     variant === 'shorts'
-      ? rig.crotchY + legLen * 0.27
+      ? garmentLength === 'knee'
+        ? rig.kneeY - 2
+        : rig.crotchY + legLen * 0.27
       : variant === 'skirt'
-        ? subtype === 'skirt_mini'
+        ? garmentLength === 'thigh'
           ? rig.crotchY + legLen * 0.25
-          : subtype === 'skirt_maxi'
-            ? rig.footY - 12
-            : rig.crotchY + legLen * 0.54
-        : rig.ankleJointY + 3;
+          : garmentLength === 'knee'
+            ? rig.kneeY + 3
+            : garmentLength === 'maxi' || garmentLength === 'ankle'
+              ? rig.footY - 12
+              : rig.crotchY + legLen * 0.54
+        : garmentLength === 'knee'
+          ? rig.kneeY + 4
+          : garmentLength === 'midi'
+            ? rig.calfY + 14
+            : rig.ankleJointY + 3;
 
   const path =
     variant === 'skirt'
@@ -103,8 +113,14 @@ export function SidePantsTemplate({
   const patternId =
     garmentMeta?.pattern === 'striped' ||
     garmentMeta?.pattern === 'plaid' ||
-    garmentMeta?.pattern === 'textured'
-      ? `${patternPrefix}-pat-${garmentMeta.pattern}`
+    garmentMeta?.pattern === 'textured' ||
+    bp.fabricTexture === 'corduroy' ||
+    bp.fabricTexture === 'knit'
+      ? `${patternPrefix}-pat-${
+          garmentMeta?.pattern === 'striped' || garmentMeta?.pattern === 'plaid'
+            ? garmentMeta.pattern
+            : 'textured'
+        }`
       : null;
 
   return (
@@ -126,8 +142,8 @@ export function SidePantsTemplate({
             y1={rig.waistY + 7.5}
             x2={wFront - 1}
             y2={rig.waistY + 7.5}
-            stroke={seamColor}
-            strokeWidth="0.95"
+            stroke={bp.secondaryColorHex ?? seamColor}
+            strokeWidth={bp.closure === 'belt' ? '1.8' : '0.95'}
           />
           <line
             x1={rig.cx}
@@ -138,6 +154,18 @@ export function SidePantsTemplate({
             strokeWidth="0.85"
             opacity="0.55"
           />
+          {bp.pockets === 'cargo' && variant !== 'skirt' && (
+            <rect
+              x={rig.cx - 8}
+              y={rig.crotchY + 14}
+              width={16}
+              height={20}
+              rx={2}
+              fill="rgb(0 0 0 / 6%)"
+              stroke={seamColor}
+              strokeWidth="0.95"
+            />
+          )}
         </g>
       )}
 

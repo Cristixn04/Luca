@@ -13,13 +13,24 @@ import {
   type BodyModel,
   type OutfitProposal,
 } from '@luca/domain';
-import { ArrowLeft, ArrowRight, Pause, Play, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Loader2,
+  Pause,
+  Play,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+  X,
+} from 'lucide-react';
 import type { GarmentWithSizes } from '@/features/closet/types';
 import type { MannequinSilhouette, ViewerMode } from '@/features/fitting/store';
 import { BackAvatarSvg } from '@/features/fitting/svg/BackAvatarSvg';
 import { FrontAvatarSvg, type OutfitLayerOverlay } from '@/features/fitting/svg/FrontAvatarSvg';
 import type { GarmentVisualMeta } from '@/features/fitting/svg/garmentVisuals';
 import { SideAvatarSvg } from '@/features/fitting/svg/SideAvatarSvg';
+import { makeOutfitRenderKey, type OutfitRenderRecord } from './outfitsStore';
 
 const VIEW_OPTIONS: readonly { id: ViewerMode; label: string }[] = [
   { id: 'front', label: 'Frente' },
@@ -39,6 +50,7 @@ function extractVisualMeta(
     pattern: full?.garment.pattern,
     style: full?.garment.style,
     tags: full?.garment.tags,
+    visualSpec: full?.garment.visualSpec,
     imageUrl: full?.image?.dataUrl,
     backImageUrl: full?.image?.backDataUrl,
   };
@@ -218,6 +230,16 @@ export interface OutfitRunwayCarouselProps {
   onToggleHeatmap: () => void;
   highlightedItemId: string | null;
   onHighlightItem: (id: string | null) => void;
+  rendersByKey?: Readonly<Record<string, OutfitRenderRecord>>;
+  displayMode?: 'parametric' | 'ai';
+  onChangeDisplayMode?: (mode: 'parametric' | 'ai') => void;
+  onRequestAiRender?: (activeSvg: SVGSVGElement | null) => void;
+  aiRenderBusy?: boolean;
+  aiRenderNotice?: string | null;
+  aiRenderError?: string | null;
+  needsApiConsent?: boolean;
+  onGrantApiConsentAndRender?: (activeSvg: SVGSVGElement | null) => void;
+  onCancelApiConsent?: () => void;
 }
 
 export function OutfitRunwayCarousel({
@@ -236,6 +258,16 @@ export function OutfitRunwayCarousel({
   onToggleHeatmap,
   highlightedItemId,
   onHighlightItem,
+  rendersByKey = {},
+  displayMode = 'parametric',
+  onChangeDisplayMode,
+  onRequestAiRender,
+  aiRenderBusy = false,
+  aiRenderNotice = null,
+  aiRenderError = null,
+  needsApiConsent = false,
+  onGrantApiConsentAndRender,
+  onCancelApiConsent,
 }: OutfitRunwayCarouselProps) {
   const safeIndex = Math.min(selectedIndex, Math.max(0, proposals.length - 1));
   const activeProposal = proposals[safeIndex] ?? null;
@@ -381,6 +413,22 @@ export function OutfitRunwayCarousel({
 
   const singleViewMode: Exclude<ViewerMode, 'all'> = viewMode === 'all' ? 'front' : viewMode;
   const lookNumber = String(safeIndex + 1).padStart(2, '0');
+  const activeRenderKey = activeProposal
+    ? makeOutfitRenderKey(
+        silhouette,
+        activeProposal.items.map((i) => i.id),
+      )
+    : null;
+  const activeCachedRender = activeRenderKey ? rendersByKey[activeRenderKey] : undefined;
+
+  const findActiveMannequinSvg = (): SVGSVGElement | null => {
+    const stage = stageRef.current;
+    if (!stage) return null;
+    const activeNode = stage.querySelector('[data-runway-active="true"] svg');
+    if (activeNode instanceof SVGSVGElement) return activeNode;
+    const fallbackSvg = stage.querySelector('svg');
+    return fallbackSvg instanceof SVGSVGElement ? fallbackSvg : null;
+  };
 
   return (
     <div className="flex min-w-0 flex-col justify-between bg-transparent">
@@ -478,6 +526,63 @@ export function OutfitRunwayCarousel({
             Mapa de calor
           </label>
 
+          {/* Modo híbrido: conmutador Realista IA / Paramétrico cuando existe caché + botón bajo demanda */}
+          {activeCachedRender && onChangeDisplayMode && (
+            <div
+              role="group"
+              aria-label="Modo de visualización del outfit"
+              className="luca-glass-pill inline-flex items-center gap-0.5 rounded-full p-1"
+            >
+              {(
+                [
+                  { id: 'ai', label: 'Realista IA' },
+                  { id: 'parametric', label: 'Paramétrico' },
+                ] as const
+              ).map((opt) => {
+                const active = displayMode === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => onChangeDisplayMode(opt.id)}
+                    className={`cursor-pointer rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                      active
+                        ? 'bg-[var(--rw-cta)] text-[var(--rw-cta-ink)]'
+                        : 'text-[var(--rw-muted)] hover:text-[var(--rw-ink)]'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {onRequestAiRender && activeProposal && (
+            <button
+              type="button"
+              disabled={aiRenderBusy}
+              onClick={() => onRequestAiRender(findActiveMannequinSvg())}
+              className="luca-glass-pill inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]/45 disabled:cursor-wait disabled:opacity-60"
+            >
+              {aiRenderBusy ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              ) : activeCachedRender ? (
+                <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
+              <span>
+                {aiRenderBusy
+                  ? 'Renderizando...'
+                  : activeCachedRender
+                    ? 'Regenerar IA'
+                    : 'Render realista IA'}
+              </span>
+            </button>
+          )}
+
           {isZoomed && (
             <button
               type="button"
@@ -493,6 +598,61 @@ export function OutfitRunwayCarousel({
           )}
         </div>
       </div>
+
+      {/* Consentimiento explícito / estado de render realista IA (sin llamadas automáticas) */}
+      {needsApiConsent && onGrantApiConsentAndRender && (
+        <div
+          role="dialog"
+          aria-label="Consentimiento para render realista IA"
+          className="luca-glass-panel mx-1 mb-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3 text-xs sm:mx-2"
+        >
+          <div className="flex items-start gap-2 text-[var(--rw-muted)]">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--rw-ink)]" aria-hidden="true" />
+            <span>
+              <strong className="font-semibold text-[var(--rw-ink)]">
+                Consentimiento de renderizado IA:
+              </strong>{' '}
+              se enviarán las prendas del outfit sin metadatos EXIF a Gemini (sin almacenamiento en
+              servidor) y el resultado quedará cifrado en tu dispositivo.
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={aiRenderBusy}
+              onClick={() => onGrantApiConsentAndRender(findActiveMannequinSvg())}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--rw-cta)] px-3.5 py-1.5 text-xs font-medium text-[var(--rw-cta-ink)] transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+              Permitir y renderizar
+            </button>
+            {onCancelApiConsent && (
+              <button
+                type="button"
+                onClick={onCancelApiConsent}
+                className="cursor-pointer rounded-full px-2.5 py-1.5 text-xs font-medium text-[var(--rw-muted)] hover:text-[var(--rw-ink)]"
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {(aiRenderError || aiRenderNotice) && (
+        <div className="px-2 pb-1">
+          {aiRenderError && (
+            <p role="alert" className="text-xs font-medium text-[#C2410C]">
+              {aiRenderError}
+            </p>
+          )}
+          {!aiRenderError && aiRenderNotice && (
+            <p role="status" className="text-xs font-medium text-[var(--rw-muted)]">
+              {aiRenderNotice}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Escenario 3D Ring Carousel flotante sin encerrar */}
       <div
@@ -536,6 +696,16 @@ export function OutfitRunwayCarousel({
               const delta = getCircularOffset(index, safeIndex, proposals.length);
               const isActive = delta === 0;
               const ringStyle = getRingStyle(delta, isZoomed);
+              const renderKey = makeOutfitRenderKey(
+                silhouette,
+                proposal.items.map((i) => i.id),
+              );
+              const cachedRender = rendersByKey[renderKey];
+              const useAiImage =
+                displayMode === 'ai' &&
+                singleViewMode === 'front' &&
+                !showHeatmap &&
+                Boolean(cachedRender?.dataUrl);
 
               return (
                 <div
@@ -572,7 +742,16 @@ export function OutfitRunwayCarousel({
                     }}
                     className="relative flex h-full w-full cursor-pointer items-end justify-center bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]"
                   >
-                    {renderFigureSvg(proposal, singleViewMode, `rw-${index}`)}
+                    {useAiImage && cachedRender ? (
+                      <img
+                        src={cachedRender.dataUrl}
+                        alt={`Render realista IA del outfit Opción ${index + 1}`}
+                        data-outfit-ai-render="true"
+                        className="h-full w-full object-contain object-bottom drop-shadow-[0_12px_18px_rgba(0,0,0,0.16)]"
+                      />
+                    ) : (
+                      renderFigureSvg(proposal, singleViewMode, `rw-${index}`)
+                    )}
                   </button>
 
                   {/* Pines interactivos sobre el maniquí en modo Zoom */}

@@ -1,15 +1,18 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useClosetStore } from '@/features/closet/closetStore';
 import { useColorStore } from '@/features/color/colorStore';
 import { resetVaultServiceForTests } from '@/features/vault/vaultStore';
+import { setApiConsent } from '@/infrastructure/api-client/client';
 import { DexieLocalStore } from '@/infrastructure/storage/dexieStore';
 import { OutfitsView } from '../OutfitsView';
 import { useOutfitsStore } from '../outfitsStore';
 
 describe('OutfitsView: sugerir, guardar, favoritos y registrar uso (T9.5–T9.7)', () => {
   beforeEach(async () => {
+    window.localStorage.clear();
+    setApiConsent(false);
     const dbName = `luca-outfits-test-${Math.random().toString(16).slice(2)}`;
     const store = new DexieLocalStore(dbName);
     const vault = resetVaultServiceForTests(store, { kdfIterations: 1000 });
@@ -17,6 +20,10 @@ describe('OutfitsView: sugerir, guardar, favoritos y registrar uso (T9.5–T9.7)
     useClosetStore.getState().clearMemory();
     useColorStore.getState().clearMemory();
     useOutfitsStore.getState().clearMemory();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('carga prendas de ejemplo, genera 3 propuestas diversas, guarda favorito y registra uso', async () => {
@@ -79,5 +86,57 @@ describe('OutfitsView: sugerir, guardar, favoritos y registrar uso (T9.5–T9.7)
     expect(
       screen.queryByRole('button', { name: 'Salir de vista ampliada' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('pide consentimiento antes de generar el render realista IA, cachea el resultado y permite alternar con Paramétrico', async () => {
+    const user = userEvent.setup();
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          render_png_base64: 'iVBORw0KGgo=',
+          width: 240,
+          height: 360,
+          provider: 'gemini:gemini-nano-banana-2.1',
+          processing_ms: 310,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+
+    const { container } = render(<OutfitsView />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Cargar 6 prendas de ejemplo/i })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('button', { name: /Cargar 6 prendas de ejemplo/i }));
+    await waitFor(() => {
+      expect(useClosetStore.getState().items).toHaveLength(6);
+    });
+
+    // Ninguna llamada de red automática al cargar
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    // Primer clic solicita consentimiento explícito
+    await user.click(screen.getByRole('button', { name: /Render realista IA/i }));
+    expect(screen.getByRole('dialog', { name: /Consentimiento para render realista IA/i })).toBeInTheDocument();
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    // Al autorizar, llama a /v1/vision/render-outfit, muestra el render RGBA y habilita el conmutador
+    await user.click(screen.getByRole('button', { name: /Permitir y renderizar/i }));
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-outfit-ai-render="true"]')).toBeInTheDocument();
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(Object.keys(useOutfitsStore.getState().rendersByKey)).toHaveLength(1);
+
+    // Alternar a modo Paramétrico oculta el <img> y vuelve a mostrar el SVG
+    await user.click(screen.getByRole('button', { name: 'Paramétrico' }));
+    expect(container.querySelector('[data-outfit-ai-render="true"]')).not.toBeInTheDocument();
+
+    // Volver a Realista IA usa la caché local sin volver a llamar a la red
+    await user.click(screen.getByRole('button', { name: 'Realista IA' }));
+    expect(container.querySelector('[data-outfit-ai-render="true"]')).toBeInTheDocument();
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });

@@ -233,4 +233,89 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
       container.querySelector('[data-avatar-view="front"]')?.getAttribute('data-mannequin-silhouette'),
     ).toBe('female');
   });
+
+  it('aplica la ficha quirúrgica visualSpec (cuello en V, manga 3/4, cremallera y pantalones cargo)', () => {
+    const model = createBodyModel({ required: DEFAULT_BODY_MEASUREMENTS });
+    const upperFit = evaluateGarmentFit(model, {
+      category: 'jacket',
+      sizeLabel: 'M',
+      elasticity: 0.03,
+      flatMeasuresCm: DEFAULT_GARMENT_PRESETS.long_sleeve.flatMeasuresCm,
+    });
+    const lowerFit = evaluateGarmentFit(model, {
+      category: 'pants',
+      sizeLabel: '32',
+      elasticity: 0.03,
+      flatMeasuresCm: DEFAULT_GARMENT_PRESETS.pants.flatMeasuresCm,
+    });
+
+    const { container, rerender } = render(
+      <AvatarViewer
+        model={model}
+        garmentCategory="jacket"
+        fitReport={upperFit}
+        showHeatmap={false}
+        garmentColorHex="#3B4D3B"
+        garmentMeta={{
+          name: 'Chaqueta técnica',
+          visualSpec: {
+            neckline: 'v_neck',
+            sleeve_length: 'three_quarter',
+            garment_length: 'hip',
+            fit_cut: 'relaxed',
+            closure: 'zipper',
+            pockets: 'patch',
+            has_hood: false,
+            has_ribbed_trim: true,
+            has_lapels: true,
+            has_pleats: false,
+            secondary_color_hex: '#1F2937',
+            accent_color_hex: '#D1D5DB',
+            graphic_position: 'none',
+            fabric_texture: 'smooth',
+          },
+        }}
+        viewMode="front"
+        onChangeViewMode={() => {}}
+      />,
+    );
+
+    const upperNode = container.querySelector('[data-garment="jacket"]');
+    expect(upperNode).toHaveAttribute('data-neckline', 'v_neck');
+    expect(upperNode).toHaveAttribute('data-sleeve', 'three_quarter');
+    expect(upperNode).toHaveAttribute('data-closure', 'zipper');
+
+    rerender(
+      <AvatarViewer
+        model={model}
+        garmentCategory="pants"
+        fitReport={lowerFit}
+        showHeatmap={false}
+        garmentColorHex="#354F52"
+        garmentMeta={{
+          name: 'Pantalón cargo ancho',
+          visualSpec: {
+            neckline: 'none',
+            sleeve_length: 'none',
+            garment_length: 'ankle',
+            fit_cut: 'wide_leg',
+            closure: 'drawstring',
+            pockets: 'cargo',
+            has_hood: false,
+            has_ribbed_trim: false,
+            has_lapels: false,
+            has_pleats: false,
+            graphic_position: 'none',
+            fabric_texture: 'smooth',
+          },
+        }}
+        viewMode="front"
+        onChangeViewMode={() => {}}
+      />,
+    );
+
+    const lowerNode = container.querySelector('[data-garment="pants"]');
+    expect(lowerNode).toHaveAttribute('data-fit-cut', 'wide_leg');
+    expect(lowerNode).toHaveAttribute('data-pockets', 'cargo');
+  });
 });

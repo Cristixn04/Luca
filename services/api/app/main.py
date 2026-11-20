@@ -8,9 +8,11 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from app.adapters.render.gemini_renderer import build_outfit_renderer
 from app.adapters.tagging.gemini_tagger import build_tagger
 from app.adapters.vision.rembg_remover import build_background_remover
 from app.adapters.weather.open_meteo import build_weather_provider
+from app.ports.render import OutfitRenderer
 from app.ports.tagging import Tagger
 from app.ports.vision import BackgroundRemover
 from app.ports.weather import WeatherProvider
@@ -42,6 +44,7 @@ def create_app(
     *,
     remover: BackgroundRemover | None = None,
     tagger: Tagger | None = None,
+    renderer: OutfitRenderer | None = None,
     weather_provider: WeatherProvider | None = None,
     rate_limiter: InMemoryRateLimiter | None = None,
     budget_guard: DailyBudgetGuard | None = None,
@@ -50,6 +53,7 @@ def create_app(
 ) -> FastAPI:
     active_remover = remover or build_background_remover()
     active_tagger = tagger or build_tagger()
+    active_renderer = renderer or build_outfit_renderer()
     active_weather = weather_provider or build_weather_provider()
     active_limiter = rate_limiter or InMemoryRateLimiter.from_env()
     active_budget = budget_guard or DailyBudgetGuard.from_env()
@@ -102,6 +106,7 @@ def create_app(
         create_vision_router(
             remover=active_remover,
             tagger=active_tagger,
+            renderer=active_renderer,
             rate_limiter=active_limiter,
             budget_guard=active_budget,
             max_upload_bytes=max_upload_bytes,

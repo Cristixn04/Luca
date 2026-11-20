@@ -17,12 +17,14 @@ import {
   SEASON_LABELS,
   STATUS_LABELS,
   STYLE_LABELS,
+  formatVisualSpecSummary,
   type FormalityLevel,
   type GarmentDraft,
   type GarmentPattern,
   type GarmentSeason,
   type GarmentStatus,
   type GarmentStyle,
+  type GarmentVisualSpec,
   type GarmentWithSizes,
   type SizeOptionDraft,
 } from './types';
@@ -72,6 +74,7 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
   const [seasons, setSeasons] = useState<GarmentSeason[]>([]);
   const [tagsText, setTagsText] = useState('');
   const [dominantColorHex, setDominantColorHex] = useState('#1F5F6B');
+  const [visualSpec, setVisualSpec] = useState<GarmentVisualSpec | undefined>(undefined);
   const [photo, setPhoto] = useState<PhotoIngestValue>({ dominantColorHex: '#1F5F6B' });
   const [sizes, setSizes] = useState<SizeOptionDraft[]>(() => defaultSizesForCategory('tshirt'));
   const [errors, setErrors] = useState<string[]>([]);
@@ -94,6 +97,7 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
       setTagsText(editing.garment.tags.join(', '));
       const colorHex = editing.garment.dominantColorHex ?? '#1F5F6B';
       setDominantColorHex(colorHex);
+      setVisualSpec(editing.garment.visualSpec);
       setPhoto({
         dominantColorHex: colorHex,
         ...(editing.image
@@ -126,6 +130,7 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
       setSeasons([]);
       setTagsText('');
       setDominantColorHex('#1F5F6B');
+      setVisualSpec(undefined);
       setPhoto({ dominantColorHex: '#1F5F6B' });
       setSizes(defaultSizesForCategory('tshirt'));
     }
@@ -172,6 +177,9 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
     setStyle(suggestion.style);
     setFormality(suggestion.formality);
     setSeasons([...suggestion.seasons]);
+    if (suggestion.visual_spec) {
+      setVisualSpec(suggestion.visual_spec);
+    }
 
     const existing = tagsText
       .split(',')
@@ -202,6 +210,7 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
         .map((t) => t.trim())
         .filter(Boolean),
       dominantColorHex,
+      ...(visualSpec ? { visualSpec } : {}),
       image: photo.dataUrl
         ? {
             dataUrl: photo.dataUrl,
@@ -490,6 +499,22 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
             }}
             onApplyTagSuggestion={handleApplyTagSuggestion}
           />
+
+          {visualSpec && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-2 text-xs">
+              <span className="text-muted">
+                Patronaje IA activo:{' '}
+                <strong className="font-medium text-ink">{formatVisualSpecSummary(visualSpec)}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => setVisualSpec(undefined)}
+                className="cursor-pointer text-[11px] font-medium text-muted hover:text-ink"
+              >
+                Limpiar
+              </button>
+            </div>
+          )}
 
           <SizeTableEditor category={category} unit={unit} sizes={sizes} onChange={setSizes} />
 

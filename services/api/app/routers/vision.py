@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import io
+import json
 import os
 import time
 from typing import Annotated
@@ -17,9 +18,15 @@ from fastapi import (
     status,
 )
 from PIL import Image, UnidentifiedImageError
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
+from app.adapters.render.gemini_renderer import DisabledOutfitRenderer
 from app.adapters.vision.dominant_color import extract_dominant_color
+from app.ports.render import (
+    MannequinSilhouetteLiteral,
+    OutfitRenderer,
+    OutfitRenderGarmentInput,
+)
 from app.ports.tagging import GarmentTagSuggestion, Tagger
 from app.ports.vision import BackgroundRemover
 from app.security.controls import DailyBudgetGuard, InMemoryRateLimiter, validate_install_token
@@ -28,8 +35,10 @@ ALLOWED_IMAGE_FORMATS = frozenset({"JPEG", "PNG", "WEBP"})
 DEFAULT_MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MiB
 DEFAULT_VISION_TIMEOUT_SECONDS = 15.0
 DEFAULT_TAGGING_TIMEOUT_SECONDS = 12.0
+DEFAULT_RENDER_TIMEOUT_SECONDS = 45.0
 VISION_CALL_COST_USD = 0.002
 TAGGING_CALL_COST_USD = 0.008
+RENDER_CALL_COST_USD = 0.04
 
 # Protección contra decompression bombs (Pillow)
 Image.MAX_IMAGE_PIXELS = 25_000_000
@@ -63,6 +72,26 @@ class VisionAnalyzeResponse(BaseModel):
         default=None,
         description="Aviso no bloqueante si el proveedor de etiquetado IA no respondió a tiempo",
     )
+
+
+class _OutfitRenderGarmentMeta(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    category: str = Field(..., min_length=1, max_length=40)
+    color_hex: str | None = Field(default=None, pattern=r"^#[0-9A-Fa-f]{6}$")
+    fit_summary: str | None = Field(default=None, max_length=160)
+    visual_spec_summary: str | None = Field(default=None, max_length=320)
+    has_image: bool = False
+
+
+class OutfitRenderResponse(BaseModel):
+    render_png_base64: str = Field(
+        ...,
+        description="Render fotorrealista del outfit sobre maniquí con fondo transparente (PNG RGBA Base64)",
+    )
+    width: int = Field(..., ge=1)
+    height: int = Field(..., ge=1)
+    provider: str
+    processing_ms: int = Field(..., ge=0)
 
 
 def _validate_and_read_image(raw_bytes: bytes, max_bytes: int) -> tuple[int, int]:
@@ -103,10 +132,12 @@ def create_vision_router(
     tagger: Tagger,
     rate_limiter: InMemoryRateLimiter,
     budget_guard: DailyBudgetGuard,
+    renderer: OutfitRenderer | None = None,
     max_upload_bytes: int | None = None,
     timeout_seconds: float | None = None,
 ) -> APIRouter:
     router = APIRouter(prefix="/v1/vision", tags=["vision"])
+    active_renderer: OutfitRenderer = renderer or DisabledOutfitRenderer()
 
     effective_max_bytes = (
         max_upload_bytes
@@ -259,6 +290,145 @@ def create_vision_router(
             processing_ms=elapsed_ms,
             tagging=tagging_result,
             tagging_warning=tagging_warning,
+        )
+
+    @router.post(
+        "/render-outfit",
+        response_model=OutfitRenderResponse,
+        summary="Genera un render fotorrealista del outfit vestido sobre el maniquí (PNG RGBA transparente)",
+    )
+    async def render_outfit_on_mannequin(
+        request: Request,
+        response: Response,
+        outfit_description: Annotated[
+            str,
+            Form(description="Lista JSON con metadatos de las prendas del outfit (máximo 4)"),
+        ],
+        silhouette: Annotated[
+            MannequinSilhouetteLiteral,
+            Form(description="Silueta del maniquí: female o male"),
+        ] = "female",
+        mannequin_file: Annotated[
+            UploadFile | None,
+            File(description="Imagen opcional del maniquí base en postura frontal neutra"),
+        ] = None,
+        garment_files: Annotated[
+            list[UploadFile] | None,
+            File(description="Fotos o recortes opcionales de las prendas del outfit (máximo 4)"),
+        ] = None,
+        x_luca_install_token: Annotated[
+            str | None,
+            Header(alias="X-Luca-Install-Token"),
+        ] = None,
+    ) -> OutfitRenderResponse:
+        response.headers["Cache-Control"] = "no-store"
+
+        token = validate_install_token(x_luca_install_token)
+        client_ip = request.client.host if request.client else "unknown"
+        rate_limiter.check(f"token:{token}")
+        rate_limiter.check(f"ip:{client_ip}")
+
+        if active_renderer.provider_name == "none":
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=(
+                    "El renderizado realista con IA no está habilitado en el servidor "
+                    "(configura LUCA_LLM_API_KEY en services/api/.env)."
+                ),
+            )
+
+        try:
+            raw_list = json.loads(outfit_description)
+            if not isinstance(raw_list, list) or len(raw_list) == 0 or len(raw_list) > 4:
+                raise ValueError("Se requieren entre 1 y 4 prendas en outfit_description.")
+            garment_metas = [_OutfitRenderGarmentMeta.model_validate(item) for item in raw_list]
+        except (json.JSONDecodeError, ValidationError, ValueError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="La descripción del outfit no es válida (envía un JSON de 1 a 4 prendas).",
+            ) from exc
+
+        safe_garment_files = garment_files or []
+        if len(safe_garment_files) > 4:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Se admiten como máximo 4 fotografías de prendas por render.",
+            )
+
+        budget_guard.consume(RENDER_CALL_COST_USD)
+
+        mannequin_bytes: bytes | None = None
+        if mannequin_file is not None:
+            mannequin_bytes = await mannequin_file.read(effective_max_bytes + 1)
+            await mannequin_file.close()
+            _validate_and_read_image(mannequin_bytes, effective_max_bytes)
+
+        uploaded_garment_bytes: list[bytes] = []
+        for gfile in safe_garment_files:
+            raw_g = await gfile.read(effective_max_bytes + 1)
+            await gfile.close()
+            _validate_and_read_image(raw_g, effective_max_bytes)
+            uploaded_garment_bytes.append(raw_g)
+
+        file_cursor = 0
+        has_any_flagged_image = any(m.has_image for m in garment_metas)
+        render_inputs: list[OutfitRenderGarmentInput] = []
+        for meta in garment_metas:
+            assigned_bytes: bytes | None = None
+            should_assign = meta.has_image or not has_any_flagged_image
+            if should_assign and file_cursor < len(uploaded_garment_bytes):
+                assigned_bytes = uploaded_garment_bytes[file_cursor]
+                file_cursor += 1
+
+            render_inputs.append(
+                OutfitRenderGarmentInput(
+                    name=meta.name,
+                    category=meta.category,
+                    color_hex=meta.color_hex,
+                    fit_summary=meta.fit_summary,
+                    visual_spec_summary=meta.visual_spec_summary,
+                    image_bytes=assigned_bytes,
+                )
+            )
+
+        render_timeout = float(
+            os.getenv("LUCA_RENDER_TIMEOUT_SECONDS", str(DEFAULT_RENDER_TIMEOUT_SECONDS))
+        )
+        started = time.perf_counter()
+        try:
+            result = await asyncio.wait_for(
+                asyncio.to_thread(
+                    active_renderer.render_outfit,
+                    silhouette=silhouette,
+                    garments=render_inputs,
+                    mannequin_reference_bytes=mannequin_bytes,
+                ),
+                timeout=max(effective_timeout, render_timeout),
+            )
+        except TimeoutError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                detail="El renderizado realista IA superó el tiempo máximo permitido.",
+            ) from exc
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="No se pudo generar el render realista IA en este momento.",
+            ) from exc
+
+        if result is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="El proveedor de renderizado realista no devolvió ninguna imagen.",
+            )
+
+        elapsed_ms = int((time.perf_counter() - started) * 1000)
+        return OutfitRenderResponse(
+            render_png_base64=base64.b64encode(result.image_png_bytes).decode("ascii"),
+            width=result.width,
+            height=result.height,
+            provider=result.provider,
+            processing_ms=elapsed_ms,
         )
 
     return router

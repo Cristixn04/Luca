@@ -10,6 +10,7 @@ export const STORE_NAMES = [
   'wear_log',
   'outfit',
   'outfit_item',
+  'outfit_render',
   'interaction_event',
   'taste_snapshot',
   'preferences',

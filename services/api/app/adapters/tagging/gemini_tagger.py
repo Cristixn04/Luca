@@ -12,6 +12,7 @@ from app.ports.tagging import (
     GarmentSeasonLiteral,
     GarmentStyleLiteral,
     GarmentTagSuggestion,
+    GarmentVisualSpec,
     Tagger,
 )
 
@@ -33,16 +34,41 @@ class _GeminiTagPayload(BaseModel):
     seasons_confidence: float = Field(..., ge=0.0, le=1.0)
     suggested_tags: list[str] = Field(default_factory=list, max_length=8)
     overall_confidence: float = Field(..., ge=0.0, le=1.0)
+    visual_spec: GarmentVisualSpec | None = None
+
+
+SURGICAL_SYSTEM_INSTRUCTION = (
+    "Eres un patronista técnico y analista de visión de moda de alta precisión para el probador "
+    "digital Luca. Tu trabajo es inspeccionar quirúrgicamente cada fotografía de prenda (frente y "
+    "espalda opcional) y devolver una clasificación semántica exacta junto con un plano visual "
+    "estructural (`visual_spec`) que permita reconstruir la prenda fielmente sobre un maniquí.\n"
+    "Directrices técnicas obligatorias:\n"
+    "1. Examina silueta, escote/cuello exacto (crew, v_neck, scoop, turtleneck, polo, shirt_collar, "
+    "hood, square, strapless o none en prendas inferiores), longitud real de manga (sleeveless, cap, "
+    "short, three_quarter, long o none en prendas inferiores) y largo de la prenda (crop, waist, hip, "
+    "thigh, knee, midi, maxi, ankle).\n"
+    "2. Identifica corte y caída (skinny, fitted, regular, relaxed, oversized, wide_leg, flared, "
+    "a_line, pleated), cierre (pullover, zipper, buttons, open_front, drawstring, belt) y bolsillos "
+    "visibles (none, side, chest, kangaroo, cargo, patch).\n"
+    "3. Marca con precisión detalles constructivos: has_hood (capucha), has_ribbed_trim (puños o "
+    "cintura en rib/canalé), has_lapels (solapas de blazer/chaqueta), has_pleats (tablas o pliegues).\n"
+    "4. Detecta color secundario y color de acento en formato HEX (#RRGGBB) únicamente si existen "
+    "contrastes reales (puños, cuello, estampado, cierres o paneles); en caso contrario devuelve null.\n"
+    "5. Identifica textura de tejido (smooth, denim, knit, ribbed, fleece, linen, leather, satin, "
+    "corduroy) y ubicación de gráfico/logo (none, chest_center, chest_left, all_over, back).\n"
+    "6. Responde únicamente con JSON válido acorde al esquema."
+)
 
 
 TAGGING_PROMPT = (
-    "Analiza la(s) foto(s) de esta prenda de vestir (primera imagen: frente; "
-    "segunda imagen opcional: espalda) y clasifícala en JSON estricto.\n"
+    "Analiza quirúrgicamente la(s) foto(s) de esta prenda de vestir (primera imagen: frente; "
+    "segunda imagen opcional: espalda) y devuelve el JSON estricto completo incluyendo `visual_spec`.\n"
     "Reglas:\n"
     "- Usa exclusivamente las categorías permitidas: tshirt, long_sleeve, jacket, pants, shorts, skirt, dress.\n"
     "- Estima patrón (solid, striped, plaid, floral, graphic, textured, other), estilo "
     "(casual, minimalist, sporty, formal, streetwear, classic, bohemian), formalidad (1 a 5) "
     "y temporadas (spring, summer, autumn, winter).\n"
+    "- Rellena todos los campos de `visual_spec` con exactitud según la prenda visible.\n"
     "- En suggested_tags devuelve hasta 6 etiquetas cortas en español en minúsculas "
     "(tela aparente, corte, cuello, detalle trasero si aparece en la segunda foto).\n"
     "- Devuelve valores de confianza realistas entre 0.0 y 1.0."
@@ -89,6 +115,28 @@ class MockDeterministicTagger:
         if back_image_bytes is not None:
             tags.append("vista trasera")
 
+        visual_spec = (
+            GarmentVisualSpec(
+                neckline="none",
+                sleeve_length="none",
+                garment_length="ankle",
+                fit_cut="regular",
+                closure="buttons",
+                pockets="side",
+                fabric_texture="smooth",
+            )
+            if category == "pants"
+            else GarmentVisualSpec(
+                neckline="crew",
+                sleeve_length="short",
+                garment_length="hip",
+                fit_cut="regular",
+                closure="pullover",
+                pockets="none",
+                fabric_texture="smooth",
+            )
+        )
+
         return GarmentTagSuggestion(
             category=category,
             category_confidence=0.86,
@@ -102,6 +150,7 @@ class MockDeterministicTagger:
             seasons_confidence=0.8,
             suggested_tags=tags,
             overall_confidence=0.85,
+            visual_spec=visual_spec,
             provider=self.provider_name,
         )
 
@@ -156,6 +205,7 @@ class GeminiVisionTagger:
         interaction = self._client.interactions.create(
             model=self._model,
             store=False,
+            system_instruction=SURGICAL_SYSTEM_INSTRUCTION,
             input=content_blocks,
             response_format={
                 "type": "text",

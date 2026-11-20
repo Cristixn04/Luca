@@ -1,4 +1,14 @@
 import type { GarmentCategory, GarmentFlatMeasurements } from '@luca/domain';
+import type {
+  ApiClosure,
+  ApiFabricTexture,
+  ApiGarmentLength,
+  ApiNeckline,
+  ApiSleeveLength,
+  GarmentVisualSpec,
+} from '@/infrastructure/api-client/generated.types';
+
+export type { GarmentVisualSpec };
 
 export type GarmentStatus = 'owned' | 'wishlist';
 
@@ -66,6 +76,7 @@ export interface GarmentRecord {
   readonly seasons?: readonly GarmentSeason[];
   readonly tags: readonly string[];
   readonly dominantColorHex?: string;
+  readonly visualSpec?: GarmentVisualSpec;
   readonly notes?: string;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -125,6 +136,7 @@ export interface GarmentDraft {
   readonly seasons?: readonly GarmentSeason[];
   readonly tags: readonly string[];
   readonly dominantColorHex?: string;
+  readonly visualSpec?: GarmentVisualSpec;
   readonly notes?: string;
   readonly image?: GarmentImageDraft | null;
   readonly sizes: readonly SizeOptionDraft[];
@@ -179,6 +191,86 @@ export const SEASON_LABELS: Readonly<Record<GarmentSeason, string>> = {
   autumn: 'Otoño',
   winter: 'Invierno',
 };
+
+export const NECKLINE_LABELS: Readonly<Record<ApiNeckline, string>> = {
+  crew: 'Cuello redondo',
+  v_neck: 'Cuello en V',
+  scoop: 'Escote amplio',
+  turtleneck: 'Cuello alto',
+  polo: 'Cuello polo',
+  shirt_collar: 'Cuello camisa',
+  hood: 'Capucha',
+  square: 'Escote cuadrado',
+  strapless: 'Sin tirantes',
+  none: 'Sin cuello',
+};
+
+export const SLEEVE_LENGTH_LABELS: Readonly<Record<ApiSleeveLength, string>> = {
+  sleeveless: 'Sin mangas',
+  cap: 'Manga caída',
+  short: 'Manga corta',
+  three_quarter: 'Manga 3/4',
+  long: 'Manga larga',
+  none: 'Sin mangas',
+};
+
+export const GARMENT_LENGTH_LABELS: Readonly<Record<ApiGarmentLength, string>> = {
+  crop: 'Corto (crop)',
+  waist: 'A la cintura',
+  hip: 'A la cadera',
+  thigh: 'Al muslo',
+  knee: 'A la rodilla',
+  midi: 'Midi',
+  maxi: 'Maxi',
+  ankle: 'Al tobillo',
+};
+
+export const CLOSURE_LABELS: Readonly<Record<ApiClosure, string>> = {
+  pullover: 'Cerrado',
+  zipper: 'Cremallera',
+  buttons: 'Botones',
+  open_front: 'Abierto frontal',
+  drawstring: 'Cordón',
+  belt: 'Cinturón',
+};
+
+export const FABRIC_TEXTURE_LABELS: Readonly<Record<ApiFabricTexture, string>> = {
+  smooth: 'Tejido liso',
+  denim: 'Denim',
+  knit: 'Punto',
+  ribbed: 'Canalé / rib',
+  fleece: 'Algodón perchado',
+  linen: 'Lino',
+  leather: 'Cuero',
+  satin: 'Satén',
+  corduroy: 'Pana',
+};
+
+export function formatVisualSpecSummary(spec: GarmentVisualSpec | null | undefined): string {
+  if (!spec) return '';
+  const parts: string[] = [];
+  if (spec.neckline !== 'none') parts.push(NECKLINE_LABELS[spec.neckline]);
+  if (spec.sleeve_length !== 'none') parts.push(SLEEVE_LENGTH_LABELS[spec.sleeve_length]);
+  parts.push(GARMENT_LENGTH_LABELS[spec.garment_length]);
+  if (spec.closure !== 'pullover') parts.push(CLOSURE_LABELS[spec.closure]);
+  if (spec.has_hood && spec.neckline !== 'hood') parts.push('Capucha');
+  if (spec.has_lapels) parts.push('Solapas');
+  if (spec.has_pleats) parts.push('Pliegues');
+  if (spec.pockets !== 'none') {
+    const pocketLabels = {
+      side: 'Bolsillos laterales',
+      chest: 'Bolsillo en pecho',
+      kangaroo: 'Bolsillo canguro',
+      cargo: 'Bolsillos cargo',
+      patch: 'Bolsillos parche',
+    } as const;
+    parts.push(pocketLabels[spec.pockets]);
+  }
+  if (spec.fabric_texture !== 'smooth') {
+    parts.push(FABRIC_TEXTURE_LABELS[spec.fabric_texture]);
+  }
+  return parts.join(' · ');
+}
 
 export interface FlatFieldMeta {
   readonly key: keyof GarmentFlatMeasurements;

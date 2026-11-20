@@ -3,7 +3,7 @@ import {
   isSafeDataImageUrl,
   resolveGarmentAccentStroke,
   resolveGarmentSeamColor,
-  resolveLowerSubtype,
+  resolveLowerBlueprint,
   type GarmentVisualMeta,
 } from './garmentVisuals';
 import { FIT_STATE_HEX, getHeatmapPatternId } from './heatmapMeta';
@@ -37,32 +37,67 @@ export function BackPantsTemplate({
   const waistZone = fitReport.evaluatedZones.find((item) => item.zone === 'waist');
   const hipZone = fitReport.evaluatedZones.find((item) => item.zone === 'hip');
 
-  const subtype = resolveLowerSubtype(variant, garmentMeta);
+  const bp = resolveLowerBlueprint(variant, garmentMeta);
+  const { subtype, garmentLength, fitCut } = bp;
   const cx = rig.cx;
   const wEase = computeFittedEasePx(waistZone?.easeCm, 0.4);
   const hEase = computeFittedEasePx(hipZone?.easeCm, 0.5);
-  const legEase = Math.max(2.2, hEase * 0.82);
+  const legEase = Math.max(1.4, hEase * 0.82 + bp.legWidthBoostPx * 0.65);
 
   const wHalf = rig.waistX + wEase;
   const hHalf = rig.hipX + hEase;
   const legLen = rig.footY - rig.crotchY;
 
-  const shortHemY = rig.crotchY + legLen * 0.27;
+  const shortHemY = garmentLength === 'knee' ? rig.kneeY - 2 : rig.crotchY + legLen * 0.27;
   const skirtHemY =
-    subtype === 'skirt_mini'
+    garmentLength === 'thigh'
       ? rig.crotchY + legLen * 0.25
-      : subtype === 'skirt_maxi'
-        ? rig.footY - 12
-        : rig.crotchY + legLen * 0.54;
-  const pantsHemY = rig.ankleJointY + 3;
+      : garmentLength === 'knee'
+        ? rig.kneeY + 3
+        : garmentLength === 'maxi' || garmentLength === 'ankle'
+          ? rig.footY - 12
+          : rig.crotchY + legLen * 0.54;
+  const pantsHemY =
+    garmentLength === 'knee'
+      ? rig.kneeY + 4
+      : garmentLength === 'midi'
+        ? rig.calfY + 14
+        : rig.ankleJointY + 3;
 
-  const kneeOuter = rig.kneeOuterX + legEase;
-  const calfOuter = Math.max(rig.calfOuterX + legEase, kneeOuter - 0.5);
-  const ankleOuter = Math.max(rig.ankleOuterX + legEase * 1.15, calfOuter * 0.82);
-  const ankleInner = Math.max(3.6, rig.ankleInnerX - 1.6);
-  const kneeInner = Math.max(3.2, rig.kneeInnerX - 1.4);
+  const kneeOuter =
+    fitCut === 'wide_leg' || fitCut === 'oversized'
+      ? Math.max(rig.kneeOuterX + legEase, hHalf * 0.94)
+      : rig.kneeOuterX + legEase;
+  const calfOuter =
+    fitCut === 'wide_leg' || fitCut === 'oversized'
+      ? Math.max(rig.calfOuterX + legEase, kneeOuter)
+      : fitCut === 'skinny'
+        ? rig.calfOuterX + Math.max(1.2, legEase * 0.7)
+        : Math.max(rig.calfOuterX + legEase, kneeOuter - 0.5);
+  const ankleOuter =
+    fitCut === 'flared'
+      ? Math.max(rig.ankleOuterX + legEase + 5.5, calfOuter + 3.5)
+      : fitCut === 'wide_leg' || fitCut === 'oversized'
+        ? Math.max(calfOuter + 1.5, hHalf * 0.96)
+        : fitCut === 'skinny'
+          ? rig.ankleOuterX + 1.6
+          : Math.max(rig.ankleOuterX + legEase * 1.15, calfOuter * 0.82);
+
+  const ankleInner = Math.max(3.2, rig.ankleInnerX - (fitCut === 'wide_leg' ? 2.4 : 1.6));
+  const kneeInner = Math.max(3.0, rig.kneeInnerX - 1.4);
   const shortOuter = Math.max(rig.hipX * 0.86 + legEase, kneeOuter + 2);
-  const skirtFlare = subtype === 'skirt_maxi' ? 14 : subtype === 'skirt_mini' ? 5 : 9.5;
+  const skirtFlareBase =
+    garmentLength === 'maxi' || garmentLength === 'ankle'
+      ? 14
+      : garmentLength === 'thigh'
+        ? 5
+        : 9.5;
+  const skirtFlare =
+    fitCut === 'a_line' || fitCut === 'pleated' || fitCut === 'flared'
+      ? skirtFlareBase + 5
+      : fitCut === 'fitted' || fitCut === 'skinny'
+        ? Math.max(1.5, skirtFlareBase - 5)
+        : skirtFlareBase;
 
   const garmentPath =
     variant === 'skirt'
@@ -113,7 +148,7 @@ export function BackPantsTemplate({
   const clipId = `${patternPrefix}-${variant}-back-clip`;
 
   const hemBottom = variant === 'skirt' ? skirtHemY : variant === 'shorts' ? shortHemY : pantsHemY;
-  const maxHalfX = Math.max(hHalf + skirtFlare, hHalf + 4);
+  const maxHalfX = Math.max(hHalf + skirtFlare, ankleOuter + 3, hHalf + 4);
   const imgX = cx - maxHalfX;
   const imgY = rig.waistY - 2;
   const imgW = maxHalfX * 2;
@@ -123,8 +158,14 @@ export function BackPantsTemplate({
     !hasBackPhoto &&
     (garmentMeta?.pattern === 'striped' ||
       garmentMeta?.pattern === 'plaid' ||
-      garmentMeta?.pattern === 'textured')
-      ? `${patternPrefix}-pat-${garmentMeta.pattern}`
+      garmentMeta?.pattern === 'textured' ||
+      bp.fabricTexture === 'corduroy' ||
+      bp.fabricTexture === 'knit')
+      ? `${patternPrefix}-pat-${
+          garmentMeta?.pattern === 'striped' || garmentMeta?.pattern === 'plaid'
+            ? garmentMeta.pattern
+            : 'textured'
+        }`
       : null;
 
   return (
@@ -175,8 +216,8 @@ export function BackPantsTemplate({
           <path
             d={`M ${cx - wHalf + 1} ${rig.waistY + 7.5} Q ${cx} ${rig.waistY + 9} ${cx + wHalf - 1} ${rig.waistY + 7.5}`}
             fill="none"
-            stroke={seamColor}
-            strokeWidth="1"
+            stroke={bp.secondaryColorHex ?? seamColor}
+            strokeWidth={bp.closure === 'belt' ? '1.8' : '1'}
           />
 
           {variant !== 'skirt' ? (

@@ -1,8 +1,14 @@
-import type { HealthResponse, VisionAnalyzeResponse, WeatherSummary } from './generated.types';
+import type {
+  HealthResponse,
+  OutfitRenderResponse,
+  VisionAnalyzeResponse,
+  WeatherSummary,
+} from './generated.types';
 
 const INSTALL_TOKEN_KEY = 'luca-install-token';
 const API_CONSENT_KEY = 'luca-api-consent';
 const DEFAULT_REQUEST_TIMEOUT_MS = 20_000;
+const DEFAULT_RENDER_TIMEOUT_MS = 50_000;
 
 let fallbackSessionToken: string | null = null;
 let fallbackConsent = false;
@@ -169,6 +175,91 @@ export async function analyzeGarmentPhoto(
     }
 
     return (await res.json()) as VisionAnalyzeResponse;
+  } finally {
+    window.clearTimeout(timeoutId);
+    options?.signal?.removeEventListener('abort', onExternalAbort);
+  }
+}
+
+export interface OutfitRenderGarmentPayload {
+  readonly name: string;
+  readonly category: string;
+  readonly color_hex?: string;
+  readonly fit_summary?: string;
+  readonly visual_spec_summary?: string;
+  readonly imageBlob?: Blob;
+}
+
+export async function renderOutfitOnMannequin(
+  input: {
+    silhouette: 'female' | 'male';
+    garments: readonly OutfitRenderGarmentPayload[];
+    mannequinBlob?: Blob | null;
+  },
+  options?: {
+    baseUrl?: string;
+    signal?: AbortSignal;
+    timeoutMs?: number;
+  },
+): Promise<OutfitRenderResponse> {
+  if (!getApiConsent()) {
+    throw new ApiConsentRequiredError();
+  }
+
+  const baseUrl = resolveApiBaseUrl(options?.baseUrl);
+  const token = getOrCreateInstallToken();
+  const timeoutMs = options?.timeoutMs ?? DEFAULT_RENDER_TIMEOUT_MS;
+
+  const controller = new AbortController();
+  const onExternalAbort = () => controller.abort();
+  options?.signal?.addEventListener('abort', onExternalAbort, { once: true });
+
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const limited = input.garments.slice(0, 4);
+    const metaPayload = limited.map((g) => ({
+      name: g.name,
+      category: g.category,
+      ...(g.color_hex ? { color_hex: g.color_hex } : {}),
+      ...(g.fit_summary ? { fit_summary: g.fit_summary } : {}),
+      ...(g.visual_spec_summary ? { visual_spec_summary: g.visual_spec_summary } : {}),
+      has_image: Boolean(g.imageBlob),
+    }));
+
+    const form = new FormData();
+    form.append('silhouette', input.silhouette);
+    form.append('outfit_description', JSON.stringify(metaPayload));
+    if (input.mannequinBlob) {
+      form.append('mannequin_file', input.mannequinBlob, 'mannequin.png');
+    }
+    limited.forEach((g, idx) => {
+      if (g.imageBlob) {
+        form.append('garment_files', g.imageBlob, `garment-${idx + 1}.png`);
+      }
+    });
+
+    const res = await fetch(`${baseUrl}/v1/vision/render-outfit`, {
+      method: 'POST',
+      headers: {
+        'X-Luca-Install-Token': token,
+      },
+      body: form,
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      let detail = 'No se pudo generar el render realista IA.';
+      try {
+        const body = (await res.json()) as { detail?: string };
+        if (body.detail) detail = body.detail;
+      } catch {
+        // Ignora cuerpos no JSON
+      }
+      throw new ApiClientError(detail, res.status);
+    }
+
+    return (await res.json()) as OutfitRenderResponse;
   } finally {
     window.clearTimeout(timeoutId);
     options?.signal?.removeEventListener('abort', onExternalAbort);

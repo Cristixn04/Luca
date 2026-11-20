@@ -23,13 +23,25 @@ import {
   X,
 } from 'lucide-react';
 import { useClosetStore } from '@/features/closet/closetStore';
-import { CATEGORY_LABELS, type GarmentDraft, type GarmentWithSizes } from '@/features/closet/types';
+import {
+  CATEGORY_LABELS,
+  formatVisualSpecSummary,
+  type GarmentDraft,
+  type GarmentWithSizes,
+} from '@/features/closet/types';
 import { getActiveSeasonId, useColorStore } from '@/features/color/colorStore';
 import { useFittingStore, type ViewerMode } from '@/features/fitting/store';
 import { useTasteStore } from '@/features/taste/tasteStore';
-import { fetchWeatherByCoordinates } from '@/infrastructure/api-client/client';
+import {
+  ApiConsentRequiredError,
+  fetchWeatherByCoordinates,
+  getApiConsent,
+  renderOutfitOnMannequin,
+  setApiConsent,
+} from '@/infrastructure/api-client/client';
 import { OutfitRunwayCarousel } from './OutfitRunwayCarousel';
-import { toOutfitGarmentInputs, useOutfitsStore } from './outfitsStore';
+import { makeOutfitRenderKey, toOutfitGarmentInputs, useOutfitsStore } from './outfitsStore';
+import { captureMannequinSvgToPngBlob, dataUrlToBlob } from './renderSnapshot';
 
 const CITY_PRESETS: readonly { label: string; tempC: number }[] = [
   { label: 'Bogotá · 14 °C', tempC: 14 },
@@ -180,9 +192,11 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
 
   const savedOutfits = useOutfitsStore((s) => s.savedOutfits);
   const wearLogs = useOutfitsStore((s) => s.wearLogs);
+  const rendersByKey = useOutfitsStore((s) => s.rendersByKey);
   const outfitsLoaded = useOutfitsStore((s) => s.loaded);
   const loadOutfits = useOutfitsStore((s) => s.loadAll);
   const saveProposal = useOutfitsStore((s) => s.saveProposal);
+  const saveOutfitRender = useOutfitsStore((s) => s.saveOutfitRender);
   const toggleFavorite = useOutfitsStore((s) => s.toggleFavorite);
   const deleteSavedOutfit = useOutfitsStore((s) => s.deleteSavedOutfit);
   const logOutfitWear = useOutfitsStore((s) => s.logOutfitWear);
@@ -205,6 +219,11 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [seedingDemo, setSeedingDemo] = useState(false);
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
+  const [displayMode, setDisplayMode] = useState<'parametric' | 'ai'>('ai');
+  const [aiRenderBusy, setAiRenderBusy] = useState(false);
+  const [aiRenderNotice, setAiRenderNotice] = useState<string | null>(null);
+  const [aiRenderError, setAiRenderError] = useState<string | null>(null);
+  const [needsApiConsent, setNeedsApiConsent] = useState(false);
 
   useEffect(() => {
     if (!closetLoaded) void loadCloset();
@@ -340,6 +359,87 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
       activeProposal.fitStatesByGarmentId,
     );
     setActionNotice('Uso registrado para hoy.');
+  };
+
+  const executeAiRender = async (activeSvg: SVGSVGElement | null) => {
+    if (!activeProposal) return;
+    setAiRenderBusy(true);
+    setAiRenderError(null);
+    setAiRenderNotice('Generando render realista sobre maniquí (sin retención en servidor)...');
+    setNeedsApiConsent(false);
+
+    try {
+      const mannequinBlob = await captureMannequinSvgToPngBlob(activeSvg);
+      const garmentsPayload = activeProposal.items.slice(0, 4).map((item) => {
+        const full = itemsById.get(item.id);
+        const specSummary = formatVisualSpecSummary(full?.garment.visualSpec);
+        const fitState = activeProposal.fitStatesByGarmentId[item.id];
+        const imageBlob = dataUrlToBlob(full?.image?.dataUrl) ?? undefined;
+
+        return {
+          name: item.name,
+          category: item.category,
+          ...(item.dominantColorHex ? { color_hex: item.dominantColorHex } : {}),
+          ...(fitState ? { fit_summary: `calce ${fitState}` } : {}),
+          ...(specSummary ? { visual_spec_summary: specSummary } : {}),
+          ...(imageBlob ? { imageBlob } : {}),
+        };
+      });
+
+      const res = await renderOutfitOnMannequin({
+        silhouette: mannequinSilhouette,
+        garments: garmentsPayload,
+        mannequinBlob,
+      });
+
+      const garmentIds = activeProposal.items.map((i) => i.id);
+      const renderKey = makeOutfitRenderKey(mannequinSilhouette, garmentIds);
+      await saveOutfitRender({
+        id: renderKey,
+        silhouette: mannequinSilhouette,
+        garmentIds,
+        dataUrl: `data:image/png;base64,${res.render_png_base64}`,
+        width: res.width,
+        height: res.height,
+        provider: res.provider,
+        createdAt: new Date().toISOString(),
+      });
+
+      setDisplayMode('ai');
+      if (viewMode !== 'front') setViewMode('front');
+      if (showHeatmap) setShowHeatmap(false);
+      setAiRenderNotice(
+        `Render realista listo (${res.provider}, ${(res.processing_ms / 1000).toFixed(1)} s) y guardado cifrado localmente.`,
+      );
+    } catch (err) {
+      if (err instanceof ApiConsentRequiredError) {
+        setNeedsApiConsent(true);
+        setAiRenderNotice(null);
+      } else {
+        setAiRenderNotice(null);
+        setAiRenderError(
+          err instanceof Error
+            ? err.message
+            : 'No se pudo generar el render realista IA. Sigue activo el maniquí paramétrico.',
+        );
+      }
+    } finally {
+      setAiRenderBusy(false);
+    }
+  };
+
+  const handleRequestAiRender = (activeSvg: SVGSVGElement | null) => {
+    if (!getApiConsent()) {
+      setNeedsApiConsent(true);
+      setAiRenderError(null);
+      return;
+    }
+    void executeAiRender(activeSvg);
+  };
+
+  const handleGrantApiConsentAndRender = (activeSvg: SVGSVGElement | null) => {
+    setApiConsent(true);
+    void executeAiRender(activeSvg);
   };
 
   const handleFeedback = async (type: 'outfit_liked' | 'outfit_disliked' | 'outfit_dismissed') => {
@@ -499,10 +599,17 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
               setSelectedIndex(idx);
               setHighlightedItemId(null);
               setActionNotice(null);
+              setAiRenderError(null);
+              setAiRenderNotice(null);
+              setNeedsApiConsent(false);
             }}
             bodyModel={bodyModel}
             silhouette={mannequinSilhouette}
-            onChangeSilhouette={setMannequinSilhouette}
+            onChangeSilhouette={(nextSilhouette) => {
+              setMannequinSilhouette(nextSilhouette);
+              setAiRenderError(null);
+              setAiRenderNotice(null);
+            }}
             occasionLabel={OCCASION_RULES[occasion].label}
             temperatureC={temperatureC}
             viewMode={viewMode}
@@ -511,6 +618,16 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
             onToggleHeatmap={() => setShowHeatmap((v) => !v)}
             highlightedItemId={highlightedItemId}
             onHighlightItem={setHighlightedItemId}
+            rendersByKey={rendersByKey}
+            displayMode={displayMode}
+            onChangeDisplayMode={setDisplayMode}
+            onRequestAiRender={handleRequestAiRender}
+            aiRenderBusy={aiRenderBusy}
+            aiRenderNotice={aiRenderNotice}
+            aiRenderError={aiRenderError}
+            needsApiConsent={needsApiConsent}
+            onGrantApiConsentAndRender={handleGrantApiConsentAndRender}
+            onCancelApiConsent={() => setNeedsApiConsent(false)}
           />
 
           {/* Columna lateral: Panel flotante de vidrio con prendas, desglose y acciones */}

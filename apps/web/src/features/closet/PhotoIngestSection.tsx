@@ -30,6 +30,7 @@ import {
   PATTERN_LABELS,
   SEASON_LABELS,
   STYLE_LABELS,
+  formatVisualSpecSummary,
   type FormalityLevel,
 } from './types';
 
@@ -625,6 +626,15 @@ export function PhotoIngestSection({
               </Badge>
             )}
           </div>
+
+          {tagSuggestion.visual_spec && (
+            <p className="text-muted">
+              Patronaje detectado:{' '}
+              <span className="font-medium text-ink">
+                {formatVisualSpecSummary(tagSuggestion.visual_spec)}
+              </span>
+            </p>
+          )}
 
           {tagSuggestion.suggested_tags.length > 0 && (
             <p className="text-muted">

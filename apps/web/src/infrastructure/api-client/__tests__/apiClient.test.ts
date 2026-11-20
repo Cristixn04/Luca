@@ -5,6 +5,7 @@ import {
   analyzeGarmentPhoto,
   getApiConsent,
   getOrCreateInstallToken,
+  renderOutfitOnMannequin,
   setApiConsent,
 } from '../client';
 import { OPENAPI_CONTRACT_VERSION } from '../generated.types';
@@ -120,5 +121,57 @@ describe('Cliente API OpenAPI v1 y sanitizador de imágenes (T6.1, T6.5, T6.6)',
     const stripped = stripJpegExifSegments(jpegWithExif);
     // Debe conservar SOI + SOS + EOI (8 bytes) y eliminar por completo APP1 ("Exif")
     expect(Array.from(stripped)).toEqual([0xff, 0xd8, 0xff, 0xda, 0x01, 0x02, 0xff, 0xd9]);
+  });
+
+  it('exige consentimiento para renderOutfitOnMannequin y envía silueta, metadatos y fotos con token', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    await expect(
+      renderOutfitOnMannequin({
+        silhouette: 'female',
+        garments: [{ name: 'Camiseta', category: 'tshirt', color_hex: '#2A9D8F' }],
+      }),
+    ).rejects.toThrow(ApiConsentRequiredError);
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    setApiConsent(true);
+    fetchSpy.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          render_png_base64: 'iVBORw0KGgo=',
+          width: 240,
+          height: 360,
+          provider: 'gemini:gemini-nano-banana-2.1',
+          processing_ms: 420,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+
+    const res = await renderOutfitOnMannequin(
+      {
+        silhouette: 'male',
+        garments: [
+          {
+            name: 'Chaqueta oliva',
+            category: 'jacket',
+            color_hex: '#4B5724',
+            visual_spec_summary: 'Solapas · Cremallera',
+            imageBlob: new Blob(['png'], { type: 'image/png' }),
+          },
+        ],
+      },
+      { baseUrl: '' },
+    );
+
+    expect(res.provider).toBe('gemini:gemini-nano-banana-2.1');
+    expect(res.render_png_base64).toBe('iVBORw0KGgo=');
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchSpy.mock.calls[0]!;
+    expect(url).toBe('/v1/vision/render-outfit');
+    const sentForm = init?.body as FormData;
+    expect(sentForm.get('silhouette')).toBe('male');
+    expect(String(sentForm.get('outfit_description'))).toContain('Chaqueta oliva');
+    expect(sentForm.getAll('garment_files')).toHaveLength(1);
   });
 });

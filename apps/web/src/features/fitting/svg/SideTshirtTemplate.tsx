@@ -2,7 +2,7 @@ import type { FitReport } from '@luca/domain';
 import {
   resolveGarmentAccentStroke,
   resolveGarmentSeamColor,
-  resolveUpperSubtype,
+  resolveUpperBlueprint,
   type GarmentVisualMeta,
 } from './garmentVisuals';
 import { FIT_STATE_HEX, getHeatmapPatternId } from './heatmapMeta';
@@ -38,16 +38,16 @@ export function SideTshirtTemplate({
   const waistZone = fitReport.evaluatedZones.find((item) => item.zone === 'waist');
   const hipZone = fitReport.evaluatedZones.find((item) => item.zone === 'hip');
 
-  const subtype = resolveUpperSubtype(variant, garmentMeta);
+  const bp = resolveUpperBlueprint(variant, garmentMeta);
+  const { subtype, neckline, sleeveLength, garmentLength } = bp;
   const legLen = rig.footY - rig.crotchY;
-  const bulkBoost =
-    variant === 'jacket'
-      ? 2.2
-      : subtype === 'hoodie' || subtype === 'sweater'
-        ? 1.5
-        : 0;
+  const isLongSleeve = sleeveLength === 'long';
+  const isThreeQuarter = sleeveLength === 'three_quarter';
+  const isSleeveless = sleeveLength === 'sleeveless' || neckline === 'strapless';
+  const isFullLengthPiece =
+    variant === 'dress' || garmentLength === 'knee' || garmentLength === 'midi' || garmentLength === 'maxi';
 
-  const ease = computeFittedEasePx(chestZone?.easeCm, bulkBoost);
+  const ease = computeFittedEasePx(chestZone?.easeCm, bp.fitBoostPx * 0.85);
   const slEase = Math.max(1.6, Math.min(3.8, ease * 0.65));
 
   const s = rig.side;
@@ -56,54 +56,64 @@ export function SideTshirtTemplate({
   const backWaist = s.waistBackX - ease * 0.9;
   const frontWaist = s.waistFrontX + ease * 0.95;
 
-  const hemY =
-    variant === 'dress'
-      ? subtype === 'dress_mini'
-        ? rig.crotchY + legLen * 0.32
-        : subtype === 'dress_maxi'
-          ? rig.footY - 12
-          : rig.crotchY + legLen * 0.56
-      : variant === 'jacket'
-        ? rig.hipY + 8
-        : subtype === 'hoodie' || subtype === 'sweater'
-          ? rig.hipY + 2
-          : rig.hipY - 4;
+  const hemY = (() => {
+    switch (garmentLength) {
+      case 'crop':
+        return rig.waistY - 6;
+      case 'waist':
+        return rig.waistY + 5;
+      case 'thigh':
+        return rig.crotchY + legLen * 0.31;
+      case 'knee':
+        return rig.kneeY + 2;
+      case 'midi':
+        return rig.crotchY + legLen * 0.56;
+      case 'maxi':
+        return rig.footY - 12;
+      case 'hip':
+      default:
+        return variant === 'jacket'
+          ? rig.hipY + 8
+          : bp.hasHood || subtype === 'sweater'
+            ? rig.hipY + 2
+            : rig.hipY - 4;
+    }
+  })();
 
-  const hemBackX =
-    variant === 'dress'
-      ? s.hipBackX - ease - 8
-      : Math.min(backWaist, s.hipBackX - ease * 0.6);
-  const hemFrontX =
-    variant === 'dress'
-      ? s.hipFrontX + ease + 8
-      : Math.max(frontWaist, s.hipFrontX + ease * 0.65);
+  const hemBackX = isFullLengthPiece
+    ? s.hipBackX - ease - 8
+    : Math.min(backWaist, s.hipBackX - ease * 0.6);
+  const hemFrontX = isFullLengthPiece
+    ? s.hipFrontX + ease + 8
+    : Math.max(frontWaist, s.hipFrontX + ease * 0.65);
 
-  const bodyPath =
-    variant === 'dress'
-      ? [
-          `M ${s.shoulderBackX - 2} ${rig.shoulderY - 3}`,
-          `Q ${rig.cx} ${rig.shoulderY - 6} ${s.shoulderFrontX + 2.5} ${rig.shoulderY - 1}`,
-          `C ${frontBust + 1} ${s.bustApexY - 4}, ${frontBust + 1} ${s.bustApexY + 6}, ${frontWaist} ${rig.waistY}`,
-          `C ${s.hipFrontX + ease + 2} ${rig.hipY}, ${hemFrontX} ${hemY - 26}, ${hemFrontX} ${hemY}`,
-          `Q ${rig.cx} ${hemY + 4} ${hemBackX} ${hemY}`,
-          `C ${s.hipBackX - ease - 2} ${s.gluteApexY}, ${backWaist} ${rig.waistY}, ${backChest} ${rig.chestY}`,
-          `C ${backChest} ${rig.shoulderY + 10}, ${s.shoulderBackX - 2} ${rig.shoulderY + 2}, ${s.shoulderBackX - 2} ${rig.shoulderY - 3}`,
-          'Z',
-        ].join(' ')
-      : [
-          `M ${s.shoulderBackX - 2} ${rig.shoulderY - 3}`,
-          `Q ${rig.cx} ${rig.shoulderY - 6} ${s.shoulderFrontX + 2.5} ${rig.shoulderY - 1}`,
-          `C ${frontBust + 1} ${s.bustApexY - 4}, ${frontBust + 1} ${s.bustApexY + 8}, ${frontWaist} ${rig.waistY}`,
-          `C ${frontWaist} ${rig.waistY + 12}, ${hemFrontX} ${hemY - 10}, ${hemFrontX} ${hemY}`,
-          `Q ${rig.cx} ${hemY + 3.5} ${hemBackX} ${hemY}`,
-          `C ${hemBackX} ${hemY - 12}, ${backWaist} ${rig.waistY + 10}, ${backWaist} ${rig.waistY}`,
-          `C ${backChest} ${rig.chestY + 12}, ${backChest} ${rig.shoulderY + 12}, ${s.shoulderBackX - 2} ${rig.shoulderY - 3}`,
-          'Z',
-        ].join(' ');
+  const bodyPath = isFullLengthPiece
+    ? [
+        `M ${s.shoulderBackX - 2} ${rig.shoulderY - 3}`,
+        `Q ${rig.cx} ${rig.shoulderY - 6} ${s.shoulderFrontX + 2.5} ${rig.shoulderY - 1}`,
+        `C ${frontBust + 1} ${s.bustApexY - 4}, ${frontBust + 1} ${s.bustApexY + 6}, ${frontWaist} ${rig.waistY}`,
+        `C ${s.hipFrontX + ease + 2} ${rig.hipY}, ${hemFrontX} ${hemY - 26}, ${hemFrontX} ${hemY}`,
+        `Q ${rig.cx} ${hemY + 4} ${hemBackX} ${hemY}`,
+        `C ${s.hipBackX - ease - 2} ${s.gluteApexY}, ${backWaist} ${rig.waistY}, ${backChest} ${rig.chestY}`,
+        `C ${backChest} ${rig.shoulderY + 10}, ${s.shoulderBackX - 2} ${rig.shoulderY + 2}, ${s.shoulderBackX - 2} ${rig.shoulderY - 3}`,
+        'Z',
+      ].join(' ')
+    : [
+        `M ${s.shoulderBackX - 2} ${rig.shoulderY - 3}`,
+        `Q ${rig.cx} ${rig.shoulderY - 6} ${s.shoulderFrontX + 2.5} ${rig.shoulderY - 1}`,
+        `C ${frontBust + 1} ${s.bustApexY - 4}, ${frontBust + 1} ${s.bustApexY + 8}, ${frontWaist} ${rig.waistY}`,
+        `C ${frontWaist} ${rig.waistY + 12}, ${hemFrontX} ${hemY - 10}, ${hemFrontX} ${hemY}`,
+        `Q ${rig.cx} ${hemY + 3.5} ${hemBackX} ${hemY}`,
+        `C ${hemBackX} ${hemY - 12}, ${backWaist} ${rig.waistY + 10}, ${backWaist} ${rig.waistY}`,
+        `C ${backChest} ${rig.chestY + 12}, ${backChest} ${rig.shoulderY + 12}, ${s.shoulderBackX - 2} ${rig.shoulderY - 3}`,
+        'Z',
+      ].join(' ');
 
-  const isLongSleeve = variant === 'long_sleeve' || variant === 'jacket';
-  const isTank = subtype === 'tank';
   const sa = rig.sideArm;
+  const midY = (sa.elbow.y + sa.wrist.y) * 0.52;
+  const midFrontX = (sa.elbow.frontX + sa.wrist.frontX) * 0.52;
+  const midBackX = (sa.elbow.backX + sa.wrist.backX) * 0.52;
+
   const sleevePath = isLongSleeve
     ? [
         `M ${sa.shoulder.backX - slEase} ${sa.shoulder.y}`,
@@ -113,33 +123,60 @@ export function SideTshirtTemplate({
         `C ${sa.elbow.backX - slEase} ${sa.elbow.y + 6}, ${sa.elbow.backX - slEase} ${sa.elbow.y - 6}, ${sa.shoulder.backX - slEase} ${sa.shoulder.y}`,
         'Z',
       ].join(' ')
-    : [
-        `M ${sa.shoulder.backX - slEase} ${sa.shoulder.y}`,
-        `Q ${rig.cx} ${rig.shoulderY - 1} ${sa.shoulder.frontX + slEase} ${sa.shoulder.y}`,
-        `L ${sa.bicep.frontX + slEase} ${sa.bicep.y}`,
-        `L ${sa.bicep.backX - slEase} ${sa.bicep.y + 1}`,
-        'Z',
-      ].join(' ');
+    : isThreeQuarter
+      ? [
+          `M ${sa.shoulder.backX - slEase} ${sa.shoulder.y}`,
+          `Q ${rig.cx} ${rig.shoulderY - 1} ${sa.shoulder.frontX + slEase} ${sa.shoulder.y}`,
+          `C ${sa.elbow.frontX + slEase} ${sa.elbow.y - 4}, ${sa.elbow.frontX + slEase} ${sa.elbow.y + 4}, ${midFrontX + slEase * 0.8} ${midY}`,
+          `L ${midBackX - slEase * 0.8} ${midY + 1}`,
+          `C ${sa.elbow.backX - slEase} ${sa.elbow.y + 4}, ${sa.elbow.backX - slEase} ${sa.elbow.y - 4}, ${sa.shoulder.backX - slEase} ${sa.shoulder.y}`,
+          'Z',
+        ].join(' ')
+      : [
+          `M ${sa.shoulder.backX - slEase} ${sa.shoulder.y}`,
+          `Q ${rig.cx} ${rig.shoulderY - 1} ${sa.shoulder.frontX + slEase} ${sa.shoulder.y}`,
+          `L ${sa.bicep.frontX + slEase} ${sa.bicep.y}`,
+          `L ${sa.bicep.backX - slEase} ${sa.bicep.y + 1}`,
+          'Z',
+        ].join(' ');
 
   const baseFill = garmentColorHex ?? 'var(--accent)';
+  const trimFill = bp.secondaryColorHex ?? baseFill;
   const strokeColor = resolveGarmentAccentStroke(garmentColorHex);
   const seamColor = resolveGarmentSeamColor(garmentColorHex);
   const patternId =
     garmentMeta?.pattern === 'striped' ||
     garmentMeta?.pattern === 'plaid' ||
-    garmentMeta?.pattern === 'textured'
-      ? `${patternPrefix}-pat-${garmentMeta.pattern}`
+    garmentMeta?.pattern === 'textured' ||
+    bp.fabricTexture === 'knit' ||
+    bp.fabricTexture === 'ribbed' ||
+    bp.fabricTexture === 'corduroy'
+      ? `${patternPrefix}-pat-${
+          garmentMeta?.pattern === 'striped' || garmentMeta?.pattern === 'plaid'
+            ? garmentMeta.pattern
+            : 'textured'
+        }`
       : null;
 
   return (
     <g data-garment={`${variant}-side`} aria-label={`Plantilla de ${variant} en vista de perfil`}>
-      {subtype === 'hoodie' && (
+      {bp.hasHood && (
         <path
           d={`M ${s.shoulderBackX - 2} ${rig.shoulderY - 3} C ${s.shoulderBackX - 13} ${rig.shoulderY - 12}, ${s.shoulderBackX - 14} ${rig.shoulderY + 7}, ${backChest - 2} ${rig.chestY - 4} Z`}
-          fill={baseFill}
+          fill={trimFill}
           fillOpacity={showHeatmap ? 0.16 : 0.95}
           stroke={strokeColor}
           strokeWidth="1.05"
+        />
+      )}
+
+      {neckline === 'turtleneck' && (
+        <path
+          d={`M ${s.shoulderBackX - 1} ${rig.shoulderY - 2} L ${s.shoulderBackX} ${rig.shoulderY - 14} L ${s.shoulderFrontX + 1} ${rig.shoulderY - 13} L ${s.shoulderFrontX + 1.5} ${rig.shoulderY - 1} Z`}
+          fill={trimFill}
+          fillOpacity={showHeatmap ? 0.18 : 0.96}
+          stroke={strokeColor}
+          strokeWidth="1"
         />
       )}
 
@@ -153,7 +190,7 @@ export function SideTshirtTemplate({
       )}
       <path d={bodyPath} fill="none" stroke={strokeColor} strokeWidth="1.15" strokeLinejoin="round" />
 
-      {!isTank && (
+      {!isSleeveless && (
         <g>
           <path d={sleevePath} fill={baseFill} fillOpacity={showHeatmap ? 0.2 : 0.97} />
           {patternId && !showHeatmap && (
@@ -175,8 +212,8 @@ export function SideTshirtTemplate({
               y1={sa.wrist.y - 5.5}
               x2={sa.wrist.frontX + slEase * 0.6}
               y2={sa.wrist.y - 6}
-              stroke={seamColor}
-              strokeWidth="0.95"
+              stroke={bp.hasRibbedTrim && bp.secondaryColorHex ? bp.secondaryColorHex : seamColor}
+              strokeWidth={bp.hasRibbedTrim && bp.secondaryColorHex ? '1.9' : '0.95'}
             />
           )}
         </g>

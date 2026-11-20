@@ -4,7 +4,7 @@ import {
   resolveGarmentAccentStroke,
   resolveGarmentButtonColor,
   resolveGarmentSeamColor,
-  resolveUpperSubtype,
+  resolveUpperBlueprint,
   type GarmentVisualMeta,
 } from './garmentVisuals';
 import { FIT_STATE_HEX, getHeatmapPatternId } from './heatmapMeta';
@@ -48,85 +48,155 @@ export function TshirtTemplate({
   const waistZone = findZone(fitReport, 'waist');
   const hipZone = findZone(fitReport, 'hip');
 
-  const subtype = resolveUpperSubtype(variant, garmentMeta);
+  const bp = resolveUpperBlueprint(variant, garmentMeta);
+  const { subtype, neckline, sleeveLength, garmentLength } = bp;
   const cx = rig.cx;
   const legLen = rig.footY - rig.crotchY;
-  const isLongSleeve = variant === 'long_sleeve' || variant === 'jacket';
-  const isTank = subtype === 'tank';
+  const isLongSleeve = sleeveLength === 'long';
+  const isThreeQuarter = sleeveLength === 'three_quarter';
+  const isSleeveless = sleeveLength === 'sleeveless';
+  const isCapSleeve = sleeveLength === 'cap';
+  const isStrapless = neckline === 'strapless';
+  const isFullLengthPiece =
+    variant === 'dress' || garmentLength === 'knee' || garmentLength === 'midi' || garmentLength === 'maxi';
 
-  const bulkBoost =
-    variant === 'jacket'
-      ? 2.6
-      : subtype === 'hoodie' || subtype === 'sweater'
-        ? 1.8
-        : 0;
-
-  const chEase = computeFittedEasePx(chestZone?.easeCm, bulkBoost);
-  const shEase = computeFittedEasePx(shouldersZone?.easeCm, bulkBoost * 0.5);
-  const wEase = computeFittedEasePx(waistZone?.easeCm ?? chestZone?.easeCm, bulkBoost * 0.65);
-  const hEase = computeFittedEasePx(hipZone?.easeCm ?? chestZone?.easeCm, bulkBoost * 0.5);
-  const slEase = Math.max(1.8, Math.min(4.6, chEase * 0.68 + bulkBoost * 0.35));
+  const chEase = computeFittedEasePx(chestZone?.easeCm, bp.fitBoostPx);
+  const shEase = computeFittedEasePx(shouldersZone?.easeCm, bp.fitBoostPx * 0.5);
+  const wEase = computeFittedEasePx(waistZone?.easeCm ?? chestZone?.easeCm, bp.fitBoostPx * 0.65);
+  const hEase = computeFittedEasePx(hipZone?.easeCm ?? chestZone?.easeCm, bp.fitBoostPx * 0.5);
+  const slEase = Math.max(1.8, Math.min(4.8, chEase * 0.68 + Math.max(0, bp.fitBoostPx) * 0.35));
   const cuffEase = Math.max(1.4, slEase * 0.72);
 
   const shHalf = rig.shoulderX + shEase * 0.65;
   const chHalf = rig.chestX + chEase;
   const wHalf =
-    variant === 'dress' || subtype === 'shirt' || rig.silhouette === 'female'
+    isFullLengthPiece || subtype === 'shirt' || rig.silhouette === 'female' || bp.fitCut === 'fitted'
       ? rig.waistX + wEase * 0.92
       : Math.max(rig.waistX + wEase, chHalf - 2);
   const hHalf = rig.hipX + hEase * 0.85;
 
+  const skirtFlareBoost = bp.fitCut === 'a_line' || bp.fitCut === 'pleated' ? 5 : 0;
   const hemHalf =
-    variant === 'dress'
-      ? subtype === 'dress_maxi'
-        ? hHalf + 15
-        : subtype === 'dress_mini'
-          ? hHalf + 6
-          : hHalf + 11
-      : Math.max(rig.hipX + hEase * 0.72, wHalf + 3);
+    isFullLengthPiece
+      ? garmentLength === 'maxi'
+        ? hHalf + 15 + skirtFlareBoost
+        : garmentLength === 'thigh'
+          ? hHalf + 6 + skirtFlareBoost
+          : hHalf + 11 + skirtFlareBoost
+      : garmentLength === 'crop'
+        ? Math.max(rig.waistX + wEase * 0.95, wHalf)
+        : garmentLength === 'waist'
+          ? Math.max(rig.waistX + wEase + 2, wHalf + 1.5)
+          : Math.max(rig.hipX + hEase * 0.72, wHalf + 3);
 
-  const hemY =
-    variant === 'dress'
-      ? subtype === 'dress_mini'
-        ? rig.crotchY + legLen * 0.32
-        : subtype === 'dress_maxi'
-          ? rig.footY - 12
-          : rig.crotchY + legLen * 0.56
-      : variant === 'jacket'
-        ? rig.hipY + 8
-        : subtype === 'hoodie' || subtype === 'sweater'
-          ? rig.hipY + 2
-          : rig.hipY - 4;
+  const hemY = (() => {
+    switch (garmentLength) {
+      case 'crop':
+        return rig.waistY - 6;
+      case 'waist':
+        return rig.waistY + 5;
+      case 'thigh':
+        return rig.crotchY + legLen * 0.31;
+      case 'knee':
+        return rig.kneeY + 2;
+      case 'midi':
+        return rig.crotchY + legLen * 0.56;
+      case 'maxi':
+        return rig.footY - 12;
+      case 'hip':
+      default:
+        return variant === 'jacket'
+          ? rig.hipY + 8
+          : bp.hasHood || subtype === 'sweater'
+            ? rig.hipY + 2
+            : rig.hipY - 4;
+    }
+  })();
 
-  const neckHalf = rig.neckHalf + (variant === 'dress' ? 5 : 2.8);
+  const neckHalf =
+    rig.neckHalf +
+    (neckline === 'scoop' || neckline === 'square'
+      ? 6.5
+      : neckline === 'v_neck'
+        ? 4.2
+        : neckline === 'turtleneck'
+          ? 1.5
+          : variant === 'dress'
+            ? 5
+            : 2.8);
   const neckTopY = rig.shoulderY - 4;
   const neckDropY =
-    variant === 'dress'
-      ? rig.shoulderY + 20
-      : subtype === 'jacket_tailored'
-        ? rig.chestY + 8
-        : subtype === 'polo' || subtype === 'shirt'
-          ? rig.shoulderY + 13
-          : rig.shoulderY + 11;
+    neckline === 'v_neck'
+      ? rig.chestY - 2
+      : neckline === 'scoop'
+        ? rig.shoulderY + 22
+        : neckline === 'square'
+          ? rig.shoulderY + 18
+          : neckline === 'turtleneck'
+            ? rig.shoulderY + 5
+            : bp.hasLapels
+              ? rig.chestY + 8
+              : neckline === 'polo' || neckline === 'shirt_collar'
+                ? rig.shoulderY + 13
+                : rig.shoulderY + 11;
 
   const arm = rig.arm;
   const armpitY = rig.armpitY + 5;
   const armpitX = rig.armpitX + chEase * 0.85;
 
-  // Trazo de manga derecha (side=1) o izquierda (side=-1) adherido exactamente al esqueleto del brazo
+  const midForearmY = (arm.elbow.y + arm.wrist.y) * 0.52;
+  const midForearmOuterX = (arm.elbow.outerX + arm.wrist.outerX) * 0.52;
+  const midForearmInnerX = (arm.elbow.innerX + arm.wrist.innerX) * 0.52;
+
+  const buildNecklineSegment = (): string[] => {
+    if (isStrapless) {
+      return [`M ${cx - chHalf} ${rig.chestY - 9}`, `Q ${cx} ${rig.chestY - 6} ${cx + chHalf} ${rig.chestY - 9}`];
+    }
+    if (neckline === 'v_neck') {
+      return [
+        `M ${cx - neckHalf} ${neckTopY}`,
+        `L ${cx} ${neckDropY + 5}`,
+        `L ${cx + neckHalf} ${neckTopY}`,
+      ];
+    }
+    if (neckline === 'square') {
+      return [
+        `M ${cx - neckHalf} ${neckTopY}`,
+        `L ${cx - neckHalf + 1.5} ${neckDropY}`,
+        `L ${cx + neckHalf - 1.5} ${neckDropY}`,
+        `L ${cx + neckHalf} ${neckTopY}`,
+      ];
+    }
+    return [
+      `M ${cx - neckHalf} ${neckTopY}`,
+      `C ${cx - neckHalf * 0.55} ${neckDropY}, ${cx + neckHalf * 0.55} ${neckDropY}, ${cx + neckHalf} ${neckTopY}`,
+    ];
+  };
+
   const buildRightSleeve = (): string[] => {
-    if (isTank) {
+    if (isStrapless) {
+      return [`L ${cx + armpitX} ${armpitY}`];
+    }
+    if (isSleeveless) {
       return [
         `L ${cx + shHalf - 6} ${rig.shoulderY + 1}`,
         `Q ${cx + chHalf - 1} ${rig.chestY - 6} ${cx + armpitX} ${armpitY}`,
       ];
     }
-    if (variant === 'dress') {
+    if (isCapSleeve) {
       return [
         `L ${cx + shHalf} ${rig.shoulderY + 2}`,
         `C ${cx + arm.deltoid.outerX + slEase} ${arm.deltoid.y + 4}, ${cx + arm.bicep.outerX + slEase * 0.8} ${arm.bicep.y - 6}, ${cx + arm.bicep.outerX + slEase * 0.6} ${arm.bicep.y - 2}`,
         `L ${cx + arm.bicep.innerX - slEase * 0.4} ${arm.bicep.y}`,
         `L ${cx + armpitX} ${armpitY}`,
+      ];
+    }
+    if (isThreeQuarter) {
+      return [
+        `L ${cx + shHalf} ${rig.shoulderY + 2}`,
+        `C ${cx + arm.deltoid.outerX + slEase} ${arm.deltoid.y + 6}, ${cx + arm.elbow.outerX + slEase} ${arm.elbow.y - 6}, ${cx + midForearmOuterX + slEase * 0.85} ${midForearmY}`,
+        `L ${cx + midForearmInnerX - slEase * 0.65} ${midForearmY + 1.5}`,
+        `C ${cx + arm.elbow.innerX - slEase * 0.65} ${arm.elbow.y + 2}, ${cx + armpitX + 2} ${armpitY + 6}, ${cx + armpitX} ${armpitY}`,
       ];
     }
     if (isLongSleeve) {
@@ -139,7 +209,6 @@ export function TshirtTemplate({
         `C ${cx + arm.bicep.innerX - slEase * 0.5} ${arm.bicep.y}, ${cx + armpitX + 2} ${armpitY + 6}, ${cx + armpitX} ${armpitY}`,
       ];
     }
-    // Manga corta (camiseta / polo)
     return [
       `L ${cx + shHalf} ${rig.shoulderY + 2}`,
       `C ${cx + arm.deltoid.outerX + slEase} ${arm.deltoid.y + 5}, ${cx + arm.bicep.outerX + slEase} ${arm.bicep.y - 6}, ${cx + arm.bicep.outerX + slEase} ${arm.bicep.y}`,
@@ -149,16 +218,24 @@ export function TshirtTemplate({
   };
 
   const buildLeftSleeveReturn = (): string[] => {
-    if (isTank) {
-      return [
-        `Q ${cx - chHalf + 1} ${rig.chestY - 6} ${cx - shHalf + 6} ${rig.shoulderY + 1}`,
-      ];
+    if (isStrapless) {
+      return [`L ${cx - chHalf} ${rig.chestY - 9}`];
     }
-    if (variant === 'dress') {
+    if (isSleeveless) {
+      return [`Q ${cx - chHalf + 1} ${rig.chestY - 6} ${cx - shHalf + 6} ${rig.shoulderY + 1}`];
+    }
+    if (isCapSleeve) {
       return [
         `L ${cx - arm.bicep.innerX + slEase * 0.4} ${arm.bicep.y}`,
         `L ${cx - arm.bicep.outerX - slEase * 0.6} ${arm.bicep.y - 2}`,
         `C ${cx - arm.bicep.outerX - slEase * 0.8} ${arm.bicep.y - 6}, ${cx - arm.deltoid.outerX - slEase} ${arm.deltoid.y + 4}, ${cx - shHalf} ${rig.shoulderY + 2}`,
+      ];
+    }
+    if (isThreeQuarter) {
+      return [
+        `C ${cx - armpitX - 2} ${armpitY + 6}, ${cx - arm.elbow.innerX + slEase * 0.65} ${arm.elbow.y + 2}, ${cx - midForearmInnerX + slEase * 0.65} ${midForearmY + 1.5}`,
+        `L ${cx - midForearmOuterX - slEase * 0.85} ${midForearmY}`,
+        `C ${cx - arm.elbow.outerX - slEase} ${arm.elbow.y - 6}, ${cx - arm.deltoid.outerX - slEase} ${arm.deltoid.y + 6}, ${cx - shHalf} ${rig.shoulderY + 2}`,
       ];
     }
     if (isLongSleeve) {
@@ -177,14 +254,19 @@ export function TshirtTemplate({
     ];
   };
 
-  const torsoRight: string[] =
-    variant === 'dress'
+  const torsoRight: string[] = isFullLengthPiece
+    ? [
+        `C ${cx + chHalf} ${rig.waistY - 14}, ${cx + wHalf} ${rig.waistY - 6}, ${cx + wHalf} ${rig.waistY}`,
+        `C ${cx + hHalf + 1} ${rig.hipY - 8}, ${cx + hemHalf - 1} ${hemY - 34}, ${cx + hemHalf} ${hemY}`,
+        `Q ${cx} ${hemY + 6} ${cx - hemHalf} ${hemY}`,
+        `C ${cx - hemHalf + 1} ${hemY - 34}, ${cx - hHalf - 1} ${rig.hipY - 8}, ${cx - wHalf} ${rig.waistY}`,
+        `C ${cx - wHalf} ${rig.waistY - 6}, ${cx - chHalf} ${rig.waistY - 14}, ${cx - armpitX} ${armpitY}`,
+      ]
+    : garmentLength === 'crop' || garmentLength === 'waist'
       ? [
-          `C ${cx + chHalf} ${rig.waistY - 14}, ${cx + wHalf} ${rig.waistY - 6}, ${cx + wHalf} ${rig.waistY}`,
-          `C ${cx + hHalf + 1} ${rig.hipY - 8}, ${cx + hemHalf - 1} ${hemY - 34}, ${cx + hemHalf} ${hemY}`,
-          `Q ${cx} ${hemY + 6} ${cx - hemHalf} ${hemY}`,
-          `C ${cx - hemHalf + 1} ${hemY - 34}, ${cx - hHalf - 1} ${rig.hipY - 8}, ${cx - wHalf} ${rig.waistY}`,
-          `C ${cx - wHalf} ${rig.waistY - 6}, ${cx - chHalf} ${rig.waistY - 14}, ${cx - armpitX} ${armpitY}`,
+          `C ${cx + chHalf} ${(armpitY + hemY) * 0.52}, ${cx + hemHalf} ${hemY - 8}, ${cx + hemHalf} ${hemY}`,
+          `Q ${cx} ${hemY + 2.5} ${cx - hemHalf} ${hemY}`,
+          `C ${cx - hemHalf} ${hemY - 8}, ${cx - chHalf} ${(armpitY + hemY) * 0.52}, ${cx - armpitX} ${armpitY}`,
         ]
       : [
           `C ${cx + chHalf} ${rig.waistY - 12}, ${cx + wHalf} ${rig.waistY - 4}, ${cx + wHalf} ${rig.waistY}`,
@@ -195,8 +277,7 @@ export function TshirtTemplate({
         ];
 
   const garmentPath = [
-    `M ${cx - neckHalf} ${neckTopY}`,
-    `C ${cx - neckHalf * 0.55} ${neckDropY}, ${cx + neckHalf * 0.55} ${neckDropY}, ${cx + neckHalf} ${neckTopY}`,
+    ...buildNecklineSegment(),
     ...buildRightSleeve(),
     ...torsoRight,
     ...buildLeftSleeveReturn(),
@@ -204,17 +285,23 @@ export function TshirtTemplate({
   ].join(' ');
 
   const baseFill = garmentColorHex ?? 'var(--accent)';
+  const trimFill = bp.secondaryColorHex ?? baseFill;
   const strokeColor = resolveGarmentAccentStroke(garmentColorHex);
   const seamColor = resolveGarmentSeamColor(garmentColorHex);
-  const buttonColor = resolveGarmentButtonColor(garmentColorHex);
+  const buttonColor = bp.accentColorHex ?? resolveGarmentButtonColor(garmentColorHex);
   const hasPhoto = isSafeDataImageUrl(garmentMeta?.imageUrl);
   const clipId = `${patternPrefix}-${variant}-clip`;
 
-  const maxHalfX = Math.max(
-    isLongSleeve ? arm.wrist.outerX + cuffEase : arm.bicep.outerX + slEase,
-    hemHalf,
-    chHalf,
-  ) + 3;
+  const maxHalfX =
+    Math.max(
+      isLongSleeve
+        ? arm.wrist.outerX + cuffEase
+        : isThreeQuarter
+          ? midForearmOuterX + slEase
+          : arm.bicep.outerX + slEase,
+      hemHalf,
+      chHalf,
+    ) + 3;
   const imgX = cx - maxHalfX;
   const imgY = neckTopY - 3;
   const imgW = maxHalfX * 2;
@@ -224,12 +311,25 @@ export function TshirtTemplate({
     !hasPhoto &&
     (garmentMeta?.pattern === 'striped' ||
       garmentMeta?.pattern === 'plaid' ||
-      garmentMeta?.pattern === 'textured')
-      ? `${patternPrefix}-pat-${garmentMeta.pattern}`
+      garmentMeta?.pattern === 'textured' ||
+      bp.fabricTexture === 'knit' ||
+      bp.fabricTexture === 'ribbed' ||
+      bp.fabricTexture === 'corduroy')
+      ? `${patternPrefix}-pat-${
+          garmentMeta?.pattern === 'striped' || garmentMeta?.pattern === 'plaid'
+            ? garmentMeta.pattern
+            : 'textured'
+        }`
       : null;
 
   return (
-    <g data-garment={variant} aria-label={`Plantilla de ${variant} sobre el avatar`}>
+    <g
+      data-garment={variant}
+      data-neckline={neckline}
+      data-sleeve={sleeveLength}
+      data-closure={bp.closure}
+      aria-label={`Plantilla de ${variant} sobre el avatar`}
+    >
       <defs>
         <clipPath id={clipId}>
           <path d={garmentPath} />
@@ -237,18 +337,37 @@ export function TshirtTemplate({
       </defs>
 
       {/* Profundidad interior del cuello */}
-      <path
-        d={`M ${cx - neckHalf} ${neckTopY} Q ${cx} ${neckTopY - 3} ${cx + neckHalf} ${neckTopY} C ${cx + neckHalf * 0.55} ${neckDropY}, ${cx - neckHalf * 0.55} ${neckDropY}, ${cx - neckHalf} ${neckTopY} Z`}
-        fill={`url(#${patternPrefix}-collar-depth)`}
-        opacity={showHeatmap ? 0.2 : 0.65}
-      />
+      {!isStrapless && neckline !== 'turtleneck' && (
+        <path
+          d={
+            neckline === 'v_neck'
+              ? `M ${cx - neckHalf} ${neckTopY} Q ${cx} ${neckTopY - 3} ${cx + neckHalf} ${neckTopY} L ${cx} ${neckDropY + 5} Z`
+              : neckline === 'square'
+                ? `M ${cx - neckHalf} ${neckTopY} Q ${cx} ${neckTopY - 2.5} ${cx + neckHalf} ${neckTopY} L ${cx + neckHalf - 1.5} ${neckDropY} L ${cx - neckHalf + 1.5} ${neckDropY} Z`
+                : `M ${cx - neckHalf} ${neckTopY} Q ${cx} ${neckTopY - 3} ${cx + neckHalf} ${neckTopY} C ${cx + neckHalf * 0.55} ${neckDropY}, ${cx - neckHalf * 0.55} ${neckDropY}, ${cx - neckHalf} ${neckTopY} Z`
+          }
+          fill={`url(#${patternPrefix}-collar-depth)`}
+          opacity={showHeatmap ? 0.2 : 0.65}
+        />
+      )}
 
-      {/* Capucha superior alrededor del cuello en buzo/hoodie */}
-      {subtype === 'hoodie' && (
+      {/* Capucha superior alrededor del cuello */}
+      {bp.hasHood && (
         <path
           d={`M ${cx - neckHalf - 6} ${neckTopY + 2} C ${cx - neckHalf - 9} ${neckTopY - 10}, ${cx - neckHalf + 2} ${neckTopY - 15}, ${cx} ${neckTopY - 13} C ${cx + neckHalf - 2} ${neckTopY - 15}, ${cx + neckHalf + 9} ${neckTopY - 10}, ${cx + neckHalf + 6} ${neckTopY + 2} Q ${cx} ${neckDropY + 3} ${cx - neckHalf - 6} ${neckTopY + 2} Z`}
-          fill={baseFill}
+          fill={trimFill}
           fillOpacity={showHeatmap ? 0.16 : 0.94}
+          stroke={strokeColor}
+          strokeWidth="1.05"
+        />
+      )}
+
+      {/* Cuello alto / turtleneck */}
+      {neckline === 'turtleneck' && (
+        <path
+          d={`M ${cx - rig.neckHalf - 1.5} ${neckTopY + 2} L ${cx - rig.neckHalf - 1} ${neckTopY - 12} Q ${cx} ${neckTopY - 14} ${cx + rig.neckHalf + 1} ${neckTopY - 12} L ${cx + rig.neckHalf + 1.5} ${neckTopY + 2} Q ${cx} ${neckTopY + 6} ${cx - rig.neckHalf - 1.5} ${neckTopY + 2} Z`}
+          fill={trimFill}
+          fillOpacity={showHeatmap ? 0.18 : 0.97}
           stroke={strokeColor}
           strokeWidth="1.05"
         />
@@ -272,7 +391,7 @@ export function TshirtTemplate({
         />
       )}
 
-      {/* Patrón procedural */}
+      {/* Patrón / textura procedural */}
       {patternId && !showHeatmap && (
         <path d={garmentPath} fill={`url(#${patternId})`} opacity="0.82" />
       )}
@@ -294,11 +413,11 @@ export function TshirtTemplate({
         strokeLinejoin="round"
       />
 
-      {/* Detalles de confección y adaptación a silueta Mujer / Hombre */}
+      {/* Detalles quirúrgicos de confección según blueprint */}
       {!showHeatmap && (
         <g pointerEvents="none">
           {/* Costuras de sisa siguiendo el hombro anatómico */}
-          {!isTank && (
+          {!isSleeveless && !isStrapless && (
             <>
               <path
                 d={`M ${cx - shHalf + 1.5} ${rig.shoulderY + 2.5} Q ${cx - armpitX - 1.5} ${(rig.shoulderY + armpitY) * 0.56} ${cx - armpitX} ${armpitY}`}
@@ -326,105 +445,61 @@ export function TshirtTemplate({
             />
           )}
 
-          {/* Ribete cuello camiseta / suéter */}
-          {(subtype === 'tshirt' || subtype === 'sweater') && (
+          {/* Ribete cuello crew / v_neck */}
+          {neckline === 'crew' && (
             <path
               d={`M ${cx - neckHalf + 1} ${neckTopY + 2.5} C ${cx - neckHalf * 0.55} ${neckDropY + 2.8}, ${cx + neckHalf * 0.55} ${neckDropY + 2.8}, ${cx + neckHalf - 1} ${neckTopY + 2.5}`}
               fill="none"
-              stroke={seamColor}
-              strokeWidth="1.05"
+              stroke={bp.secondaryColorHex ?? seamColor}
+              strokeWidth={bp.secondaryColorHex ? '1.8' : '1.05'}
             />
           )}
 
-          {/* Camisa / polo: cuello doblado + botones */}
-          {(subtype === 'shirt' || subtype === 'polo') && (
+          {neckline === 'v_neck' && (
+            <path
+              d={`M ${cx - neckHalf + 1.5} ${neckTopY + 2.2} L ${cx} ${neckDropY + 7.5} L ${cx + neckHalf - 1.5} ${neckTopY + 2.2}`}
+              fill="none"
+              stroke={bp.secondaryColorHex ?? seamColor}
+              strokeWidth={bp.secondaryColorHex ? '1.7' : '1.05'}
+              strokeLinejoin="round"
+            />
+          )}
+
+          {/* Cuello doblado camisa / polo */}
+          {(neckline === 'shirt_collar' || neckline === 'polo') && (
+            <path
+              d={`M ${cx - neckHalf} ${neckTopY} L ${cx - neckHalf - 2.5} ${neckTopY + 11} L ${cx} ${neckDropY + 3.5} L ${cx + neckHalf + 2.5} ${neckTopY + 11} L ${cx + neckHalf} ${neckTopY}`}
+              fill={trimFill}
+              fillOpacity="0.96"
+              stroke={strokeColor}
+              strokeWidth="0.95"
+              strokeLinejoin="round"
+            />
+          )}
+
+          {/* Cierre de botones */}
+          {bp.closure === 'buttons' && (
             <>
-              <path
-                d={`M ${cx - neckHalf} ${neckTopY} L ${cx - neckHalf - 2.5} ${neckTopY + 11} L ${cx} ${neckDropY + 3.5} L ${cx + neckHalf + 2.5} ${neckTopY + 11} L ${cx + neckHalf} ${neckTopY}`}
-                fill={baseFill}
-                fillOpacity="0.96"
-                stroke={strokeColor}
-                strokeWidth="0.95"
-                strokeLinejoin="round"
-              />
               <line
                 x1={cx}
                 y1={neckDropY + 3.5}
                 x2={cx}
-                y2={subtype === 'polo' ? rig.chestY + 16 : hemY + 1.5}
+                y2={neckline === 'polo' ? rig.chestY + 16 : hemY + 1.5}
                 stroke={seamColor}
                 strokeWidth="0.95"
               />
-              {(subtype === 'polo' ? [0.16, 0.28] : [0.18, 0.34, 0.5, 0.66, 0.82]).map((ratio) => {
+              {(neckline === 'polo' ? [0.16, 0.28] : [0.18, 0.34, 0.5, 0.66, 0.82]).map((ratio) => {
                 const by = neckDropY + 5 + (hemY - neckDropY - 10) * ratio;
+                if (by > hemY - 4) return null;
                 return (
-                  <circle key={ratio} cx={cx} cy={by} r="1.45" fill={buttonColor} opacity="0.82" />
+                  <circle key={ratio} cx={cx} cy={by} r="1.45" fill={buttonColor} opacity="0.86" />
                 );
               })}
             </>
           )}
 
-          {/* Buzo / hoodie: cordones, bolsillo canguro y pretina */}
-          {subtype === 'hoodie' && (
-            <>
-              <path
-                d={`M ${cx - 4.5} ${neckDropY} Q ${cx - 5.2} ${rig.chestY + 4} ${cx - 4.8} ${rig.chestY + 15}`}
-                fill="none"
-                stroke={buttonColor}
-                strokeWidth="1.25"
-                strokeLinecap="round"
-                opacity="0.76"
-              />
-              <path
-                d={`M ${cx + 4.5} ${neckDropY} Q ${cx + 5.2} ${rig.chestY + 4} ${cx + 4.8} ${rig.chestY + 15}`}
-                fill="none"
-                stroke={buttonColor}
-                strokeWidth="1.25"
-                strokeLinecap="round"
-                opacity="0.76"
-              />
-              <path
-                d={`M ${cx - wHalf * 0.56} ${rig.waistY + 6} L ${cx + wHalf * 0.56} ${rig.waistY + 6} L ${cx + hemHalf * 0.66} ${hemY - 9} L ${cx - hemHalf * 0.66} ${hemY - 9} Z`}
-                fill="rgb(0 0 0 / 6%)"
-                stroke={seamColor}
-                strokeWidth="0.95"
-                strokeLinejoin="round"
-              />
-              <line
-                x1={cx - hemHalf + 1}
-                y1={hemY - 7.5}
-                x2={cx + hemHalf - 1}
-                y2={hemY - 7.5}
-                stroke={seamColor}
-                strokeWidth="1"
-              />
-            </>
-          )}
-
-          {/* Puños en manga larga */}
-          {isLongSleeve && (
-            <>
-              <line
-                x1={cx - arm.wrist.outerX - cuffEase + 0.8}
-                y1={arm.wrist.y - 6}
-                x2={cx - arm.wrist.innerX + cuffEase - 0.8}
-                y2={arm.wrist.y - 5}
-                stroke={seamColor}
-                strokeWidth="1"
-              />
-              <line
-                x1={cx + arm.wrist.innerX - cuffEase + 0.8}
-                y1={arm.wrist.y - 5}
-                x2={cx + arm.wrist.outerX + cuffEase - 0.8}
-                y2={arm.wrist.y - 6}
-                stroke={seamColor}
-                strokeWidth="1"
-              />
-            </>
-          )}
-
-          {/* Chaqueta: apertura frontal, solapas y bolsillos */}
-          {variant === 'jacket' && (
+          {/* Cierre de cremallera */}
+          {bp.closure === 'zipper' && (
             <>
               <line
                 x1={cx}
@@ -432,15 +507,125 @@ export function TshirtTemplate({
                 x2={cx}
                 y2={hemY + 1.5}
                 stroke={strokeColor}
-                strokeWidth="1.2"
+                strokeWidth="1.25"
+              />
+              <line
+                x1={cx}
+                y1={neckDropY + 2}
+                x2={cx}
+                y2={hemY}
+                stroke={buttonColor}
+                strokeWidth="1.15"
+                strokeDasharray="1.8 1.6"
+                opacity="0.82"
+              />
+              <rect
+                x={cx - 1.6}
+                y={neckDropY + 3.5}
+                width={3.2}
+                height={5.2}
+                rx={1}
+                fill={buttonColor}
+                opacity="0.9"
+              />
+            </>
+          )}
+
+          {/* Apertura frontal abierta */}
+          {bp.closure === 'open_front' && (
+            <line
+              x1={cx}
+              y1={neckDropY + 1}
+              x2={cx}
+              y2={hemY + 1.5}
+              stroke={strokeColor}
+              strokeWidth="1.25"
+            />
+          )}
+
+          {/* Solapas de chaqueta / blazer */}
+          {bp.hasLapels && (
+            <path
+              d={`M ${cx - neckHalf} ${neckTopY} L ${cx - 12} ${rig.chestY + 1} L ${cx} ${rig.chestY + 12} L ${cx + 12} ${rig.chestY + 1} L ${cx + neckHalf} ${neckTopY}`}
+              fill="rgb(0 0 0 / 6%)"
+              stroke={strokeColor}
+              strokeWidth="1"
+              strokeLinejoin="round"
+            />
+          )}
+
+          {/* Cordones de capucha */}
+          {bp.hasHood && (
+            <>
+              <path
+                d={`M ${cx - 4.5} ${neckDropY} Q ${cx - 5.2} ${rig.chestY + 4} ${cx - 4.8} ${rig.chestY + 15}`}
+                fill="none"
+                stroke={buttonColor}
+                strokeWidth="1.25"
+                strokeLinecap="round"
+                opacity="0.78"
               />
               <path
-                d={`M ${cx - neckHalf} ${neckTopY} L ${cx - 12} ${rig.chestY + 1} L ${cx} ${rig.chestY + 12} L ${cx + 12} ${rig.chestY + 1} L ${cx + neckHalf} ${neckTopY}`}
-                fill="rgb(0 0 0 / 6%)"
-                stroke={strokeColor}
-                strokeWidth="1"
-                strokeLinejoin="round"
+                d={`M ${cx + 4.5} ${neckDropY} Q ${cx + 5.2} ${rig.chestY + 4} ${cx + 4.8} ${rig.chestY + 15}`}
+                fill="none"
+                stroke={buttonColor}
+                strokeWidth="1.25"
+                strokeLinecap="round"
+                opacity="0.78"
               />
+            </>
+          )}
+
+          {/* Bolsillo canguro */}
+          {bp.pockets === 'kangaroo' && hemY > rig.waistY + 12 && (
+            <path
+              d={`M ${cx - wHalf * 0.56} ${rig.waistY + 6} L ${cx + wHalf * 0.56} ${rig.waistY + 6} L ${cx + hemHalf * 0.66} ${hemY - 9} L ${cx - hemHalf * 0.66} ${hemY - 9} Z`}
+              fill="rgb(0 0 0 / 6%)"
+              stroke={seamColor}
+              strokeWidth="0.95"
+              strokeLinejoin="round"
+            />
+          )}
+
+          {/* Bolsillo de pecho */}
+          {bp.pockets === 'chest' && (
+            <path
+              d={`M ${cx + 6} ${rig.chestY - 6} L ${cx + 16} ${rig.chestY - 6} L ${cx + 16} ${rig.chestY + 5} L ${cx + 11} ${rig.chestY + 7.5} L ${cx + 6} ${rig.chestY + 5} Z`}
+              fill="rgb(0 0 0 / 5%)"
+              stroke={seamColor}
+              strokeWidth="0.9"
+            />
+          )}
+
+          {/* Bolsillos parche inferiores */}
+          {bp.pockets === 'patch' && hemY > rig.waistY + 12 && (
+            <>
+              <rect
+                x={cx - hemHalf * 0.72}
+                y={rig.waistY + 9}
+                width={hemHalf * 0.36}
+                height={15}
+                rx={2}
+                fill="rgb(0 0 0 / 5%)"
+                stroke={seamColor}
+                strokeWidth="0.9"
+              />
+              <rect
+                x={cx + hemHalf * 0.36}
+                y={rig.waistY + 9}
+                width={hemHalf * 0.36}
+                height={15}
+                rx={2}
+                fill="rgb(0 0 0 / 5%)"
+                stroke={seamColor}
+                strokeWidth="0.9"
+              />
+            </>
+          )}
+
+          {/* Bolsillos laterales ribeteados */}
+          {bp.pockets === 'side' && hemY > rig.waistY + 10 && (
+            <>
               <line
                 x1={cx - hemHalf * 0.72}
                 y1={rig.waistY + 11}
@@ -460,29 +645,73 @@ export function TshirtTemplate({
             </>
           )}
 
-          {/* Vestido: corte de cintura y pliegues verticales */}
-          {variant === 'dress' && (
+          {/* Pretina / puños en canalé (ribbed trim) */}
+          {bp.hasRibbedTrim && !isFullLengthPiece && (
+            <line
+              x1={cx - hemHalf + 1}
+              y1={hemY - 7}
+              x2={cx + hemHalf - 1}
+              y2={hemY - 7}
+              stroke={bp.secondaryColorHex ?? seamColor}
+              strokeWidth={bp.secondaryColorHex ? '2.1' : '1.05'}
+            />
+          )}
+
+          {isLongSleeve && (
+            <>
+              <line
+                x1={cx - arm.wrist.outerX - cuffEase + 0.8}
+                y1={arm.wrist.y - 6}
+                x2={cx - arm.wrist.innerX + cuffEase - 0.8}
+                y2={arm.wrist.y - 5}
+                stroke={bp.hasRibbedTrim && bp.secondaryColorHex ? bp.secondaryColorHex : seamColor}
+                strokeWidth={bp.hasRibbedTrim && bp.secondaryColorHex ? '2' : '1'}
+              />
+              <line
+                x1={cx + arm.wrist.innerX - cuffEase + 0.8}
+                y1={arm.wrist.y - 5}
+                x2={cx + arm.wrist.outerX + cuffEase - 0.8}
+                y2={arm.wrist.y - 6}
+                stroke={bp.hasRibbedTrim && bp.secondaryColorHex ? bp.secondaryColorHex : seamColor}
+                strokeWidth={bp.hasRibbedTrim && bp.secondaryColorHex ? '2' : '1'}
+              />
+            </>
+          )}
+
+          {/* Vestido / prenda larga: corte de cintura y pliegues */}
+          {isFullLengthPiece && (
             <>
               <path
                 d={`M ${cx - wHalf + 1} ${rig.waistY} Q ${cx} ${rig.waistY + 3.5} ${cx + wHalf - 1} ${rig.waistY}`}
                 fill="none"
-                stroke={seamColor}
-                strokeWidth="0.95"
+                stroke={bp.closure === 'belt' ? buttonColor : seamColor}
+                strokeWidth={bp.closure === 'belt' ? '2.2' : '0.95'}
               />
-              <path
-                d={`M ${cx - wHalf * 0.44} ${rig.waistY + 6} Q ${cx - hemHalf * 0.42} ${rig.hipY + 20} ${cx - hemHalf * 0.45} ${hemY - 4}`}
-                fill="none"
-                stroke={seamColor}
-                strokeWidth="0.85"
-                opacity="0.65"
-              />
-              <path
-                d={`M ${cx + wHalf * 0.44} ${rig.waistY + 6} Q ${cx + hemHalf * 0.42} ${rig.hipY + 20} ${cx + hemHalf * 0.45} ${hemY - 4}`}
-                fill="none"
-                stroke={seamColor}
-                strokeWidth="0.85"
-                opacity="0.65"
-              />
+              {bp.hasPleats && (
+                <>
+                  <path
+                    d={`M ${cx - wHalf * 0.44} ${rig.waistY + 6} Q ${cx - hemHalf * 0.42} ${rig.hipY + 20} ${cx - hemHalf * 0.45} ${hemY - 4}`}
+                    fill="none"
+                    stroke={seamColor}
+                    strokeWidth="0.85"
+                    opacity="0.65"
+                  />
+                  <path
+                    d={`M ${cx} ${rig.waistY + 7} L ${cx} ${hemY - 5}`}
+                    fill="none"
+                    stroke={seamColor}
+                    strokeWidth="0.7"
+                    opacity="0.48"
+                  />
+                  <path
+                    d={`M ${cx + wHalf * 0.44} ${rig.waistY + 6} Q ${cx + hemHalf * 0.42} ${rig.hipY + 20} ${cx + hemHalf * 0.45} ${hemY - 4}`}
+                    fill="none"
+                    stroke={seamColor}
+                    strokeWidth="0.85"
+                    opacity="0.65"
+                  />
+                </>
+              )}
             </>
           )}
         </g>

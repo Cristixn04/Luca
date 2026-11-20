@@ -46,6 +46,7 @@ export function FittingRoom() {
           pattern: selected.garment.pattern,
           style: selected.garment.style,
           tags: selected.garment.tags,
+          visualSpec: selected.garment.visualSpec,
           imageUrl: selected.image?.dataUrl,
           backImageUrl: selected.image?.backDataUrl,
         };
