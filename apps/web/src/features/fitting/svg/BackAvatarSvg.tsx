@@ -13,10 +13,12 @@ export function BackAvatarSvg({
   garmentColorHex,
   outfitLayers,
   compact = false,
+  frameless = false,
+  patternIdSuffix,
 }: SingleAvatarViewProps) {
   const anchors = computeFrontAvatarAnchors(model);
   const cx = anchors.centerX;
-  const patternPrefix = 'back';
+  const patternPrefix = patternIdSuffix ? `back-${patternIdSuffix}` : 'back';
 
   const backHalfW = Math.max(anchors.chestHalfW, (model.backWidthCm / 2) * anchors.scale);
 
@@ -44,6 +46,101 @@ export function BackAvatarSvg({
 
   const isBackEstimated = model.backWidthEstimated || model.backLengthEstimated;
 
+  const svgNode = (
+    <svg
+      viewBox={`0 0 ${AVATAR_VIEWBOX.width} ${AVATAR_VIEWBOX.height}`}
+      className={frameless ? 'h-full w-auto max-w-full' : 'h-auto w-full'}
+      role="img"
+      aria-label="Avatar paramétrico de espalda con mapa de calor de calce"
+    >
+      <HeatmapPatternDefs prefix={patternPrefix} />
+
+      {!frameless && (
+        <line
+          x1={cx}
+          y1={anchors.neckY}
+          x2={cx}
+          y2={anchors.waistY}
+          stroke="var(--border)"
+          strokeWidth="1.2"
+          strokeDasharray="3 3"
+        />
+      )}
+
+      <circle
+        cx={cx}
+        cy={anchors.headCenterY}
+        r={anchors.headRadius}
+        fill="var(--surface)"
+        stroke="var(--muted)"
+        strokeWidth="1.5"
+      />
+
+      <path
+        d={torsoPath}
+        fill="var(--surface)"
+        stroke="var(--muted)"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        data-avatar-body="back"
+      />
+
+      {outfitLayers ? (
+        <>
+          {outfitLayers.bottomFitReport && (
+            <BackPantsTemplate
+              anchors={anchors}
+              fitReport={outfitLayers.bottomFitReport}
+              showHeatmap={showHeatmap}
+              patternPrefix={patternPrefix}
+              garmentColorHex={outfitLayers.bottomColorHex}
+              variant={outfitLayers.bottomVariant}
+            />
+          )}
+          {outfitLayers.topFitReport && (
+            <BackTshirtTemplate
+              model={model}
+              anchors={anchors}
+              fitReport={outfitLayers.topFitReport}
+              showHeatmap={showHeatmap}
+              patternPrefix={patternPrefix}
+              garmentColorHex={outfitLayers.topColorHex}
+              variant={outfitLayers.topVariant}
+            />
+          )}
+        </>
+      ) : (
+        <>
+          {fitReport && !isLowerCategory(garmentCategory) && (
+            <BackTshirtTemplate
+              model={model}
+              anchors={anchors}
+              fitReport={fitReport}
+              showHeatmap={showHeatmap}
+              patternPrefix={patternPrefix}
+              garmentColorHex={garmentColorHex}
+              variant={garmentCategory}
+            />
+          )}
+          {fitReport && isLowerCategory(garmentCategory) && (
+            <BackPantsTemplate
+              anchors={anchors}
+              fitReport={fitReport}
+              showHeatmap={showHeatmap}
+              patternPrefix={patternPrefix}
+              garmentColorHex={garmentColorHex}
+              variant={garmentCategory}
+            />
+          )}
+        </>
+      )}
+    </svg>
+  );
+
+  if (frameless) {
+    return svgNode;
+  }
+
   return (
     <div
       data-avatar-view="back"
@@ -55,94 +152,7 @@ export function BackAvatarSvg({
           <Badge data-estimated-badge="back">Espalda: estimado</Badge>
         )}
       </div>
-
-      <svg
-        viewBox={`0 0 ${AVATAR_VIEWBOX.width} ${AVATAR_VIEWBOX.height}`}
-        className="h-auto w-full"
-        role="img"
-        aria-label="Avatar paramétrico de espalda con mapa de calor de calce"
-      >
-        <HeatmapPatternDefs prefix={patternPrefix} />
-
-        {/* Línea de columna central */}
-        <line
-          x1={cx}
-          y1={anchors.neckY}
-          x2={cx}
-          y2={anchors.waistY}
-          stroke="var(--border)"
-          strokeWidth="1.2"
-          strokeDasharray="3 3"
-        />
-
-        <circle
-          cx={cx}
-          cy={anchors.headCenterY}
-          r={anchors.headRadius}
-          fill="var(--surface)"
-          stroke="var(--muted)"
-          strokeWidth="1.5"
-        />
-
-        <path
-          d={torsoPath}
-          fill="var(--surface)"
-          stroke="var(--muted)"
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-          data-avatar-body="back"
-        />
-
-        {outfitLayers ? (
-          <>
-            {outfitLayers.bottomFitReport && (
-              <BackPantsTemplate
-                anchors={anchors}
-                fitReport={outfitLayers.bottomFitReport}
-                showHeatmap={showHeatmap}
-                patternPrefix={patternPrefix}
-                garmentColorHex={outfitLayers.bottomColorHex}
-                variant={outfitLayers.bottomVariant}
-              />
-            )}
-            {outfitLayers.topFitReport && (
-              <BackTshirtTemplate
-                model={model}
-                anchors={anchors}
-                fitReport={outfitLayers.topFitReport}
-                showHeatmap={showHeatmap}
-                patternPrefix={patternPrefix}
-                garmentColorHex={outfitLayers.topColorHex}
-                variant={outfitLayers.topVariant}
-              />
-            )}
-          </>
-        ) : (
-          <>
-            {fitReport && !isLowerCategory(garmentCategory) && (
-              <BackTshirtTemplate
-                model={model}
-                anchors={anchors}
-                fitReport={fitReport}
-                showHeatmap={showHeatmap}
-                patternPrefix={patternPrefix}
-                garmentColorHex={garmentColorHex}
-                variant={garmentCategory}
-              />
-            )}
-            {fitReport && isLowerCategory(garmentCategory) && (
-              <BackPantsTemplate
-                anchors={anchors}
-                fitReport={fitReport}
-                showHeatmap={showHeatmap}
-                patternPrefix={patternPrefix}
-                garmentColorHex={garmentColorHex}
-                variant={garmentCategory}
-              />
-            )}
-          </>
-        )}
-      </svg>
+      {svgNode}
     </div>
   );
 }

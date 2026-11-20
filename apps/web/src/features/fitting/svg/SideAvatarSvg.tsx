@@ -14,10 +14,12 @@ export function SideAvatarSvg({
   garmentColorHex,
   outfitLayers,
   compact = false,
+  frameless = false,
+  patternIdSuffix,
 }: SingleAvatarViewProps) {
   const anchors = computeSideAvatarAnchors(model);
   const cx = anchors.centerX;
-  const patternPrefix = 'side';
+  const patternPrefix = patternIdSuffix ? `side-${patternIdSuffix}` : 'side';
 
   const profilePath = [
     `M ${cx - 6} ${anchors.neckY}`,
@@ -38,6 +40,104 @@ export function SideAvatarSvg({
     model.sections.waist.depthEstimated ||
     model.sections.hip.depthEstimated;
 
+  const svgNode = (
+    <svg
+      viewBox={`0 0 ${AVATAR_VIEWBOX.width} ${AVATAR_VIEWBOX.height}`}
+      className={frameless ? 'h-full w-auto max-w-full' : 'h-auto w-full'}
+      role="img"
+      aria-label="Avatar paramétrico de perfil con mapa de calor de calce"
+    >
+      <HeatmapPatternDefs prefix={patternPrefix} />
+
+      {!frameless && (
+        <line
+          x1={cx}
+          y1={AVATAR_VIEWBOX.topPadding}
+          x2={cx}
+          y2={anchors.ankleY}
+          stroke="var(--border)"
+          strokeWidth="1"
+          strokeDasharray="4 4"
+        />
+      )}
+
+      <circle
+        cx={cx + 2}
+        cy={anchors.headCenterY}
+        r={anchors.headRadius}
+        fill="var(--surface)"
+        stroke="var(--muted)"
+        strokeWidth="1.5"
+      />
+
+      <path
+        d={profilePath}
+        fill="var(--surface)"
+        stroke="var(--muted)"
+        strokeWidth="1.5"
+        strokeDasharray={anyDepthEstimated ? '5 3' : undefined}
+        strokeLinejoin="round"
+        data-avatar-body="side"
+      />
+
+      {outfitLayers ? (
+        <>
+          {outfitLayers.bottomFitReport && (
+            <SidePantsTemplate
+              model={model}
+              anchors={anchors}
+              fitReport={outfitLayers.bottomFitReport}
+              showHeatmap={showHeatmap}
+              patternPrefix={patternPrefix}
+              garmentColorHex={outfitLayers.bottomColorHex}
+              variant={outfitLayers.bottomVariant}
+            />
+          )}
+          {outfitLayers.topFitReport && (
+            <SideTshirtTemplate
+              model={model}
+              anchors={anchors}
+              fitReport={outfitLayers.topFitReport}
+              showHeatmap={showHeatmap}
+              patternPrefix={patternPrefix}
+              garmentColorHex={outfitLayers.topColorHex}
+              variant={outfitLayers.topVariant}
+            />
+          )}
+        </>
+      ) : (
+        <>
+          {fitReport && !isLowerCategory(garmentCategory) && (
+            <SideTshirtTemplate
+              model={model}
+              anchors={anchors}
+              fitReport={fitReport}
+              showHeatmap={showHeatmap}
+              patternPrefix={patternPrefix}
+              garmentColorHex={garmentColorHex}
+              variant={garmentCategory}
+            />
+          )}
+          {fitReport && isLowerCategory(garmentCategory) && (
+            <SidePantsTemplate
+              model={model}
+              anchors={anchors}
+              fitReport={fitReport}
+              showHeatmap={showHeatmap}
+              patternPrefix={patternPrefix}
+              garmentColorHex={garmentColorHex}
+              variant={garmentCategory}
+            />
+          )}
+        </>
+      )}
+    </svg>
+  );
+
+  if (frameless) {
+    return svgNode;
+  }
+
   return (
     <div
       data-avatar-view="side"
@@ -49,96 +149,7 @@ export function SideAvatarSvg({
           <Badge data-estimated-badge="side">Fondo: estimado</Badge>
         )}
       </div>
-
-      <svg
-        viewBox={`0 0 ${AVATAR_VIEWBOX.width} ${AVATAR_VIEWBOX.height}`}
-        className="h-auto w-full"
-        role="img"
-        aria-label="Avatar paramétrico de perfil con mapa de calor de calce"
-      >
-        <HeatmapPatternDefs prefix={patternPrefix} />
-
-        <line
-          x1={cx}
-          y1={AVATAR_VIEWBOX.topPadding}
-          x2={cx}
-          y2={anchors.ankleY}
-          stroke="var(--border)"
-          strokeWidth="1"
-          strokeDasharray="4 4"
-        />
-
-        <circle
-          cx={cx + 2}
-          cy={anchors.headCenterY}
-          r={anchors.headRadius}
-          fill="var(--surface)"
-          stroke="var(--muted)"
-          strokeWidth="1.5"
-        />
-
-        <path
-          d={profilePath}
-          fill="var(--surface)"
-          stroke="var(--muted)"
-          strokeWidth="1.5"
-          strokeDasharray={anyDepthEstimated ? '5 3' : undefined}
-          strokeLinejoin="round"
-          data-avatar-body="side"
-        />
-
-        {outfitLayers ? (
-          <>
-            {outfitLayers.bottomFitReport && (
-              <SidePantsTemplate
-                model={model}
-                anchors={anchors}
-                fitReport={outfitLayers.bottomFitReport}
-                showHeatmap={showHeatmap}
-                patternPrefix={patternPrefix}
-                garmentColorHex={outfitLayers.bottomColorHex}
-                variant={outfitLayers.bottomVariant}
-              />
-            )}
-            {outfitLayers.topFitReport && (
-              <SideTshirtTemplate
-                model={model}
-                anchors={anchors}
-                fitReport={outfitLayers.topFitReport}
-                showHeatmap={showHeatmap}
-                patternPrefix={patternPrefix}
-                garmentColorHex={outfitLayers.topColorHex}
-                variant={outfitLayers.topVariant}
-              />
-            )}
-          </>
-        ) : (
-          <>
-            {fitReport && !isLowerCategory(garmentCategory) && (
-              <SideTshirtTemplate
-                model={model}
-                anchors={anchors}
-                fitReport={fitReport}
-                showHeatmap={showHeatmap}
-                patternPrefix={patternPrefix}
-                garmentColorHex={garmentColorHex}
-                variant={garmentCategory}
-              />
-            )}
-            {fitReport && isLowerCategory(garmentCategory) && (
-              <SidePantsTemplate
-                model={model}
-                anchors={anchors}
-                fitReport={fitReport}
-                showHeatmap={showHeatmap}
-                patternPrefix={patternPrefix}
-                garmentColorHex={garmentColorHex}
-                variant={garmentCategory}
-              />
-            )}
-          </>
-        )}
-      </svg>
+      {svgNode}
     </div>
   );
 }

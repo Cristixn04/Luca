@@ -1,13 +1,111 @@
 :root {
   color-scheme: light dark;
 
-  --bg: light-dark(#faf9f7, #111315);
-  --surface: light-dark(#ffffff, #1a1d20);
-  --ink: light-dark(#1b1f23, #eceef0);
-  --muted: light-dark(#5b6670, #9aa4ad);
-  --accent: light-dark(#1f5f6b, #5fb3c0);
-  --accent-ink: light-dark(#ffffff, #111315);
-  --border: light-dark(#e4e0da, #2a2f34);
+  /* Raw theme values for light-dark() and prefers-color-scheme fallback */
+  --bg-light: #ffffff;
+  --bg-dark: #181818;
+  --surface-light: #ffffff;
+  --surface-dark: #202020;
+  --ink-light: #151413;
+  --ink-dark: #f2f1ee;
+  --muted-light: #66625c;
+  --muted-dark: #a3a09a;
+  --accent-light: #1f5f6b;
+  --accent-dark: #5fb3c0;
+  --accent-ink-light: #ffffff;
+  --accent-ink-dark: #141414;
+  --border-light: #d4d4d4;
+  --border-dark: #343434;
+
+  /* Fallback for browsers without light-dark() support */
+  --bg: var(--bg-light);
+  --surface: var(--surface-light);
+  --ink: var(--ink-light);
+  --muted: var(--muted-light);
+  --accent: var(--accent-light);
+  --accent-ink: var(--accent-ink-light);
+  --border: var(--border-light);
+
+  /* Editorial Runway & Interactive Studio Stage Tokens */
+  --rw-stage: #ffffff;
+  --rw-panel: #ffffff;
+  --rw-ink: #151413;
+  --rw-muted: #66625c;
+  --rw-line: #c8c8c8;
+  --rw-card: #ececec;
+  --rw-cta: #0e0e0e;
+  --rw-cta-ink: #ffffff;
+  --rw-shadow-color: rgb(0 0 0 / 16%);
+  --rw-sweep-primary: rgb(21 20 19 / 5.5%);
+  --rw-sweep-secondary: rgb(21 20 19 / 2.2%);
+  --rw-floor-tint: rgb(21 20 19 / 4.2%);
+  --rw-overhead-glow: rgb(255 255 255 / 90%);
+  --rw-cursor-bg: rgb(21 20 19 / 3.5%);
+  --rw-cursor-ring: rgb(21 20 19 / 14%);
+
+  --scrollbar-track: #f2f2f2;
+  --scrollbar-thumb: #9e9b95;
+
+  @media (prefers-color-scheme: dark) {
+    --bg: var(--bg-dark);
+    --surface: var(--surface-dark);
+    --ink: var(--ink-dark);
+    --muted: var(--muted-dark);
+    --accent: var(--accent-dark);
+    --accent-ink: var(--accent-ink-dark);
+    --border: var(--border-dark);
+
+    --rw-stage: #181818;
+    --rw-panel: #1e1e1e;
+    --rw-ink: #f2f1ee;
+    --rw-muted: #a3a09a;
+    --rw-line: #343434;
+    --rw-card: #282828;
+    --rw-cta: #f2f1ee;
+    --rw-cta-ink: #141414;
+    --rw-shadow-color: rgb(0 0 0 / 56%);
+    --rw-sweep-primary: rgb(255 255 255 / 6.5%);
+    --rw-sweep-secondary: rgb(255 255 255 / 2.6%);
+    --rw-floor-tint: rgb(0 0 0 / 32%);
+    --rw-overhead-glow: rgb(255 255 255 / 4%);
+    --rw-cursor-bg: rgb(255 255 255 / 5%);
+    --rw-cursor-ring: rgb(255 255 255 / 18%);
+
+    --scrollbar-track: #181818;
+    --scrollbar-thumb: #525252;
+  }
+
+  @supports (color: light-dark(white, black)) {
+    --bg: light-dark(var(--bg-light), var(--bg-dark));
+    --surface: light-dark(var(--surface-light), var(--surface-dark));
+    --ink: light-dark(var(--ink-light), var(--ink-dark));
+    --muted: light-dark(var(--muted-light), var(--muted-dark));
+    --accent: light-dark(var(--accent-light), var(--accent-dark));
+    --accent-ink: light-dark(var(--accent-ink-light), var(--accent-ink-dark));
+    --border: light-dark(var(--border-light), var(--border-dark));
+
+    --rw-stage: light-dark(#ffffff, #181818);
+    --rw-panel: light-dark(#ffffff, #1e1e1e);
+    --rw-ink: light-dark(#151413, #f2f1ee);
+    --rw-muted: light-dark(#66625c, #a3a09a);
+    --rw-line: light-dark(#c8c8c8, #343434);
+    --rw-card: light-dark(#ececec, #282828);
+    --rw-cta: light-dark(#0e0e0e, #f2f1ee);
+    --rw-cta-ink: light-dark(#ffffff, #141414);
+    --rw-shadow-color: light-dark(rgb(0 0 0 / 16%), rgb(0 0 0 / 56%));
+    --rw-sweep-primary: light-dark(rgb(21 20 19 / 5.5%), rgb(255 255 255 / 6.5%));
+    --rw-sweep-secondary: light-dark(rgb(21 20 19 / 2.2%), rgb(255 255 255 / 2.6%));
+    --rw-floor-tint: light-dark(rgb(21 20 19 / 4.2%), rgb(0 0 0 / 32%));
+    --rw-overhead-glow: light-dark(rgb(255 255 255 / 90%), rgb(255 255 255 / 4%));
+    --rw-cursor-bg: light-dark(rgb(21 20 19 / 3.5%), rgb(255 255 255 / 5%));
+    --rw-cursor-ring: light-dark(rgb(21 20 19 / 14%), rgb(255 255 255 / 18%));
+
+    --scrollbar-track: light-dark(#f2f2f2, #181818);
+    --scrollbar-thumb: light-dark(#9e9b95, #525252);
+  }
+
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  accent-color: var(--accent);
 
   /* Mapa de calor accesible para daltonismo */
   --fit-tense: #c2410c;
@@ -25,7 +123,10 @@
 
   --motion-fast: 150ms;
   --motion-normal: 220ms;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-runway: 560ms;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-runway: cubic-bezier(0.22, 1, 0.36, 1);
 
   &:has(> head > meta[name='color-scheme'][content='dark']) {
     color-scheme: dark;
@@ -40,5 +141,6 @@
   :root {
     --motion-fast: 0ms;
     --motion-normal: 0ms;
+    --motion-runway: 160ms;
   }
 }

@@ -12,22 +12,22 @@ export interface ThemePalette {
 
 export const COLOR_TOKENS = {
   light: {
-    bg: '#FAF9F7',
+    bg: '#FFFFFF',
     surface: '#FFFFFF',
-    ink: '#1B1F23',
-    muted: '#5B6670',
+    ink: '#151413',
+    muted: '#66625C',
     accent: '#1F5F6B',
     accentInk: '#FFFFFF',
-    border: '#E4E0DA',
+    border: '#D4D4D4',
   },
   dark: {
-    bg: '#111315',
-    surface: '#1A1D20',
-    ink: '#ECEEF0',
-    muted: '#9AA4AD',
+    bg: '#181818',
+    surface: '#202020',
+    ink: '#F2F1EE',
+    muted: '#A3A09A',
     accent: '#5FB3C0',
-    accentInk: '#111315',
-    border: '#2A2F34',
+    accentInk: '#141414',
+    border: '#343434',
   },
 } as const satisfies Record<'light' | 'dark', ThemePalette>;
 

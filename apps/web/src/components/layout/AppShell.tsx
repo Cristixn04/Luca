@@ -19,6 +19,7 @@ import { cn } from '@/design-system/utils';
 import { useFittingStore } from '@/features/fitting/store';
 import type { UiVaultStatus } from '@/features/vault/vaultStore';
 import { useI18nStore, useT } from '@/i18n/i18nStore';
+import { InteractiveStageBackground } from './InteractiveStageBackground';
 
 export type NavSection = 'fitting' | 'closet' | 'outfits' | 'color' | 'memory' | 'privacy';
 
@@ -67,12 +68,14 @@ export function AppShell({
   };
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg text-ink">
+    <div className="relative flex min-h-dvh flex-col bg-transparent text-ink">
+      <InteractiveStageBackground />
+
       <a href="#contenido-principal" className="skip-link">
         {t.header.skipToMain}
       </a>
 
-      <header className="border-b border-border bg-surface">
+      <header className="relative z-10 border-b border-border bg-surface/85 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
             <a
@@ -210,7 +213,7 @@ export function AppShell({
       {vaultStatus === 'plaintext' && (
         <div
           role="status"
-          className="border-b border-border bg-surface px-4 py-2 text-xs text-muted"
+          className="relative z-10 border-b border-border bg-surface/90 px-4 py-2 text-xs text-muted"
         >
           <div className="mx-auto flex w-full max-w-6xl items-center gap-2 sm:px-2">
             <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-[#E0A526]" aria-hidden="true" />
@@ -219,11 +222,17 @@ export function AppShell({
         </div>
       )}
 
-      <main id="contenido-principal" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
+      <main
+        id="contenido-principal"
+        className={cn(
+          'relative z-10 mx-auto w-full flex-1 px-4 py-6 sm:px-6 sm:py-8',
+          activeSection === 'outfits' ? 'max-w-[1360px]' : 'max-w-6xl',
+        )}
+      >
         {children}
       </main>
 
-      <footer className="border-t border-border bg-surface">
+      <footer className="relative z-10 border-t border-border bg-surface/85 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 text-xs text-muted sm:px-6">
           <span>{t.footer.localPromise}</span>
           <div className="flex flex-wrap items-center gap-3">

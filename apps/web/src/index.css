@@ -88,3 +88,167 @@ dialog::backdrop {
 .vault-input:user-invalid {
   border-color: #c2410c;
 }
+
+/* Global Interactive Studio Cyclorama Backdrop */
+.luca-studio-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background-color: var(--bg);
+}
+
+.luca-studio-cyclorama {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      92% 54% at 50% 0%,
+      var(--rw-overhead-glow) 0%,
+      transparent 70%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 56%,
+      var(--rw-floor-tint) 100%
+    );
+}
+
+.luca-studio-horizon {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 36vh;
+  background: radial-gradient(
+    75% 100% at 50% 100%,
+    var(--rw-sweep-secondary) 0%,
+    transparent 74%
+  );
+}
+
+.luca-studio-sweep {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 760px;
+  height: 760px;
+  margin-top: -380px;
+  margin-left: -380px;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at center,
+    var(--rw-sweep-primary) 0%,
+    var(--rw-sweep-secondary) 38%,
+    transparent 72%
+  );
+  opacity: 0;
+  transition: opacity 420ms var(--ease-out);
+  will-change: transform, opacity;
+}
+
+.luca-studio-sweep.is-active {
+  opacity: 1;
+}
+
+.luca-studio-sheen {
+  position: absolute;
+  inset-inline: -12%;
+  bottom: 4%;
+  height: 28vh;
+  background: radial-gradient(
+    42% 65% at 50% 55%,
+    var(--rw-sweep-primary) 0%,
+    transparent 74%
+  );
+  opacity: 0.7;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .luca-studio-sweep,
+  .luca-studio-sheen {
+    transition: none;
+    will-change: auto;
+  }
+}
+
+/* Runway 3D Ring Carousel & Editorial Outfits */
+.rw-actor {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform-origin: center bottom;
+  transition: opacity 220ms ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rw-actor {
+    transition:
+      transform var(--motion-runway) var(--ease-runway),
+      opacity 360ms var(--ease-out),
+      filter 420ms var(--ease-out);
+  }
+}
+
+.rw-floor-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 68%;
+  height: 22px;
+  transform: translateX(-50%);
+  border-radius: 9999px;
+  background: radial-gradient(
+    ellipse at center,
+    var(--rw-shadow-color) 0%,
+    transparent 72%
+  );
+  pointer-events: none;
+}
+
+.rw-stage-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 38px;
+  height: 38px;
+  margin-top: -19px;
+  margin-left: -19px;
+  border-radius: 9999px;
+  background: var(--rw-cursor-bg);
+  border: 1px solid var(--rw-cursor-ring);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms var(--ease-out);
+  z-index: 40;
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .rw-stage-cursor {
+    display: block;
+  }
+  .rw-stage-cursor.is-visible {
+    opacity: 1;
+  }
+}
+
+@keyframes rw-tick-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.rw-tick-progress {
+  transform-origin: left center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rw-tick-progress.is-running {
+    animation: rw-tick-fill 5000ms linear infinite;
+  }
+}

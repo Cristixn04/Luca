@@ -27,6 +27,8 @@ export interface SingleAvatarViewProps {
   garmentColorHex?: string;
   outfitLayers?: OutfitLayerOverlay;
   compact?: boolean;
+  frameless?: boolean;
+  patternIdSuffix?: string;
 }
 
 export function FrontAvatarSvg({
@@ -37,10 +39,12 @@ export function FrontAvatarSvg({
   garmentColorHex,
   outfitLayers,
   compact = false,
+  frameless = false,
+  patternIdSuffix,
 }: SingleAvatarViewProps) {
   const anchors = computeFrontAvatarAnchors(model);
   const cx = anchors.centerX;
-  const patternPrefix = 'front';
+  const patternPrefix = patternIdSuffix ? `front-${patternIdSuffix}` : 'front';
 
   const torsoPath = [
     `M ${cx - anchors.neckHalfW} ${anchors.neckY}`,
@@ -66,6 +70,99 @@ export function FrontAvatarSvg({
 
   const isTorsoEstimated = model.landmarks.torsoEstimated;
 
+  const svgNode = (
+    <svg
+      viewBox={`0 0 ${AVATAR_VIEWBOX.width} ${AVATAR_VIEWBOX.height}`}
+      className={frameless ? 'h-full w-auto max-w-full' : 'h-auto w-full'}
+      role="img"
+      aria-label="Avatar paramétrico de frente con mapa de calor de calce"
+    >
+      <HeatmapPatternDefs prefix={patternPrefix} />
+
+      {!frameless && (
+        <line
+          x1={cx}
+          y1={AVATAR_VIEWBOX.topPadding}
+          x2={cx}
+          y2={anchors.ankleY}
+          stroke="var(--border)"
+          strokeWidth="1"
+          strokeDasharray="4 4"
+        />
+      )}
+
+      <circle
+        cx={cx}
+        cy={anchors.headCenterY}
+        r={anchors.headRadius}
+        fill="var(--surface)"
+        stroke="var(--muted)"
+        strokeWidth="1.5"
+      />
+
+      <path
+        d={torsoPath}
+        fill="var(--surface)"
+        stroke="var(--muted)"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        data-avatar-body="front"
+      />
+
+      {outfitLayers ? (
+        <>
+          {outfitLayers.bottomFitReport && (
+            <PantsTemplate
+              anchors={anchors}
+              fitReport={outfitLayers.bottomFitReport}
+              showHeatmap={showHeatmap}
+              patternPrefix={patternPrefix}
+              garmentColorHex={outfitLayers.bottomColorHex}
+              variant={outfitLayers.bottomVariant}
+            />
+          )}
+          {outfitLayers.topFitReport && (
+            <TshirtTemplate
+              anchors={anchors}
+              fitReport={outfitLayers.topFitReport}
+              showHeatmap={showHeatmap}
+              patternPrefix={patternPrefix}
+              garmentColorHex={outfitLayers.topColorHex}
+              variant={outfitLayers.topVariant}
+            />
+          )}
+        </>
+      ) : (
+        <>
+          {fitReport && !isLowerCategory(garmentCategory) && (
+            <TshirtTemplate
+              anchors={anchors}
+              fitReport={fitReport}
+              showHeatmap={showHeatmap}
+              patternPrefix={patternPrefix}
+              garmentColorHex={garmentColorHex}
+              variant={garmentCategory}
+            />
+          )}
+          {fitReport && isLowerCategory(garmentCategory) && (
+            <PantsTemplate
+              anchors={anchors}
+              fitReport={fitReport}
+              showHeatmap={showHeatmap}
+              patternPrefix={patternPrefix}
+              garmentColorHex={garmentColorHex}
+              variant={garmentCategory}
+            />
+          )}
+        </>
+      )}
+    </svg>
+  );
+
+  if (frameless) {
+    return svgNode;
+  }
+
   return (
     <div
       data-avatar-view="front"
@@ -77,91 +174,7 @@ export function FrontAvatarSvg({
           <Badge data-estimated-badge="front">Torso: estimado</Badge>
         )}
       </div>
-
-      <svg
-        viewBox={`0 0 ${AVATAR_VIEWBOX.width} ${AVATAR_VIEWBOX.height}`}
-        className="h-auto w-full"
-        role="img"
-        aria-label="Avatar paramétrico de frente con mapa de calor de calce"
-      >
-        <HeatmapPatternDefs prefix={patternPrefix} />
-
-        <line
-          x1={cx}
-          y1={AVATAR_VIEWBOX.topPadding}
-          x2={cx}
-          y2={anchors.ankleY}
-          stroke="var(--border)"
-          strokeWidth="1"
-          strokeDasharray="4 4"
-        />
-
-        <circle
-          cx={cx}
-          cy={anchors.headCenterY}
-          r={anchors.headRadius}
-          fill="var(--surface)"
-          stroke="var(--muted)"
-          strokeWidth="1.5"
-        />
-
-        <path
-          d={torsoPath}
-          fill="var(--surface)"
-          stroke="var(--muted)"
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-          data-avatar-body="front"
-        />
-
-        {outfitLayers ? (
-          <>
-            {outfitLayers.bottomFitReport && (
-              <PantsTemplate
-                anchors={anchors}
-                fitReport={outfitLayers.bottomFitReport}
-                showHeatmap={showHeatmap}
-                patternPrefix={patternPrefix}
-                garmentColorHex={outfitLayers.bottomColorHex}
-                variant={outfitLayers.bottomVariant}
-              />
-            )}
-            {outfitLayers.topFitReport && (
-              <TshirtTemplate
-                anchors={anchors}
-                fitReport={outfitLayers.topFitReport}
-                showHeatmap={showHeatmap}
-                patternPrefix={patternPrefix}
-                garmentColorHex={outfitLayers.topColorHex}
-                variant={outfitLayers.topVariant}
-              />
-            )}
-          </>
-        ) : (
-          <>
-            {fitReport && !isLowerCategory(garmentCategory) && (
-              <TshirtTemplate
-                anchors={anchors}
-                fitReport={fitReport}
-                showHeatmap={showHeatmap}
-                patternPrefix={patternPrefix}
-                garmentColorHex={garmentColorHex}
-                variant={garmentCategory}
-              />
-            )}
-            {fitReport && isLowerCategory(garmentCategory) && (
-              <PantsTemplate
-                anchors={anchors}
-                fitReport={fitReport}
-                showHeatmap={showHeatmap}
-                patternPrefix={patternPrefix}
-                garmentColorHex={garmentColorHex}
-                variant={garmentCategory}
-              />
-            )}
-          </>
-        )}
-      </svg>
+      {svgNode}
     </div>
   );
 }

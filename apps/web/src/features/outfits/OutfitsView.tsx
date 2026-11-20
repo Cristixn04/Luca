@@ -3,19 +3,18 @@ import {
   OCCASION_RULES,
   OUTFIT_OCCASIONS,
   createBodyModel,
-  evaluateGarmentFit,
   generateDiverseOutfits,
-  getGarmentSlot,
   validateBodyMeasurements,
   type OutfitOccasion,
   type OutfitProposal,
 } from '@luca/domain';
 import {
-  Bookmark,
+  ArrowRight,
   CalendarCheck,
   CloudSun,
   Heart,
   LocateFixed,
+  Plus,
   Shirt,
   Sparkles,
   ThumbsDown,
@@ -23,17 +22,13 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { Badge } from '@/design-system/components/Badge';
-import { Button } from '@/design-system/components/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/design-system/components/Card';
 import { useClosetStore } from '@/features/closet/closetStore';
 import { CATEGORY_LABELS, type GarmentDraft, type GarmentWithSizes } from '@/features/closet/types';
 import { getActiveSeasonId, useColorStore } from '@/features/color/colorStore';
 import { useFittingStore, type ViewerMode } from '@/features/fitting/store';
-import { AvatarViewer } from '@/features/fitting/svg/AvatarViewer';
-import type { OutfitLayerOverlay } from '@/features/fitting/svg/FrontAvatarSvg';
 import { useTasteStore } from '@/features/taste/tasteStore';
 import { fetchWeatherByCoordinates } from '@/infrastructure/api-client/client';
+import { OutfitRunwayCarousel } from './OutfitRunwayCarousel';
 import { toOutfitGarmentInputs, useOutfitsStore } from './outfitsStore';
 
 const CITY_PRESETS: readonly { label: string; tempC: number }[] = [
@@ -141,17 +136,26 @@ export interface OutfitsViewProps {
   onOpenGarmentInCloset?: (garmentId: string) => void;
 }
 
-function ScoreBar({ label, value }: { label: string; value: number }) {
+function isLightHex(hex: string | undefined): boolean {
+  if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) return false;
+  const r = Number.parseInt(hex.slice(1, 3), 16);
+  const g = Number.parseInt(hex.slice(3, 5), 16);
+  const b = Number.parseInt(hex.slice(5, 7), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.68;
+}
+
+function EditorialScoreBar({ label, value }: { label: string; value: number }) {
+  const clamped = Math.max(0, Math.min(100, value));
   return (
-    <div className="flex flex-col gap-1 text-xs">
+    <div className="flex flex-col gap-1 text-[11px]">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-muted">{label}</span>
-        <span className="tabular-nums font-semibold text-ink">{value}</span>
+        <span className="text-[var(--rw-muted)]">{label}</span>
+        <span className="tabular-nums font-medium text-[var(--rw-ink)]">{value}</span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-border/60">
+      <div className="h-[2px] w-full overflow-hidden bg-[var(--rw-line)]/70">
         <div
-          className="h-full rounded-full bg-accent transition-all"
-          style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
+          className="h-full bg-[var(--rw-ink)] transition-[width] duration-300 ease-[var(--ease-out)]"
+          style={{ width: `${clamped}%` }}
         />
       </div>
     </div>
@@ -198,6 +202,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [seedingDemo, setSeedingDemo] = useState(false);
+  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!closetLoaded) void loadCloset();
@@ -249,76 +254,20 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
       count: 6,
     });
     const visible = raw.filter((p) => !dismissedIds.includes(p.id));
-    return (visible.length > 0 ? visible : raw).slice(0, 3);
-  }, [activeSeasonId, bodyModel, dismissedIds, fitPreference, garmentInputs, occasion, tasteProfile, temperatureC]);
+    return (visible.length > 0 ? visible : raw).slice(0, 6);
+  }, [
+    activeSeasonId,
+    bodyModel,
+    dismissedIds,
+    fitPreference,
+    garmentInputs,
+    occasion,
+    tasteProfile,
+    temperatureC,
+  ]);
 
-  const activeProposal: OutfitProposal | null =
-    proposals[Math.min(selectedIndex, Math.max(0, proposals.length - 1))] ?? null;
-
-  const outfitLayers: OutfitLayerOverlay | undefined = useMemo(() => {
-    if (!bodyModel || !activeProposal) return undefined;
-
-    const topItem =
-      activeProposal.items.find((i) => getGarmentSlot(i.category) === 'outerwear') ??
-      activeProposal.items.find((i) => getGarmentSlot(i.category) === 'top') ??
-      activeProposal.items.find((i) => getGarmentSlot(i.category) === 'one_piece');
-
-    const bottomItem = activeProposal.items.find((i) => getGarmentSlot(i.category) === 'bottom');
-
-    const topFitReport = topItem?.flatMeasuresCm
-      ? evaluateGarmentFit(bodyModel, {
-          category: 'tshirt',
-          sizeLabel: 'M',
-          elasticity: topItem.elasticity,
-          flatMeasuresCm: topItem.flatMeasuresCm,
-        })
-      : topItem
-        ? evaluateGarmentFit(bodyModel, {
-            category: 'tshirt',
-            sizeLabel: 'M',
-            elasticity: topItem.elasticity,
-            flatMeasuresCm: { chestFlat: 50, shoulders: 45, backWidth: 42 },
-          })
-        : null;
-
-    const bottomFitReport = bottomItem?.flatMeasuresCm
-      ? evaluateGarmentFit(bodyModel, {
-          category: 'pants',
-          sizeLabel: '32',
-          elasticity: bottomItem.elasticity,
-          flatMeasuresCm: bottomItem.flatMeasuresCm,
-        })
-      : bottomItem
-        ? evaluateGarmentFit(bodyModel, {
-            category: 'pants',
-            sizeLabel: '32',
-            elasticity: bottomItem.elasticity,
-            flatMeasuresCm: { waistFlat: 41, hipFlat: 52, inseam: 79 },
-          })
-        : null;
-
-    return {
-      topFitReport,
-      topColorHex: topItem?.dominantColorHex ?? '#1F5F6B',
-      topVariant:
-        topItem &&
-        (topItem.category === 'tshirt' ||
-          topItem.category === 'long_sleeve' ||
-          topItem.category === 'jacket' ||
-          topItem.category === 'dress')
-          ? topItem.category
-          : 'tshirt',
-      bottomFitReport,
-      bottomColorHex: bottomItem?.dominantColorHex ?? '#2B4263',
-      bottomVariant:
-        bottomItem &&
-        (bottomItem.category === 'pants' ||
-          bottomItem.category === 'shorts' ||
-          bottomItem.category === 'skirt')
-          ? bottomItem.category
-          : 'pants',
-    };
-  }, [activeProposal, bodyModel]);
+  const safeSelectedIndex = Math.min(selectedIndex, Math.max(0, proposals.length - 1));
+  const activeProposal: OutfitProposal | null = proposals[safeSelectedIndex] ?? null;
 
   const handleUseLocation = () => {
     if (!('geolocation' in navigator)) {
@@ -394,7 +343,9 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
       );
     } else {
       setActionNotice(
-        tastePaused ? 'Aprendizaje pausado.' : 'Preferencia negativa registrada en tu memoria local.',
+        tastePaused
+          ? 'Aprendizaje pausado.'
+          : 'Preferencia negativa registrada en tu memoria local.',
       );
     }
   };
@@ -402,57 +353,63 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
   const displayedSaved = favoritesOnly ? savedOutfits.filter((o) => o.favorite) : savedOutfits;
 
   return (
-    <div className="flex flex-col gap-6">
-      <section aria-labelledby="outfits-heading" className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 id="outfits-heading" className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Outfits
-          </h1>
-        </div>
-        {proposals.length > 0 && (
-          <Badge className="tabular-nums">{proposals.length} propuestas</Badge>
-        )}
-      </section>
-
-      {/* Selector de ocasión y clima */}
-      <div className="grid gap-4 rounded-[var(--radius-md)] border border-border bg-surface p-4 lg:grid-cols-[1.2fr_1fr]">
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-semibold text-muted">Ocasión</span>
+    <div className="flex flex-col gap-4">
+      {/* Barra editorial compacta de ocasión y clima */}
+      <section
+        aria-label="Filtros de ocasión y temperatura"
+        className="flex flex-col gap-2.5 border border-[var(--rw-line)] bg-[var(--rw-panel)]/88 px-4 py-2.5 backdrop-blur-xs lg:flex-row lg:items-center lg:justify-between lg:gap-6 sm:px-6"
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--rw-muted)]">
+            Ocasión
+          </span>
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="Seleccionar ocasión">
-            {OUTFIT_OCCASIONS.map((occ) => (
-              <Button
-                key={occ}
-                type="button"
-                size="sm"
-                variant={occasion === occ ? 'primary' : 'outline'}
-                aria-pressed={occasion === occ}
-                onClick={() => {
-                  setOccasion(occ);
-                  setSelectedIndex(0);
-                }}
-              >
-                {OCCASION_RULES[occ].label}
-              </Button>
-            ))}
+            {OUTFIT_OCCASIONS.map((occ) => {
+              const active = occasion === occ;
+              return (
+                <button
+                  key={occ}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => {
+                    setOccasion(occ);
+                    setSelectedIndex(0);
+                    setActionNotice(null);
+                  }}
+                  className={`cursor-pointer border px-2.5 py-1 text-xs font-medium transition-colors ${
+                    active
+                      ? 'border-[var(--rw-cta)] bg-[var(--rw-cta)] text-[var(--rw-cta-ink)]'
+                      : 'border-[var(--rw-line)] bg-transparent text-[var(--rw-muted)] hover:border-[var(--rw-ink)] hover:text-[var(--rw-ink)]'
+                  }`}
+                >
+                  {OCCASION_RULES[occ].label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 border-t border-[var(--rw-line)]/70 pt-3 lg:min-w-[330px] lg:border-t-0 lg:border-l lg:pl-6 lg:pt-0">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <label htmlFor="outfit-temp-input" className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted">
-              <CloudSun className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-              Temperatura: <span className="tabular-nums text-ink">{temperatureC} °C</span>
+            <label
+              htmlFor="outfit-temp-input"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--rw-muted)]"
+            >
+              <CloudSun className="h-3.5 w-3.5 text-[var(--rw-ink)]" aria-hidden="true" />
+              Temperatura:{' '}
+              <span className="tabular-nums font-semibold text-[var(--rw-ink)]">
+                {temperatureC} °C
+              </span>
             </label>
-            <Button
+            <button
               type="button"
-              size="sm"
-              variant="ghost"
               disabled={weatherBusy}
               onClick={handleUseLocation}
+              className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-medium text-[var(--rw-muted)] transition-colors hover:text-[var(--rw-ink)] disabled:opacity-50"
             >
-              <LocateFixed className="h-3.5 w-3.5" aria-hidden="true" />
+              <LocateFixed className="h-3 w-3" aria-hidden="true" />
               {weatherBusy ? 'Consultando...' : 'Usar ubicación'}
-            </Button>
+            </button>
           </div>
 
           <input
@@ -466,7 +423,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
               setTemperatureC(Number(event.target.value));
               setSelectedIndex(0);
             }}
-            className="w-full accent-[var(--accent)]"
+            className="w-full accent-[var(--rw-ink)]"
           />
 
           <div className="flex flex-wrap gap-1.5">
@@ -479,329 +436,345 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                   setWeatherNote(null);
                   setSelectedIndex(0);
                 }}
-                className="cursor-pointer rounded-[var(--radius-sm)] border border-border bg-bg px-2 py-0.5 text-[11px] text-muted hover:border-accent hover:text-ink"
+                className="cursor-pointer border border-[var(--rw-line)] px-2 py-0.5 text-[10px] text-[var(--rw-muted)] transition-colors hover:border-[var(--rw-ink)] hover:text-[var(--rw-ink)]"
               >
                 {city.label}
               </button>
             ))}
           </div>
-          {weatherNote && <p className="text-xs text-accent">{weatherNote}</p>}
+          {weatherNote && <p className="text-[11px] text-[var(--rw-ink)]">{weatherNote}</p>}
         </div>
-      </div>
+      </section>
 
-      {/* Propuestas o estado vacío */}
+      {/* Estado vacío o Interfaz Runway Split */}
       {proposals.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Necesitas al menos una prenda superior e inferior propias</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              disabled={seedingDemo}
-              onClick={() => void handleSeedDemoCloset()}
+        <section
+          aria-labelledby="outfits-heading"
+          className="flex flex-col items-start gap-5 border border-[var(--rw-line)] bg-[var(--rw-panel)]/90 p-6 sm:p-10"
+        >
+          <div className="flex flex-col gap-2">
+            <h1
+              id="outfits-heading"
+              className="font-display text-3xl font-normal tracking-[-0.02em] text-[var(--rw-ink)] sm:text-[42px]"
             >
-              <Sparkles className="h-4 w-4" aria-hidden="true" />
-              {seedingDemo ? 'Cargando prendas...' : 'Cargar 6 prendas de ejemplo'}
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {/* Selector de las 3 propuestas diversas */}
-          <div className="grid gap-3 sm:grid-cols-3" role="tablist" aria-label="Propuestas de outfits">
-            {proposals.map((proposal, index) => {
-              const active = index === Math.min(selectedIndex, proposals.length - 1);
-              return (
-                <button
-                  key={proposal.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => {
-                    setSelectedIndex(index);
-                    setActionNotice(null);
-                  }}
-                  className={`flex cursor-pointer flex-col gap-2 rounded-[var(--radius-md)] border p-3.5 text-left transition-colors ${
-                    active
-                      ? 'border-accent bg-surface ring-1 ring-accent'
-                      : 'border-border bg-surface/60 hover:border-accent/60'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-ink">Opción {index + 1}</span>
-                    <Badge variant={active ? 'accent' : 'neutral'} className="tabular-nums">
-                      {proposal.score.total} / 100
-                    </Badge>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {proposal.items.map((item) => (
-                      <span
-                        key={item.id}
-                        className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] border border-border bg-bg px-2 py-0.5 text-[11px] text-ink"
-                      >
-                        <span
-                          className="h-2.5 w-2.5 rounded-full border border-border"
-                          style={{ backgroundColor: item.dominantColorHex ?? '#1F5F6B' }}
-                          aria-hidden="true"
-                        />
-                        <span className="max-w-[110px] truncate">{item.name}</span>
-                      </span>
-                    ))}
-                  </div>
-                </button>
-              );
-            })}
+              Outfits
+            </h1>
+            <p className="max-w-md text-sm text-[var(--rw-muted)]">
+              Necesitas al menos una prenda superior e inferior propias para armar combinaciones en
+              el carrusel.
+            </p>
           </div>
+          <button
+            type="button"
+            disabled={seedingDemo}
+            onClick={() => void handleSeedDemoCloset()}
+            className="inline-flex cursor-pointer items-center gap-2 bg-[var(--rw-cta)] px-5 py-3 text-sm font-medium text-[var(--rw-cta-ink)] transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
+            {seedingDemo ? 'Cargando prendas...' : 'Cargar 6 prendas de ejemplo'}
+          </button>
+        </section>
+      ) : (
+        <section
+          aria-labelledby="outfits-heading"
+          className="grid border border-[var(--rw-line)] bg-[var(--rw-stage)]/72 lg:grid-cols-[minmax(0,1fr)_380px]"
+        >
+          {/* Columna izquierda: Carrusel 3D Ring Runway */}
+          <OutfitRunwayCarousel
+            proposals={proposals}
+            selectedIndex={safeSelectedIndex}
+            onSelectIndex={(idx) => {
+              setSelectedIndex(idx);
+              setHighlightedItemId(null);
+              setActionNotice(null);
+            }}
+            bodyModel={bodyModel}
+            occasionLabel={OCCASION_RULES[occasion].label}
+            temperatureC={temperatureC}
+            viewMode={viewMode}
+            onChangeViewMode={setViewMode}
+            showHeatmap={showHeatmap}
+            onToggleHeatmap={() => setShowHeatmap((v) => !v)}
+            highlightedItemId={highlightedItemId}
+            onHighlightItem={setHighlightedItemId}
+          />
 
+          {/* Columna derecha: Panel editorial "En este outfit" */}
           {activeProposal && (
-            <div className="grid items-start gap-5 lg:grid-cols-[1fr_minmax(310px,400px)]">
-              {/* Avatar en capas en las tres vistas (T9.6) */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <CardTitle>Vista combinada</CardTitle>
-                    <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-ink">
-                      <input
-                        type="checkbox"
-                        checked={showHeatmap}
-                        onChange={() => setShowHeatmap((v) => !v)}
-                        className="h-4 w-4 accent-[var(--accent)]"
-                      />
-                      Mapa de calor
-                    </label>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {bodyModel ? (
-                    <AvatarViewer
-                      model={bodyModel}
-                      garmentCategory="tshirt"
-                      fitReport={null}
-                      showHeatmap={showHeatmap}
-                      outfitLayers={outfitLayers}
-                      viewMode={viewMode}
-                      onChangeViewMode={setViewMode}
-                    />
-                  ) : (
-                    <p className="text-sm text-muted">
-                      Verifica tus medidas en el Probador para ver el avatar.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Prendas, desglose y acciones */}
-              <div className="flex flex-col gap-5">
-                <Card data-testid="outfit-breakdown-card">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <CardTitle>Puntaje del outfit</CardTitle>
-                      <Badge variant="accent" className="tabular-nums">
-                        {activeProposal.score.total} / 100
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex flex-col gap-3">
-                    <ScoreBar label="Color" value={activeProposal.score.color} />
-                    <ScoreBar label="Calce" value={activeProposal.score.fit} />
-                    <ScoreBar label="Estilo" value={activeProposal.score.style} />
-                    <ScoreBar label="Ocasión y clima" value={activeProposal.score.occasion} />
-                    <ScoreBar label="Variedad" value={activeProposal.score.variety} />
-                    {activeProposal.score.tasteActive && activeProposal.score.taste !== null && (
-                      <ScoreBar label="Gusto" value={activeProposal.score.taste} />
-                    )}
-
-                    <div className="flex flex-wrap gap-1.5 border-t border-border pt-3">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => void handleFeedback('outfit_liked')}
-                      >
-                        <ThumbsUp className="h-3.5 w-3.5" aria-hidden="true" />
-                        Me gusta
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => void handleFeedback('outfit_disliked')}
-                      >
-                        <ThumbsDown className="h-3.5 w-3.5" aria-hidden="true" />
-                        No me gusta
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => void handleFeedback('outfit_dismissed')}
-                      >
-                        <X className="h-3.5 w-3.5" aria-hidden="true" />
-                        Descartar
-                      </Button>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 border-t border-border pt-3">
-                      <Button type="button" size="sm" onClick={() => void handleSave(false)}>
-                        <Bookmark className="h-3.5 w-3.5" aria-hidden="true" />
-                        Guardar outfit
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => void handleSave(true)}
-                      >
-                        <Heart className="h-3.5 w-3.5" aria-hidden="true" />
-                        Favorito
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => void handleWearProposal()}
-                      >
-                        <CalendarCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                        Usé este outfit hoy
-                      </Button>
-                    </div>
-
-                    {actionNotice && (
-                      <p role="status" className="text-xs font-medium text-accent">
-                        {actionNotice}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle>Prendas incluidas</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="flex flex-col gap-2.5">
-                      {activeProposal.items.map((item) => {
-                        const full = itemsById.get(item.id);
-                        return (
-                          <li key={item.id}>
-                            <button
-                              type="button"
-                              onClick={() => onOpenGarmentInCloset?.(item.id)}
-                              className="flex w-full cursor-pointer items-center gap-3 rounded-[var(--radius-sm)] border border-border bg-bg p-2.5 text-left transition-colors hover:border-accent"
-                            >
-                              {full?.image?.dataUrl ? (
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[var(--radius-sm)] border border-border bg-surface p-1">
-                                  <img
-                                    src={full.image.dataUrl}
-                                    alt={item.name}
-                                    className="max-h-full max-w-full object-contain"
-                                    onError={(event) => {
-                                      event.currentTarget.style.display = 'none';
-                                    }}
-                                  />
-                                </div>
-                              ) : (
-                                <span
-                                  className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border"
-                                  style={{ backgroundColor: item.dominantColorHex ?? '#1F5F6B' }}
-                                  aria-hidden="true"
-                                >
-                                  <Shirt className="h-5 w-5 text-white" />
-                                </span>
-                              )}
-
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-semibold text-ink">{item.name}</p>
-                                <p className="truncate text-xs text-muted">
-                                  {CATEGORY_LABELS[item.category]}
-                                  {item.wearCount !== undefined ? ` · ${item.wearCount} uso(s)` : ''}
-                                </p>
-                              </div>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </CardContent>
-                </Card>
+            <aside className="flex flex-col border-t border-[var(--rw-line)] bg-[var(--rw-panel)]/92 lg:border-t-0 lg:border-l">
+              <div className="flex items-baseline justify-between gap-3 border-b border-[var(--rw-line)] px-5 py-4 sm:px-6">
+                <h2 className="font-display text-lg font-normal tracking-tight text-[var(--rw-ink)]">
+                  En este outfit
+                </h2>
+                <span className="tabular-nums text-xs font-semibold text-[var(--rw-muted)]">
+                  {activeProposal.score.total} / 100
+                </span>
               </div>
-            </div>
+
+              {/* Lista de prendas incluidas con miniatura cuadrada y badge numerado */}
+              <ul className="divide-y divide-[var(--rw-line)] px-5 sm:px-6">
+                {activeProposal.items.map((item, idx) => {
+                  const full = itemsById.get(item.id);
+                  const isHighlighted = highlightedItemId === item.id;
+                  const swatchIsLight = isLightHex(item.dominantColorHex);
+
+                  return (
+                    <li
+                      key={item.id}
+                      onMouseEnter={() => setHighlightedItemId(item.id)}
+                      onMouseLeave={() => setHighlightedItemId(null)}
+                      className={`py-3.5 transition-colors ${
+                        isHighlighted ? 'bg-[var(--rw-card)]/45 -mx-3 px-3' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div className="relative h-16 w-16 shrink-0 bg-[var(--rw-card)] sm:h-[76px] sm:w-[76px]">
+                          {full?.image?.dataUrl ? (
+                            <div className="flex h-full w-full items-center justify-center p-1.5">
+                              <img
+                                src={full.image.dataUrl}
+                                alt={item.name}
+                                className="max-h-full max-w-full object-contain"
+                                onError={(event) => {
+                                  event.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              className="flex h-full w-full items-center justify-center"
+                              style={{ backgroundColor: item.dominantColorHex ?? '#1F5F6B' }}
+                              aria-hidden="true"
+                            >
+                              <Shirt
+                                className={`h-6 w-6 ${
+                                  swatchIsLight ? 'text-[#151413]/80' : 'text-white/90'
+                                }`}
+                              />
+                            </div>
+                          )}
+                          <span
+                            aria-hidden="true"
+                            className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-[var(--rw-line)] bg-[var(--rw-panel)] text-[10px] font-semibold tabular-nums text-[var(--rw-ink)]"
+                          >
+                            {idx + 1}
+                          </span>
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--rw-muted)]">
+                            {full?.garment.brand ?? CATEGORY_LABELS[item.category]}
+                          </p>
+                          <p className="mt-0.5 truncate text-[13px] font-medium text-[var(--rw-ink)]">
+                            {item.name}
+                          </p>
+                          <p className="mt-1 flex items-center gap-1.5 text-xs text-[var(--rw-muted)]">
+                            <span
+                              className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-[var(--rw-line)]"
+                              style={{ backgroundColor: item.dominantColorHex ?? '#1F5F6B' }}
+                              aria-hidden="true"
+                            />
+                            <span className="truncate">
+                              {CATEGORY_LABELS[item.category]}
+                              {item.wearCount !== undefined ? ` · ${item.wearCount} uso(s)` : ''}
+                            </span>
+                          </p>
+                        </div>
+
+                        {onOpenGarmentInCloset && (
+                          <button
+                            type="button"
+                            onClick={() => onOpenGarmentInCloset(item.id)}
+                            aria-label={`Ver ${item.name} en el clóset`}
+                            className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center text-[var(--rw-muted)] transition-colors hover:text-[var(--rw-ink)]"
+                          >
+                            <Plus className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {/* Desglose de puntaje + feedback local */}
+              <div
+                data-testid="outfit-breakdown-card"
+                className="flex flex-col gap-2.5 border-t border-[var(--rw-line)] px-5 py-4 sm:px-6"
+              >
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                  <EditorialScoreBar label="Color" value={activeProposal.score.color} />
+                  <EditorialScoreBar label="Calce" value={activeProposal.score.fit} />
+                  <EditorialScoreBar label="Estilo" value={activeProposal.score.style} />
+                  <EditorialScoreBar label="Ocasión y clima" value={activeProposal.score.occasion} />
+                  <EditorialScoreBar label="Variedad" value={activeProposal.score.variety} />
+                  {activeProposal.score.tasteActive && activeProposal.score.taste !== null && (
+                    <EditorialScoreBar label="Gusto" value={activeProposal.score.taste} />
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleFeedback('outfit_liked')}
+                    className="inline-flex cursor-pointer items-center gap-1.5 border border-[var(--rw-line)] px-2.5 py-1.5 text-xs font-medium text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]"
+                  >
+                    <ThumbsUp className="h-3.5 w-3.5" aria-hidden="true" />
+                    Me gusta
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleFeedback('outfit_disliked')}
+                    className="inline-flex cursor-pointer items-center gap-1.5 border border-[var(--rw-line)] px-2.5 py-1.5 text-xs font-medium text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]"
+                  >
+                    <ThumbsDown className="h-3.5 w-3.5" aria-hidden="true" />
+                    No me gusta
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleFeedback('outfit_dismissed')}
+                    className="inline-flex cursor-pointer items-center gap-1 px-2 py-1.5 text-xs font-medium text-[var(--rw-muted)] transition-colors hover:text-[var(--rw-ink)]"
+                  >
+                    <X className="h-3.5 w-3.5" aria-hidden="true" />
+                    Descartar
+                  </button>
+                </div>
+              </div>
+
+              {/* Barra inferior fija de acciones editoriales (estilo "Complete the look") */}
+              <div className="mt-auto flex flex-col gap-2.5 border-t border-[var(--rw-line)] px-5 py-4 sm:px-6">
+                <div className="flex items-baseline justify-between gap-2">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium text-[var(--rw-ink)]">
+                      Opción {safeSelectedIndex + 1}
+                    </span>
+                    <span className="text-[11px] text-[var(--rw-muted)]">
+                      {activeProposal.items.length} prendas combinadas
+                    </span>
+                  </div>
+                  <span className="tabular-nums text-base font-medium text-[var(--rw-ink)]">
+                    {activeProposal.score.total} / 100
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => void handleSave(false)}
+                  className="inline-flex w-full cursor-pointer items-center justify-center gap-2 bg-[var(--rw-cta)] px-4 py-3 text-[13px] font-medium text-[var(--rw-cta-ink)] transition-opacity hover:opacity-90"
+                >
+                  <span>Guardar outfit</span>
+                  <ArrowRight className="h-4 w-4" strokeWidth={1.6} aria-hidden="true" />
+                </button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleSave(true)}
+                    className="inline-flex cursor-pointer items-center justify-center gap-1.5 border border-[var(--rw-line)] bg-transparent px-3 py-2 text-xs font-medium text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]"
+                  >
+                    <Heart className="h-3.5 w-3.5" aria-hidden="true" />
+                    Favorito
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleWearProposal()}
+                    className="inline-flex cursor-pointer items-center justify-center gap-1.5 border border-[var(--rw-line)] bg-transparent px-3 py-2 text-xs font-medium text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]"
+                  >
+                    <CalendarCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                    Usé este outfit hoy
+                  </button>
+                </div>
+
+                {actionNotice && (
+                  <p role="status" className="text-xs font-medium text-[var(--rw-ink)]">
+                    {actionNotice}
+                  </p>
+                )}
+              </div>
+            </aside>
           )}
-        </>
+        </section>
       )}
 
-      {/* Outfits guardados y favoritos (T9.7) */}
+      {/* Outfits guardados y favoritos */}
       {savedOutfits.length > 0 && (
-        <Card data-testid="saved-outfits-card">
-          <CardHeader className="pb-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <CardTitle>Outfits guardados ({displayedSaved.length})</CardTitle>
-              <Button
-                type="button"
-                size="sm"
-                variant={favoritesOnly ? 'primary' : 'outline'}
-                onClick={() => setFavoritesOnly((v) => !v)}
-              >
-                <Heart className="h-3.5 w-3.5" aria-hidden="true" />
-                Solo favoritos
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {displayedSaved.map((saved) => (
-                <div
-                  key={saved.id}
-                  className="flex flex-col justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-bg p-3"
-                >
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="truncate text-sm font-semibold text-ink">{saved.name}</p>
-                      <Badge className="shrink-0 tabular-nums">{saved.score.total}</Badge>
-                    </div>
-                    <p className="text-xs text-muted">
-                      {OCCASION_RULES[saved.occasion].label} · {saved.temperatureC} °C
-                    </p>
-                  </div>
+        <section
+          data-testid="saved-outfits-card"
+          className="flex flex-col gap-4 border border-[var(--rw-line)] bg-[var(--rw-panel)]/90 p-5 sm:p-7"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--rw-line)] pb-4">
+            <h2 className="font-display text-lg font-normal text-[var(--rw-ink)]">
+              Outfits guardados ({displayedSaved.length})
+            </h2>
+            <button
+              type="button"
+              onClick={() => setFavoritesOnly((v) => !v)}
+              className={`inline-flex cursor-pointer items-center gap-1.5 border px-3 py-1.5 text-xs font-medium transition-colors ${
+                favoritesOnly
+                  ? 'border-[var(--rw-cta)] bg-[var(--rw-cta)] text-[var(--rw-cta-ink)]'
+                  : 'border-[var(--rw-line)] text-[var(--rw-ink)] hover:border-[var(--rw-ink)]'
+              }`}
+            >
+              <Heart className="h-3.5 w-3.5" aria-hidden="true" />
+              Solo favoritos
+            </button>
+          </div>
 
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      onClick={async () => {
-                        await logOutfitWear(saved.garmentIds, saved.id);
-                        setActionNotice(`Uso registrado para "${saved.name}".`);
-                      }}
-                    >
-                      <CalendarCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                      Usé hoy
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={saved.favorite ? 'primary' : 'outline'}
-                      aria-label={saved.favorite ? 'Quitar de favoritos' : 'Marcar favorito'}
-                      onClick={() => void toggleFavorite(saved.id)}
-                    >
-                      <Heart className="h-3.5 w-3.5" aria-hidden="true" />
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      aria-label={`Eliminar ${saved.name}`}
-                      onClick={() => void deleteSavedOutfit(saved.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                    </Button>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {displayedSaved.map((saved) => (
+              <div
+                key={saved.id}
+                className="flex flex-col justify-between gap-3 border border-[var(--rw-line)] bg-[var(--rw-stage)]/70 p-4"
+              >
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="truncate text-sm font-medium text-[var(--rw-ink)]">{saved.name}</p>
+                    <span className="shrink-0 tabular-nums text-xs font-semibold text-[var(--rw-muted)]">
+                      {saved.score.total}
+                    </span>
                   </div>
+                  <p className="text-xs text-[var(--rw-muted)]">
+                    {OCCASION_RULES[saved.occasion].label} · {saved.temperatureC} °C
+                  </p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await logOutfitWear(saved.garmentIds, saved.id);
+                      setActionNotice(`Uso registrado para "${saved.name}".`);
+                    }}
+                    className="inline-flex cursor-pointer items-center gap-1.5 border border-[var(--rw-line)] px-2.5 py-1.5 text-xs font-medium text-[var(--rw-ink)] transition-colors hover:border-[var(--rw-ink)]"
+                  >
+                    <CalendarCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                    Usé hoy
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={saved.favorite ? 'Quitar de favoritos' : 'Marcar favorito'}
+                    onClick={() => void toggleFavorite(saved.id)}
+                    className={`inline-flex cursor-pointer items-center justify-center border px-2.5 py-1.5 text-xs transition-colors ${
+                      saved.favorite
+                        ? 'border-[var(--rw-cta)] bg-[var(--rw-cta)] text-[var(--rw-cta-ink)]'
+                        : 'border-[var(--rw-line)] text-[var(--rw-ink)] hover:border-[var(--rw-ink)]'
+                    }`}
+                  >
+                    <Heart className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Eliminar ${saved.name}`}
+                    onClick={() => void deleteSavedOutfit(saved.id)}
+                    className="inline-flex cursor-pointer items-center justify-center px-2 py-1.5 text-xs text-[var(--rw-muted)] transition-colors hover:text-[var(--rw-ink)]"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );

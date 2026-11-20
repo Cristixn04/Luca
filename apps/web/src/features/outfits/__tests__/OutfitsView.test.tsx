@@ -48,4 +48,36 @@ describe('OutfitsView: sugerir, guardar, favoritos y registrar uso (T9.5–T9.7)
       expect(useOutfitsStore.getState().wearLogs.length).toBeGreaterThanOrEqual(2);
     });
   });
+
+  it('permite navegar el carrusel con flechas, ticks y activar vista ampliada', async () => {
+    const user = userEvent.setup();
+    render(<OutfitsView />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Cargar 6 prendas de ejemplo/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /Cargar 6 prendas de ejemplo/i }));
+
+    await waitFor(() => {
+      expect(useClosetStore.getState().items).toHaveLength(6);
+    });
+
+    expect(screen.getByRole('tab', { name: /Opción 1/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /Opción 2/i })).toHaveAttribute('aria-selected', 'false');
+
+    await user.click(screen.getByRole('button', { name: 'Siguiente outfit' }));
+    expect(screen.getByRole('tab', { name: /Opción 2/i })).toHaveAttribute('aria-selected', 'true');
+
+    await user.click(screen.getByRole('button', { name: 'Outfit anterior' }));
+    expect(screen.getByRole('tab', { name: /Opción 1/i })).toHaveAttribute('aria-selected', 'true');
+
+    await user.click(screen.getByRole('button', { name: /Ampliar Opción 1/i }));
+    expect(screen.getByRole('button', { name: 'Salir de vista ampliada' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Salir de vista ampliada' }));
+    expect(
+      screen.queryByRole('button', { name: 'Salir de vista ampliada' }),
+    ).not.toBeInTheDocument();
+  });
 });
