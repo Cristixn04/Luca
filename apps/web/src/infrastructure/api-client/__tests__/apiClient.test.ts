@@ -21,7 +21,7 @@ describe('Cliente API OpenAPI v1 y sanitizador de imágenes (T6.1, T6.5, T6.6)',
   });
 
   it('expone la versión del contrato OpenAPI generado y genera un token anónimo estable', () => {
-    expect(OPENAPI_CONTRACT_VERSION).toBe('0.6.0');
+    expect(OPENAPI_CONTRACT_VERSION).toBe('0.8.0');
 
     const token1 = getOrCreateInstallToken();
     const token2 = getOrCreateInstallToken();

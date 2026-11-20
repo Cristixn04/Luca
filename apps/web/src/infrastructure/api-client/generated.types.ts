@@ -1,7 +1,7 @@
 // Archivo generado automáticamente desde services/api (/v1/openapi.json) vía `make api-client`.
 // No editar manualmente.
 
-export const OPENAPI_CONTRACT_VERSION = '0.6.0' as const;
+export const OPENAPI_CONTRACT_VERSION = '0.8.0' as const;
 
 export interface HealthResponse {
   readonly status: 'ok';
@@ -9,6 +9,18 @@ export interface HealthResponse {
   readonly version: string;
   readonly vision_provider: string;
   readonly tagger_provider: string;
+  readonly weather_provider: string;
+}
+
+export interface WeatherSummary {
+  readonly temperature_c: number;
+  readonly apparent_temperature_c: number;
+  readonly precipitation_probability: number;
+  readonly condition: string;
+  readonly rounded_lat: number;
+  readonly rounded_lon: number;
+  readonly cached: boolean;
+  readonly provider: string;
 }
 
 export interface LabColorSchema {

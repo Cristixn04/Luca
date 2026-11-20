@@ -3,7 +3,7 @@
   "info": {
     "title": "Luca API",
     "description": "API sin estado para servicios auxiliares de Luca (visión, etiquetado y clima).",
-    "version": "0.6.0"
+    "version": "0.8.0"
   },
   "paths": {
     "/v1/health": {
@@ -90,6 +90,65 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VisionAnalyzeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/weather": {
+      "get": {
+        "tags": [
+          "weather"
+        ],
+        "summary": "Consulta el clima actual usando coordenadas redondeadas (~10 km)",
+        "operationId": "get_current_weather_v1_weather_get",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 90.0,
+              "minimum": -90.0,
+              "description": "Latitud aproximada",
+              "title": "Lat"
+            },
+            "description": "Latitud aproximada"
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 180.0,
+              "minimum": -180.0,
+              "description": "Longitud aproximada",
+              "title": "Lon"
+            },
+            "description": "Longitud aproximada"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeatherSummary"
                 }
               }
             }
@@ -309,6 +368,10 @@
           "tagger_provider": {
             "type": "string",
             "title": "Tagger Provider"
+          },
+          "weather_provider": {
+            "type": "string",
+            "title": "Weather Provider"
           }
         },
         "type": "object",
@@ -317,7 +380,8 @@
           "service",
           "version",
           "vision_provider",
-          "tagger_provider"
+          "tagger_provider",
+          "weather_provider"
         ],
         "title": "HealthResponse"
       },
@@ -483,6 +547,64 @@
           "processing_ms"
         ],
         "title": "VisionAnalyzeResponse"
+      },
+      "WeatherSummary": {
+        "properties": {
+          "temperature_c": {
+            "type": "number",
+            "title": "Temperature C",
+            "description": "Temperatura actual estimada en °C"
+          },
+          "apparent_temperature_c": {
+            "type": "number",
+            "title": "Apparent Temperature C",
+            "description": "Sensación térmica estimada en °C"
+          },
+          "precipitation_probability": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Precipitation Probability"
+          },
+          "condition": {
+            "type": "string",
+            "title": "Condition",
+            "description": "Descripción corta del estado del clima en español"
+          },
+          "rounded_lat": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Rounded Lat"
+          },
+          "rounded_lon": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Rounded Lon"
+          },
+          "cached": {
+            "type": "boolean",
+            "title": "Cached",
+            "default": false
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          }
+        },
+        "type": "object",
+        "required": [
+          "temperature_c",
+          "apparent_temperature_c",
+          "precipitation_probability",
+          "condition",
+          "rounded_lat",
+          "rounded_lon",
+          "provider"
+        ],
+        "title": "WeatherSummary",
+        "description": "Resumen climático mínimo sin almacenar ni registrar coordenadas exactas."
       }
     }
   }

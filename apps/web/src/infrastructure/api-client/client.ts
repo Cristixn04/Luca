@@ -1,4 +1,4 @@
-import type { HealthResponse, VisionAnalyzeResponse } from './generated.types';
+import type { HealthResponse, VisionAnalyzeResponse, WeatherSummary } from './generated.types';
 
 const INSTALL_TOKEN_KEY = 'luca-install-token';
 const API_CONSENT_KEY = 'luca-api-consent';
@@ -90,6 +90,28 @@ export async function fetchApiHealth(options?: {
     throw new ApiClientError('La API no respondió correctamente.', res.status);
   }
   return (await res.json()) as HealthResponse;
+}
+
+export async function fetchWeatherByCoordinates(
+  lat: number,
+  lon: number,
+  options?: { baseUrl?: string; signal?: AbortSignal },
+): Promise<WeatherSummary> {
+  const baseUrl = resolveApiBaseUrl(options?.baseUrl);
+  // Redondeo previo en cliente (~10 km) por privacidad por diseño (sección 4.2)
+  const roundedLat = Math.round(lat * 10) / 10;
+  const roundedLon = Math.round(lon * 10) / 10;
+  const res = await fetch(
+    `${baseUrl}/v1/weather?lat=${encodeURIComponent(String(roundedLat))}&lon=${encodeURIComponent(String(roundedLon))}`,
+    {
+      method: 'GET',
+      signal: options?.signal,
+    },
+  );
+  if (!res.ok) {
+    throw new ApiClientError('No se pudo obtener el clima.', res.status);
+  }
+  return (await res.json()) as WeatherSummary;
 }
 
 export async function analyzeGarmentPhoto(
