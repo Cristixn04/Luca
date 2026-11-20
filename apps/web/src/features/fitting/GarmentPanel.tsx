@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import {
+  GARMENT_CATEGORIES,
   fromCm,
   toCm,
   type FitPreference,
@@ -14,7 +15,7 @@ import { Button } from '@/design-system/components/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/design-system/components/Card';
 import { useClosetStore } from '@/features/closet/closetStore';
 import { CATEGORY_LABELS, type GarmentWithSizes } from '@/features/closet/types';
-import { useFittingStore, type M2GarmentCategory } from './store';
+import { useFittingStore } from './store';
 import { FIT_STATE_HEX, FIT_STATE_LABELS } from './svg/heatmapMeta';
 
 const ZONE_LABELS: Readonly<Record<FitZone, string>> = {
@@ -43,24 +44,30 @@ interface GarmentFieldSpec {
   readonly hint: string;
 }
 
-const GARMENT_FIELDS: Record<M2GarmentCategory, readonly GarmentFieldSpec[]> = {
-  tshirt: [
+const UPPER_FIELDS: readonly GarmentFieldSpec[] = [
+  { key: 'chestFlat', label: 'Pecho en plano', hint: 'Axila a axila (×2)' },
+  { key: 'shoulders', label: 'Hombros', hint: 'Costura a costura' },
+  { key: 'backWidth', label: 'Ancho de espalda', hint: 'Opcional' },
+];
+
+const LOWER_FIELDS: readonly GarmentFieldSpec[] = [
+  { key: 'waistFlat', label: 'Cintura en plano', hint: 'Borde a borde (×2)' },
+  { key: 'hipFlat', label: 'Cadera en plano', hint: 'Zona más ancha (×2)' },
+];
+
+const GARMENT_FIELDS: Record<GarmentCategory, readonly GarmentFieldSpec[]> = {
+  tshirt: UPPER_FIELDS,
+  long_sleeve: UPPER_FIELDS,
+  jacket: UPPER_FIELDS,
+  pants: LOWER_FIELDS,
+  shorts: LOWER_FIELDS,
+  skirt: LOWER_FIELDS,
+  dress: [
     { key: 'chestFlat', label: 'Pecho en plano', hint: 'Axila a axila (×2)' },
-    { key: 'shoulders', label: 'Hombros', hint: 'Costura a costura' },
-    { key: 'backWidth', label: 'Ancho de espalda', hint: 'Opcional' },
-  ],
-  pants: [
     { key: 'waistFlat', label: 'Cintura en plano', hint: 'Borde a borde (×2)' },
     { key: 'hipFlat', label: 'Cadera en plano', hint: 'Zona más ancha (×2)' },
   ],
 };
-
-function mapCategoryToTemplate(category: GarmentCategory): M2GarmentCategory {
-  if (category === 'pants' || category === 'shorts' || category === 'skirt') {
-    return 'pants';
-  }
-  return 'tshirt';
-}
 
 function formatEase(easeCm: number, unit: 'cm' | 'in'): string {
   const sign = easeCm >= 0 ? '+' : '-';
@@ -77,7 +84,7 @@ function applyClosetItemToFitting(item: GarmentWithSizes, preferredSizeLabel?: s
     garmentEnabled: true,
     garmentSource: 'closet',
     selectedClosetGarmentId: item.garment.id,
-    garmentCategory: mapCategoryToTemplate(item.garment.category),
+    garmentCategory: item.garment.category,
     garmentName: item.garment.name,
     garmentColorHex: item.garment.dominantColorHex ?? '#1F5F6B',
     garmentSizeLabel: size?.label ?? 'M',
@@ -315,26 +322,20 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
           )
         ) : (
           <>
-            {/* Selector de categoría en modo prenda rápida */}
-            <div className="flex gap-1.5" role="group" aria-label="Tipo de prenda">
-              <Button
-                type="button"
-                size="sm"
-                variant={garmentCategory === 'tshirt' ? 'primary' : 'outline'}
-                aria-pressed={garmentCategory === 'tshirt'}
-                onClick={() => setGarmentCategory('tshirt')}
-              >
-                Camiseta
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={garmentCategory === 'pants' ? 'primary' : 'outline'}
-                aria-pressed={garmentCategory === 'pants'}
-                onClick={() => setGarmentCategory('pants')}
-              >
-                Pantalón
-              </Button>
+            {/* Selector de categoría (las 7 categorías completas en modo prenda rápida) */}
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Tipo de prenda">
+              {GARMENT_CATEGORIES.map((cat) => (
+                <Button
+                  key={cat}
+                  type="button"
+                  size="sm"
+                  variant={garmentCategory === cat ? 'primary' : 'outline'}
+                  aria-pressed={garmentCategory === cat}
+                  onClick={() => setGarmentCategory(cat)}
+                >
+                  {CATEGORY_LABELS[cat]}
+                </Button>
+              ))}
             </div>
 
             {/* Nombre y talla libres solo en prenda rápida */}

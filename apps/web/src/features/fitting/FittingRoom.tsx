@@ -8,12 +8,14 @@ import {
 import { AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/design-system/components/Card';
 import { useVaultStore } from '@/features/vault/vaultStore';
+import { useT } from '@/i18n/i18nStore';
 import { GarmentPanel } from './GarmentPanel';
 import { MeasurementsPanel } from './MeasurementsPanel';
 import { useFittingStore } from './store';
 import { AvatarViewer } from './svg/AvatarViewer';
 
 export function FittingRoom() {
+  const t = useT();
   const bodyMeasurements = useFittingStore((s) => s.bodyMeasurements);
   const optionalMeasurements = useFittingStore((s) => s.optionalMeasurements);
   const viewMode = useFittingStore((s) => s.viewMode);
@@ -99,7 +101,7 @@ export function FittingRoom() {
     <div className="flex flex-col gap-6">
       <section aria-labelledby="fitting-heading" className="flex flex-col gap-1">
         <h1 id="fitting-heading" className="text-2xl font-bold tracking-tight sm:text-3xl">
-          Probador de calce
+          {t.headings.fitting}
         </h1>
       </section>
 

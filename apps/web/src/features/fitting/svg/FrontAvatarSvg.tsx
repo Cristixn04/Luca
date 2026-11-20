@@ -3,14 +3,20 @@ import { Badge } from '@/design-system/components/Badge';
 import type { M2GarmentCategory } from '../store';
 import { AVATAR_VIEWBOX, computeFrontAvatarAnchors } from './anchors';
 import { HeatmapPatternDefs } from './heatmapPatterns';
-import { PantsTemplate } from './PantsTemplate';
-import { TshirtTemplate } from './TshirtTemplate';
+import { PantsTemplate, type LowerGarmentVariant } from './PantsTemplate';
+import { TshirtTemplate, type UpperGarmentVariant } from './TshirtTemplate';
 
 export interface OutfitLayerOverlay {
   readonly topFitReport?: FitReport | null;
   readonly topColorHex?: string;
+  readonly topVariant?: UpperGarmentVariant;
   readonly bottomFitReport?: FitReport | null;
   readonly bottomColorHex?: string;
+  readonly bottomVariant?: LowerGarmentVariant;
+}
+
+export function isLowerCategory(category: M2GarmentCategory): category is LowerGarmentVariant {
+  return category === 'pants' || category === 'shorts' || category === 'skirt';
 }
 
 export interface SingleAvatarViewProps {
@@ -117,6 +123,7 @@ export function FrontAvatarSvg({
                 showHeatmap={showHeatmap}
                 patternPrefix={patternPrefix}
                 garmentColorHex={outfitLayers.bottomColorHex}
+                variant={outfitLayers.bottomVariant}
               />
             )}
             {outfitLayers.topFitReport && (
@@ -126,27 +133,30 @@ export function FrontAvatarSvg({
                 showHeatmap={showHeatmap}
                 patternPrefix={patternPrefix}
                 garmentColorHex={outfitLayers.topColorHex}
+                variant={outfitLayers.topVariant}
               />
             )}
           </>
         ) : (
           <>
-            {fitReport && garmentCategory === 'tshirt' && (
+            {fitReport && !isLowerCategory(garmentCategory) && (
               <TshirtTemplate
                 anchors={anchors}
                 fitReport={fitReport}
                 showHeatmap={showHeatmap}
                 patternPrefix={patternPrefix}
                 garmentColorHex={garmentColorHex}
+                variant={garmentCategory}
               />
             )}
-            {fitReport && garmentCategory === 'pants' && (
+            {fitReport && isLowerCategory(garmentCategory) && (
               <PantsTemplate
                 anchors={anchors}
                 fitReport={fitReport}
                 showHeatmap={showHeatmap}
                 patternPrefix={patternPrefix}
                 garmentColorHex={garmentColorHex}
+                variant={garmentCategory}
               />
             )}
           </>

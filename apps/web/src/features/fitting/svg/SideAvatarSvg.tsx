@@ -1,6 +1,6 @@
 import { Badge } from '@/design-system/components/Badge';
 import { AVATAR_VIEWBOX } from './anchors';
-import type { SingleAvatarViewProps } from './FrontAvatarSvg';
+import { isLowerCategory, type SingleAvatarViewProps } from './FrontAvatarSvg';
 import { HeatmapPatternDefs } from './heatmapPatterns';
 import { computeSideAvatarAnchors } from './sideAnchors';
 import { SidePantsTemplate } from './SidePantsTemplate';
@@ -97,6 +97,7 @@ export function SideAvatarSvg({
                 showHeatmap={showHeatmap}
                 patternPrefix={patternPrefix}
                 garmentColorHex={outfitLayers.bottomColorHex}
+                variant={outfitLayers.bottomVariant}
               />
             )}
             {outfitLayers.topFitReport && (
@@ -107,12 +108,13 @@ export function SideAvatarSvg({
                 showHeatmap={showHeatmap}
                 patternPrefix={patternPrefix}
                 garmentColorHex={outfitLayers.topColorHex}
+                variant={outfitLayers.topVariant}
               />
             )}
           </>
         ) : (
           <>
-            {fitReport && garmentCategory === 'tshirt' && (
+            {fitReport && !isLowerCategory(garmentCategory) && (
               <SideTshirtTemplate
                 model={model}
                 anchors={anchors}
@@ -120,9 +122,10 @@ export function SideAvatarSvg({
                 showHeatmap={showHeatmap}
                 patternPrefix={patternPrefix}
                 garmentColorHex={garmentColorHex}
+                variant={garmentCategory}
               />
             )}
-            {fitReport && garmentCategory === 'pants' && (
+            {fitReport && isLowerCategory(garmentCategory) && (
               <SidePantsTemplate
                 model={model}
                 anchors={anchors}
@@ -130,6 +133,7 @@ export function SideAvatarSvg({
                 showHeatmap={showHeatmap}
                 patternPrefix={patternPrefix}
                 garmentColorHex={garmentColorHex}
+                variant={garmentCategory}
               />
             )}
           </>

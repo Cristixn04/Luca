@@ -1,6 +1,7 @@
 import type {
   AvatarView,
   FitPreference,
+  GarmentCategory,
   GarmentFlatMeasurements,
   MeasurementUnit,
   OptionalBodyMeasurements,
@@ -8,7 +9,7 @@ import type {
 } from '@luca/domain';
 import { create } from 'zustand';
 
-export type M2GarmentCategory = 'tshirt' | 'pants';
+export type M2GarmentCategory = GarmentCategory;
 export type ViewerMode = AvatarView | 'all';
 export type FittingGarmentSource = 'closet' | 'quick';
 
@@ -22,7 +23,7 @@ export const DEFAULT_BODY_MEASUREMENTS: RequiredBodyMeasurements = {
 };
 
 export const DEFAULT_GARMENT_PRESETS: Record<
-  M2GarmentCategory,
+  GarmentCategory,
   {
     name: string;
     sizeLabel: string;
@@ -34,22 +35,43 @@ export const DEFAULT_GARMENT_PRESETS: Record<
     name: 'Camiseta de lino',
     sizeLabel: 'M',
     elasticity: 0.05,
-    flatMeasuresCm: {
-      chestFlat: 50,
-      shoulders: 45.5,
-      backWidth: 42,
-      length: 68,
-    },
+    flatMeasuresCm: { chestFlat: 50, shoulders: 45.5, backWidth: 42, length: 68 },
+  },
+  long_sleeve: {
+    name: 'Camisa manga larga',
+    sizeLabel: 'M',
+    elasticity: 0.02,
+    flatMeasuresCm: { chestFlat: 51, shoulders: 45.5, backWidth: 42.5, length: 71 },
+  },
+  jacket: {
+    name: 'Chaqueta estructurada',
+    sizeLabel: 'M',
+    elasticity: 0,
+    flatMeasuresCm: { chestFlat: 54, shoulders: 46.5, backWidth: 43.5, length: 72 },
   },
   pants: {
     name: 'Pantalón recto',
     sizeLabel: '32',
     elasticity: 0.05,
-    flatMeasuresCm: {
-      waistFlat: 41,
-      hipFlat: 52,
-      inseam: 78,
-    },
+    flatMeasuresCm: { waistFlat: 41, hipFlat: 52, inseam: 78 },
+  },
+  shorts: {
+    name: 'Short de algodón',
+    sizeLabel: 'M',
+    elasticity: 0.04,
+    flatMeasuresCm: { waistFlat: 41, hipFlat: 52 },
+  },
+  skirt: {
+    name: 'Falda midi recta',
+    sizeLabel: 'M',
+    elasticity: 0.03,
+    flatMeasuresCm: { waistFlat: 40, hipFlat: 52 },
+  },
+  dress: {
+    name: 'Vestido midi',
+    sizeLabel: 'M',
+    elasticity: 0.05,
+    flatMeasuresCm: { chestFlat: 49, waistFlat: 41, hipFlat: 52 },
   },
 };
 
@@ -62,7 +84,7 @@ export interface FittingState {
   garmentEnabled: boolean;
   garmentSource: FittingGarmentSource;
   selectedClosetGarmentId: string | null;
-  garmentCategory: M2GarmentCategory;
+  garmentCategory: GarmentCategory;
   garmentName: string;
   garmentColorHex: string;
   garmentSizeLabel: string;
@@ -79,13 +101,13 @@ export interface FittingState {
   setViewMode: (mode: ViewerMode) => void;
   setGarmentSource: (source: FittingGarmentSource) => void;
   setSelectedClosetGarmentId: (id: string | null) => void;
-  setGarmentCategory: (category: M2GarmentCategory) => void;
+  setGarmentCategory: (category: GarmentCategory) => void;
   setGarmentName: (name: string) => void;
   setGarmentSizeLabel: (sizeLabel: string) => void;
   setGarmentElasticity: (elasticity: number) => void;
   setGarmentFlatMeasure: (field: keyof GarmentFlatMeasurements, valueCm: number | undefined) => void;
   clearGarment: () => void;
-  restoreDefaultGarment: (category?: M2GarmentCategory) => void;
+  restoreDefaultGarment: (category?: GarmentCategory) => void;
   setFitPreference: (preference: FitPreference) => void;
   toggleHeatmap: () => void;
 }

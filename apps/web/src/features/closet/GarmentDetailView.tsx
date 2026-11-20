@@ -21,7 +21,7 @@ import {
   CardTitle,
 } from '@/design-system/components/Card';
 import { getActiveSeasonId, useColorStore } from '@/features/color/colorStore';
-import { useFittingStore, type M2GarmentCategory, type ViewerMode } from '@/features/fitting/store';
+import { useFittingStore, type ViewerMode } from '@/features/fitting/store';
 import { toOutfitGarmentInputs, useOutfitsStore } from '@/features/outfits/outfitsStore';
 import { AvatarViewer } from '@/features/fitting/svg/AvatarViewer';
 import { FIT_STATE_HEX, FIT_STATE_LABELS } from '@/features/fitting/svg/heatmapMeta';
@@ -43,13 +43,6 @@ const ZONE_LABELS: Readonly<Record<FitZone, string>> = {
   shoulders: 'Hombros',
   back: 'Espalda',
 };
-
-function mapToFrontTemplate(category: GarmentWithSizes['garment']['category']): M2GarmentCategory {
-  if (category === 'pants' || category === 'shorts' || category === 'skirt') {
-    return 'pants';
-  }
-  return 'tshirt';
-}
 
 function formatEase(easeCm: number, unit: 'cm' | 'in'): string {
   const sign = easeCm >= 0 ? '+' : '-';
@@ -181,7 +174,7 @@ export function GarmentDetailView({
       garmentEnabled: true,
       garmentSource: 'closet',
       selectedClosetGarmentId: garment.id,
-      garmentCategory: mapToFrontTemplate(garment.category),
+      garmentCategory: garment.category,
       garmentName: garment.name,
       garmentColorHex: garment.dominantColorHex ?? '#1F5F6B',
       garmentSizeLabel: selectedSize.label,
@@ -313,7 +306,7 @@ export function GarmentDetailView({
             {bodyModel && activeEvaluation ? (
               <AvatarViewer
                 model={bodyModel}
-                garmentCategory={mapToFrontTemplate(garment.category)}
+                garmentCategory={garment.category}
                 fitReport={activeEvaluation.report}
                 showHeatmap={showHeatmap}
                 garmentColorHex={garment.dominantColorHex}

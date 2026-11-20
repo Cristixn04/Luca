@@ -300,8 +300,23 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
     return {
       topFitReport,
       topColorHex: topItem?.dominantColorHex ?? '#1F5F6B',
+      topVariant:
+        topItem &&
+        (topItem.category === 'tshirt' ||
+          topItem.category === 'long_sleeve' ||
+          topItem.category === 'jacket' ||
+          topItem.category === 'dress')
+          ? topItem.category
+          : 'tshirt',
       bottomFitReport,
       bottomColorHex: bottomItem?.dominantColorHex ?? '#2B4263',
+      bottomVariant:
+        bottomItem &&
+        (bottomItem.category === 'pants' ||
+          bottomItem.category === 'shorts' ||
+          bottomItem.category === 'skirt')
+          ? bottomItem.category
+          : 'pants',
     };
   }, [activeProposal, bodyModel]);
 

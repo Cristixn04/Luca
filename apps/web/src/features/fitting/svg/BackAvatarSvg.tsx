@@ -2,7 +2,7 @@ import { Badge } from '@/design-system/components/Badge';
 import { AVATAR_VIEWBOX, computeFrontAvatarAnchors } from './anchors';
 import { BackPantsTemplate } from './BackPantsTemplate';
 import { BackTshirtTemplate } from './BackTshirtTemplate';
-import type { SingleAvatarViewProps } from './FrontAvatarSvg';
+import { isLowerCategory, type SingleAvatarViewProps } from './FrontAvatarSvg';
 import { HeatmapPatternDefs } from './heatmapPatterns';
 
 export function BackAvatarSvg({
@@ -102,6 +102,7 @@ export function BackAvatarSvg({
                 showHeatmap={showHeatmap}
                 patternPrefix={patternPrefix}
                 garmentColorHex={outfitLayers.bottomColorHex}
+                variant={outfitLayers.bottomVariant}
               />
             )}
             {outfitLayers.topFitReport && (
@@ -112,12 +113,13 @@ export function BackAvatarSvg({
                 showHeatmap={showHeatmap}
                 patternPrefix={patternPrefix}
                 garmentColorHex={outfitLayers.topColorHex}
+                variant={outfitLayers.topVariant}
               />
             )}
           </>
         ) : (
           <>
-            {fitReport && garmentCategory === 'tshirt' && (
+            {fitReport && !isLowerCategory(garmentCategory) && (
               <BackTshirtTemplate
                 model={model}
                 anchors={anchors}
@@ -125,15 +127,17 @@ export function BackAvatarSvg({
                 showHeatmap={showHeatmap}
                 patternPrefix={patternPrefix}
                 garmentColorHex={garmentColorHex}
+                variant={garmentCategory}
               />
             )}
-            {fitReport && garmentCategory === 'pants' && (
+            {fitReport && isLowerCategory(garmentCategory) && (
               <BackPantsTemplate
                 anchors={anchors}
                 fitReport={fitReport}
                 showHeatmap={showHeatmap}
                 patternPrefix={patternPrefix}
                 garmentColorHex={garmentColorHex}
+                variant={garmentCategory}
               />
             )}
           </>

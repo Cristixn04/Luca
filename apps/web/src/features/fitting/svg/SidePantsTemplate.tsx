@@ -1,6 +1,7 @@
 import { solveGarmentSection, type BodyModel, type FitReport } from '@luca/domain';
 import { clampVisualEaseOffsetPx } from './anchors';
 import { FIT_STATE_HEX, getHeatmapPatternId } from './heatmapMeta';
+import type { LowerGarmentVariant } from './PantsTemplate';
 import type { SideAvatarAnchors } from './sideAnchors';
 
 export interface SidePantsTemplateProps {
@@ -10,6 +11,7 @@ export interface SidePantsTemplateProps {
   showHeatmap: boolean;
   garmentColorHex?: string;
   patternPrefix: string;
+  variant?: LowerGarmentVariant;
 }
 
 function formatEase(easeCm: number): string {
@@ -24,6 +26,7 @@ export function SidePantsTemplate({
   showHeatmap,
   garmentColorHex,
   patternPrefix,
+  variant = 'pants',
 }: SidePantsTemplateProps) {
   const waistZone = fitReport.evaluatedZones.find((item) => item.zone === 'waist');
   const hipZone = fitReport.evaluatedZones.find((item) => item.zone === 'hip');
@@ -58,20 +61,37 @@ export function SidePantsTemplate({
   const hFront = anchors.hipFrontX + hipOffset;
   const legBack = anchors.legBackX - Math.max(2, hipOffset * 0.6);
   const legFront = anchors.legFrontX + Math.max(2, hipOffset * 0.6);
+  const legLength = anchors.ankleY - anchors.crotchY;
+  const hemY =
+    variant === 'shorts'
+      ? anchors.crotchY + legLength * 0.28
+      : variant === 'skirt'
+        ? anchors.crotchY + legLength * 0.5
+        : anchors.ankleY;
 
-  const path = [
-    `M ${wBack} ${anchors.waistY}`,
-    `L ${wFront} ${anchors.waistY}`,
-    `Q ${hFront + 2} ${anchors.hipY} ${legFront} ${anchors.crotchY}`,
-    `L ${legFront - 2} ${anchors.ankleY}`,
-    `L ${legBack + 2} ${anchors.ankleY}`,
-    `L ${legBack} ${anchors.crotchY}`,
-    `Q ${hBack - 2} ${anchors.hipY} ${wBack} ${anchors.waistY}`,
-    'Z',
-  ].join(' ');
+  const path =
+    variant === 'skirt'
+      ? [
+          `M ${wBack} ${anchors.waistY}`,
+          `L ${wFront} ${anchors.waistY}`,
+          `Q ${hFront + 3} ${anchors.hipY} ${hFront + 6} ${hemY}`,
+          `L ${hBack - 6} ${hemY}`,
+          `Q ${hBack - 3} ${anchors.hipY} ${wBack} ${anchors.waistY}`,
+          'Z',
+        ].join(' ')
+      : [
+          `M ${wBack} ${anchors.waistY}`,
+          `L ${wFront} ${anchors.waistY}`,
+          `Q ${hFront + 2} ${anchors.hipY} ${legFront} ${anchors.crotchY}`,
+          `L ${legFront - 2} ${hemY}`,
+          `L ${legBack + 2} ${hemY}`,
+          `L ${legBack} ${anchors.crotchY}`,
+          `Q ${hBack - 2} ${anchors.hipY} ${wBack} ${anchors.waistY}`,
+          'Z',
+        ].join(' ');
 
   return (
-    <g data-garment="pants-side" aria-label="Plantilla de pantalón en vista de perfil">
+    <g data-garment={`${variant}-side`} aria-label={`Plantilla de ${variant} en vista de perfil`}>
       <path
         d={path}
         fill={garmentColorHex ?? 'var(--accent)'}
