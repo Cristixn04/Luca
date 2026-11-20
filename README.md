@@ -2,7 +2,7 @@
 
 **Clóset inteligente, probador de calce en tres vistas y asesor de color. Una web instalable que recuerda tus gustos y guarda tus datos solo en tu dispositivo.**
 
-![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M5)-blue)
+![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M6)-blue)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green)
 ![Plataforma](https://img.shields.io/badge/plataforma-PWA-5A0FC8)
 ![Dominio](https://img.shields.io/badge/dominio-TypeScript-3178C6)
@@ -13,7 +13,7 @@ Luca te dice **cuánta holgura tendrá una prenda en cada zona de tu cuerpo** (v
 
 La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu perfil de color, tus gustos y tu historial nunca salen de tu dispositivo**, y se guardan cifrados con una contraseña que solo tú conoces. Los servicios en la nube son una API **sin estado y sin cuentas** que solo procesa lo mínimo, con tu permiso, y no guarda nada.
 
-> **Estado del documento:** hitos M0 a M4 completados (**`v0.3` — camino mínimo útil completo: medidas cifradas, probador con mapa de calor y clóset local con talla recomendada**); siguiente hito activo: **M5 (`v0.4`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
+> **Estado del documento:** hitos M0 a M5 completados (**`v0.4` — vistas de frente, perfil y espalda coherentes desde un único `BodyModel`**); siguiente hito activo: **M6 (`v0.5`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
 
 ---
 
@@ -21,7 +21,7 @@ La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu 
 
 Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada hito.
 
-**Progreso global: 111 / 280 h** (núcleo M0–M11) · Hito actual: **M5**
+**Progreso global: 133 / 280 h** (núcleo M0–M11) · Hito actual: **M6**
 
 | Hito | Nombre | Release | Horas est. | Estado |
 | :-- | :-- | :-- | --: | :-- |
@@ -30,7 +30,7 @@ Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada
 | M2 | Avatar de frente y probador con mapa de calor | **v0.1** | 26 | Completado |
 | M3 | Almacenamiento local seguro y bóveda cifrada | **v0.2** | 26 | Completado |
 | M4 | Clóset local y tallas | **v0.3** | 22 | Completado |
-| M5 | Vistas de perfil y de espalda | v0.4 | 22 | Pendiente |
+| M5 | Vistas de perfil y de espalda | v0.4 | 22 | Completado |
 | M6 | API de servicios e ingesta de fotos | v0.5 | 29 | Pendiente |
 | M7 | Etiquetado y búsqueda | v0.6 | 16 | Pendiente |
 | M8 | Colorimetría estacional | v0.7 | 26 | Pendiente |
@@ -1011,13 +1011,13 @@ Planifica con el colchón: estimar siempre se queda corto. El **camino mínimo (
 
 ### M5 · Vistas de perfil y de espalda (22 h) → v0.4
 
-- [ ] T5.1 Medidas opcionales (fondo, ancho y largo de espalda) y su guía (3 h)
-- [ ] T5.2 Avatar SVG de perfil (4 h)
-- [ ] T5.3 Avatar SVG de espalda (3 h)
-- [ ] T5.4 Plantillas de camiseta y pantalón en perfil y espalda (6 h)
-- [ ] T5.5 Mapa de calor por vista y marca "estimado" cuando falte una medida (3 h)
-- [ ] T5.6 Selector de vistas: pestañas, modo de 3 vistas en pantallas anchas y deslizar en móvil (2 h)
-- [ ] T5.7 Pruebas de coherencia: el mismo estado por zona en las tres vistas (1 h)
+- [x] T5.1 Medidas opcionales (fondo, ancho y largo de espalda) y su guía (3 h)
+- [x] T5.2 Avatar SVG de perfil (4 h)
+- [x] T5.3 Avatar SVG de espalda (3 h)
+- [x] T5.4 Plantillas de camiseta y pantalón en perfil y espalda (6 h)
+- [x] T5.5 Mapa de calor por vista y marca "estimado" cuando falte una medida (3 h)
+- [x] T5.6 Selector de vistas: pestañas, modo de 3 vistas en pantallas anchas y deslizar en móvil (2 h)
+- [x] T5.7 Pruebas de coherencia: el mismo estado por zona en las tres vistas (1 h)
 
 **Hecho cuando:** cambias una medida y las tres vistas se actualizan con estados coherentes y las zonas estimadas se distinguen.
 

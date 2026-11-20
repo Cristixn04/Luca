@@ -1,0 +1,154 @@
+import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { FittingRoom } from '../FittingRoom';
+import { DEFAULT_BODY_MEASUREMENTS, DEFAULT_GARMENT_PRESETS, useFittingStore } from '../store';
+
+describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.7)', () => {
+  beforeEach(() => {
+    useFittingStore.setState({
+      unit: 'cm',
+      hideNumbers: false,
+      bodyMeasurements: { ...DEFAULT_BODY_MEASUREMENTS },
+      optionalMeasurements: {},
+      viewMode: 'all',
+      garmentEnabled: true,
+      garmentCategory: 'tshirt',
+      garmentName: DEFAULT_GARMENT_PRESETS.tshirt.name,
+      garmentSizeLabel: DEFAULT_GARMENT_PRESETS.tshirt.sizeLabel,
+      garmentElasticity: DEFAULT_GARMENT_PRESETS.tshirt.elasticity,
+      garmentFlatMeasures: { ...DEFAULT_GARMENT_PRESETS.tshirt.flatMeasuresCm },
+      fitPreference: 'regular',
+      showHeatmap: true,
+    });
+  });
+
+  it('muestra el mismo estado de calce por zona compartida en frente, perfil y espalda (camiseta y pantalón)', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<FittingRoom />);
+
+    // 1. Camiseta: hombros en las 3 vistas y pecho en frente + perfil
+    const front = container.querySelector('[data-avatar-view="front"]')!;
+    const side = container.querySelector('[data-avatar-view="side"]')!;
+    const back = container.querySelector('[data-avatar-view="back"]')!;
+
+    expect(front).not.toBeNull();
+    expect(side).not.toBeNull();
+    expect(back).not.toBeNull();
+
+    const frontShoulders = front
+      .querySelector('[data-heatmap-zone="shoulders"]')
+      ?.getAttribute('data-fit-state');
+    const sideShoulders = side
+      .querySelector('[data-heatmap-zone="shoulders"]')
+      ?.getAttribute('data-fit-state');
+    const backShoulders = back
+      .querySelector('[data-heatmap-zone="shoulders"]')
+      ?.getAttribute('data-fit-state');
+
+    expect(frontShoulders).toBe('regular');
+    expect(sideShoulders).toBe(frontShoulders);
+    expect(backShoulders).toBe(frontShoulders);
+
+    const frontChest = front
+      .querySelector('[data-heatmap-zone="chest"]')
+      ?.getAttribute('data-fit-state');
+    const sideChest = side
+      .querySelector('[data-heatmap-zone="chest"]')
+      ?.getAttribute('data-fit-state');
+    expect(frontChest).toBe('regular');
+    expect(sideChest).toBe(frontChest);
+
+    // 2. Cambiar a Pantalón y forzar cintura ajustada/tensa -> las 3 vistas deben coincidir exactamente
+    await user.click(screen.getByRole('button', { name: 'Pantalón' }));
+    const waistFlat = screen.getByLabelText('Cintura en plano');
+    await user.clear(waistFlat);
+    await user.type(waistFlat, '35'); // 70 - 78 = -8 cm (con 5 % alivio +3.5 -> -4.5 -> tense)
+
+    for (const zone of ['waist', 'hip'] as const) {
+      const fState = container
+        .querySelector(`[data-avatar-view="front"] [data-heatmap-zone="${zone}"]`)
+        ?.getAttribute('data-fit-state');
+      const sState = container
+        .querySelector(`[data-avatar-view="side"] [data-heatmap-zone="${zone}"]`)
+        ?.getAttribute('data-fit-state');
+      const bState = container
+        .querySelector(`[data-avatar-view="back"] [data-heatmap-zone="${zone}"]`)
+        ?.getAttribute('data-fit-state');
+
+      expect(fState).toBeTruthy();
+      expect(sState).toBe(fState);
+      expect(bState).toBe(fState);
+    }
+
+    expect(
+      container
+        .querySelector('[data-avatar-view="front"] [data-heatmap-zone="waist"]')
+        ?.getAttribute('data-fit-state'),
+    ).toBe('tense');
+  });
+
+  it('marca como "estimado" las vistas sin medidas opcionales y quita la marca al ingresarlas', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<FittingRoom />);
+
+    expect(container.querySelector('[data-estimated-badge="front"]')).toHaveTextContent(
+      'Torso: estimado',
+    );
+    expect(container.querySelector('[data-estimated-badge="side"]')).toHaveTextContent(
+      'Fondo: estimado',
+    );
+    expect(container.querySelector('[data-estimated-badge="back"]')).toHaveTextContent(
+      'Espalda: estimado',
+    );
+
+    // Abrir sección de medidas opcionales y llenar todas
+    await user.click(screen.getByRole('button', { name: /Medidas opcionales/i }));
+    await user.type(screen.getByLabelText('Largo de torso'), '50');
+    await user.type(screen.getByLabelText('Fondo de pecho'), '23');
+    await user.type(screen.getByLabelText('Fondo de cintura'), '20');
+    await user.type(screen.getByLabelText('Fondo de cadera'), '25');
+    await user.type(container.querySelector('#optional-backWidth') as HTMLElement, '41');
+    await user.type(screen.getByLabelText('Largo de espalda'), '48');
+
+    expect(container.querySelector('[data-estimated-badge="front"]')).toBeNull();
+    expect(container.querySelector('[data-estimated-badge="side"]')).toBeNull();
+    expect(container.querySelector('[data-estimated-badge="back"]')).toBeNull();
+  });
+
+  it('mantiene IDs únicos de patrones SVG cuando se muestran las 3 vistas simultáneamente', () => {
+    const { container } = render(<FittingRoom />);
+    const patterns = Array.from(container.querySelectorAll('pattern[id]'));
+    const ids = patterns.map((el) => el.getAttribute('id'));
+    const uniqueIds = new Set(ids);
+
+    expect(ids.length).toBeGreaterThan(10);
+    expect(uniqueIds.size).toBe(ids.length);
+  });
+
+  it('permite alternar vistas por botones y por gesto táctil horizontal (swipe)', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<FittingRoom />);
+
+    await user.click(screen.getByRole('button', { name: 'Frente' }));
+    expect(container.querySelector('[data-avatar-view="front"]')).not.toBeNull();
+    expect(container.querySelector('[data-avatar-view="side"]')).toBeNull();
+
+    const stage = screen.getByTestId('avatar-swipe-stage');
+
+    // Deslizar a la izquierda: frente -> perfil
+    fireEvent.touchStart(stage, { touches: [{ clientX: 200 }] });
+    fireEvent.touchEnd(stage, { changedTouches: [{ clientX: 120 }] });
+    expect(container.querySelector('[data-avatar-view="side"]')).not.toBeNull();
+
+    // Deslizar a la izquierda: perfil -> espalda
+    fireEvent.touchStart(stage, { touches: [{ clientX: 200 }] });
+    fireEvent.touchEnd(stage, { changedTouches: [{ clientX: 120 }] });
+    expect(container.querySelector('[data-avatar-view="back"]')).not.toBeNull();
+
+    // Deslizar a la derecha: espalda -> perfil
+    fireEvent.touchStart(stage, { touches: [{ clientX: 100 }] });
+    fireEvent.touchEnd(stage, { changedTouches: [{ clientX: 190 }] });
+    expect(container.querySelector('[data-avatar-view="side"]')).not.toBeNull();
+  });
+});

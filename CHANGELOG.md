@@ -6,6 +6,16 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-20
+
+### Added
+- **M5 · Vistas de perfil y de espalda (`v0.4`)**:
+  - Medidas opcionales (largo de torso, fondos de pecho/cintura/cadera, ancho y largo de espalda) en `MeasurementsPanel`, persistidas cifradas en la bóveda y documentadas en `MeasuringGuideDialog`.
+  - Avatares paramétricos SVG de perfil (`SideAvatarSvg` + `sideAnchors.ts`) y de espalda (`BackAvatarSvg`) alineados verticalmente con la vista frontal desde un único `BodyModel`.
+  - Plantillas paramétricas de camiseta y pantalón en perfil (`SideTshirtTemplate`, `SidePantsTemplate`, usando `solveGarmentSection`) y espalda (`BackTshirtTemplate`, `BackPantsTemplate`).
+  - Selector unificado `AvatarViewer` con pestañas (`Frente`, `Perfil`, `Espalda`, `3 vistas`), deslizamiento táctil horizontal en móvil, marcas `"estimado"` dinámicas cuando faltan opcionales e IDs únicos por patrón SVG en cada vista.
+  - Pruebas unitarias de coherencia entre vistas (`ThreeViewsCoherence.test.tsx`) y flujo e2e Playwright (`e2e/three-views.spec.ts`).
+
 ## [0.3.0] - 2026-11-20
 
 ### Added
