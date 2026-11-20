@@ -10,7 +10,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/icon.svg'],
+      includeAssets: ['icons/icon.svg', 'theme-init.js'],
       manifest: {
         name: 'Luca — Clóset inteligente y probador de calce',
         short_name: 'Luca',
