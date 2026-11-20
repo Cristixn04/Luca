@@ -17,8 +17,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/design-system/components/Card';
-import { useFittingStore, type M2GarmentCategory } from '@/features/fitting/store';
-import { FrontAvatarCanvas } from '@/features/fitting/svg/FrontAvatarCanvas';
+import { useFittingStore, type M2GarmentCategory, type ViewerMode } from '@/features/fitting/store';
+import { AvatarViewer } from '@/features/fitting/svg/AvatarViewer';
 import { FIT_STATE_HEX, FIT_STATE_LABELS } from '@/features/fitting/svg/heatmapMeta';
 import { CATEGORY_LABELS, FORMALITY_LABELS, STATUS_LABELS, type GarmentWithSizes } from './types';
 
@@ -59,12 +59,20 @@ export function GarmentDetailView({
 }: GarmentDetailViewProps) {
   const { garment, sizes } = item;
   const bodyMeasurements = useFittingStore((s) => s.bodyMeasurements);
+  const optionalMeasurements = useFittingStore((s) => s.optionalMeasurements);
   const fitPreference = useFittingStore((s) => s.fitPreference);
   const unit = useFittingStore((s) => s.unit);
   const showHeatmap = useFittingStore((s) => s.showHeatmap);
   const toggleHeatmap = useFittingStore((s) => s.toggleHeatmap);
+  const [detailViewMode, setDetailViewMode] = useState<ViewerMode>('front');
 
-  const measurements = useMemo(() => ({ required: bodyMeasurements }), [bodyMeasurements]);
+  const measurements = useMemo(
+    () => ({
+      required: bodyMeasurements,
+      ...(Object.keys(optionalMeasurements).length > 0 ? { optional: optionalMeasurements } : {}),
+    }),
+    [bodyMeasurements, optionalMeasurements],
+  );
   const validation = useMemo(() => validateBodyMeasurements(measurements), [measurements]);
 
   const bodyModel = useMemo(
@@ -216,11 +224,13 @@ export function GarmentDetailView({
           </CardHeader>
           <CardContent>
             {bodyModel && activeEvaluation ? (
-              <FrontAvatarCanvas
+              <AvatarViewer
                 model={bodyModel}
                 garmentCategory={mapToFrontTemplate(garment.category)}
                 fitReport={activeEvaluation.report}
                 showHeatmap={showHeatmap}
+                viewMode={detailViewMode}
+                onChangeViewMode={setDetailViewMode}
               />
             ) : (
               <p className="text-sm text-muted">
