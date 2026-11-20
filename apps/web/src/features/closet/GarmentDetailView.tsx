@@ -179,6 +179,8 @@ export function GarmentDetailView({
 
     useFittingStore.setState({
       garmentEnabled: true,
+      garmentSource: 'closet',
+      selectedClosetGarmentId: garment.id,
       garmentCategory: mapToFrontTemplate(garment.category),
       garmentName: garment.name,
       garmentColorHex: garment.dominantColorHex ?? '#1F5F6B',

@@ -1,16 +1,20 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { useClosetStore } from '@/features/closet/closetStore';
 import { FittingRoom } from '../FittingRoom';
 import { DEFAULT_BODY_MEASUREMENTS, DEFAULT_GARMENT_PRESETS, useFittingStore } from '../store';
 
 describe('Probador de calce M2 (T2.1 – T2.7)', () => {
   beforeEach(() => {
+    useClosetStore.setState({ items: [], loaded: true });
     useFittingStore.setState({
       unit: 'cm',
       hideNumbers: false,
       bodyMeasurements: { ...DEFAULT_BODY_MEASUREMENTS },
       garmentEnabled: true,
+      garmentSource: 'quick',
+      selectedClosetGarmentId: null,
       garmentCategory: 'tshirt',
       garmentName: DEFAULT_GARMENT_PRESETS.tshirt.name,
       garmentSizeLabel: DEFAULT_GARMENT_PRESETS.tshirt.sizeLabel,
@@ -100,10 +104,97 @@ describe('Probador de calce M2 (T2.1 – T2.7)', () => {
     expect(screen.getByRole('button', { name: 'Holgado' })).toHaveAttribute('aria-pressed', 'true');
 
     await user.click(screen.getByRole('button', { name: 'Quitar prenda del probador' }));
-    expect(screen.getByText('Sin prenda activa en el probador')).toBeInTheDocument();
+    expect(screen.getByText(/Sin prenda activa en el probador/i)).toBeInTheDocument();
     expect(container.querySelector('[data-garment]')).toBeNull();
 
     await user.click(screen.getByRole('button', { name: /Probar camiseta/i }));
     expect(container.querySelector('[data-garment="tshirt"]')).not.toBeNull();
+  });
+
+  it('muestra desplegable con prendas guardadas del clóset y opción aparte de prenda rápida editable', async () => {
+    const user = userEvent.setup();
+    const now = '2026-11-20T10:00:00.000Z';
+    useClosetStore.setState({
+      loaded: true,
+      items: [
+        {
+          garment: {
+            id: 'g-shirt',
+            category: 'tshirt',
+            name: 'Camisa Oxford Blanca',
+            brand: 'Norte',
+            status: 'owned',
+            elasticity: 0.05,
+            formality: 3,
+            tags: ['oficina'],
+            dominantColorHex: '#F3EFE6',
+            createdAt: now,
+            updatedAt: now,
+          },
+          sizes: [
+            {
+              id: 's-m',
+              garmentId: 'g-shirt',
+              label: 'M',
+              flatMeasuresCm: { chestFlat: 50, shoulders: 45 },
+              createdAt: now,
+              updatedAt: now,
+            },
+            {
+              id: 's-l',
+              garmentId: 'g-shirt',
+              label: 'L',
+              flatMeasuresCm: { chestFlat: 54, shoulders: 47 },
+              createdAt: now,
+              updatedAt: now,
+            },
+          ],
+        },
+        {
+          garment: {
+            id: 'g-pants',
+            category: 'pants',
+            name: 'Jean Recto Azul',
+            brand: 'Sur',
+            status: 'owned',
+            elasticity: 0.02,
+            formality: 2,
+            tags: ['denim'],
+            dominantColorHex: '#1F3A68',
+            createdAt: now,
+            updatedAt: now,
+          },
+          sizes: [
+            {
+              id: 's-32',
+              garmentId: 'g-pants',
+              label: '32',
+              flatMeasuresCm: { waistFlat: 41, hipFlat: 52 },
+              createdAt: now,
+              updatedAt: now,
+            },
+          ],
+        },
+      ],
+    });
+
+    const { container } = render(<FittingRoom />);
+
+    // Modo Mi clóset activo automáticamente: selector desplegable, sin input de texto libre "Nombre"
+    const garmentSelect = await screen.findByLabelText('Prenda guardada');
+    expect(garmentSelect).toBeInTheDocument();
+    expect(screen.queryByLabelText('Nombre')).not.toBeInTheDocument();
+
+    // Seleccionar otra prenda guardada del desplegable cambia el avatar a pantalón
+    await user.selectOptions(garmentSelect, 'g-pants');
+    expect(container.querySelector('[data-garment="pants"]')).not.toBeNull();
+
+    // Cambiar a Prenda rápida habilita edición libre del nombre
+    await user.click(screen.getByRole('button', { name: /Prenda rápida/i }));
+    const nameInput = screen.getByLabelText('Nombre');
+    expect(nameInput).toBeInTheDocument();
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Prueba tienda');
+    expect((nameInput as HTMLInputElement).value).toBe('Prueba tienda');
   });
 });

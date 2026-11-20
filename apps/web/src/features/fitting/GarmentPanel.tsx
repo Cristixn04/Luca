@@ -1,15 +1,19 @@
+import { useEffect, useRef } from 'react';
 import {
   fromCm,
   toCm,
   type FitPreference,
   type FitReport,
   type FitZone,
+  type GarmentCategory,
   type GarmentFlatMeasurements,
 } from '@luca/domain';
-import { Shirt, Trash2 } from 'lucide-react';
+import { Shirt, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { Badge } from '@/design-system/components/Badge';
 import { Button } from '@/design-system/components/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/design-system/components/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/design-system/components/Card';
+import { useClosetStore } from '@/features/closet/closetStore';
+import { CATEGORY_LABELS, type GarmentWithSizes } from '@/features/closet/types';
 import { useFittingStore, type M2GarmentCategory } from './store';
 import { FIT_STATE_HEX, FIT_STATE_LABELS } from './svg/heatmapMeta';
 
@@ -51,10 +55,35 @@ const GARMENT_FIELDS: Record<M2GarmentCategory, readonly GarmentFieldSpec[]> = {
   ],
 };
 
+function mapCategoryToTemplate(category: GarmentCategory): M2GarmentCategory {
+  if (category === 'pants' || category === 'shorts' || category === 'skirt') {
+    return 'pants';
+  }
+  return 'tshirt';
+}
+
 function formatEase(easeCm: number, unit: 'cm' | 'in'): string {
   const sign = easeCm >= 0 ? '+' : '-';
   const abs = fromCm(Math.abs(easeCm), unit);
   return `${sign}${abs.toFixed(1)} ${unit}`;
+}
+
+function applyClosetItemToFitting(item: GarmentWithSizes, preferredSizeLabel?: string) {
+  const size =
+    (preferredSizeLabel ? item.sizes.find((s) => s.label === preferredSizeLabel) : undefined) ??
+    item.sizes[0];
+
+  useFittingStore.setState({
+    garmentEnabled: true,
+    garmentSource: 'closet',
+    selectedClosetGarmentId: item.garment.id,
+    garmentCategory: mapCategoryToTemplate(item.garment.category),
+    garmentName: item.garment.name,
+    garmentColorHex: item.garment.dominantColorHex ?? '#1F5F6B',
+    garmentSizeLabel: size?.label ?? 'M',
+    garmentElasticity: item.garment.elasticity,
+    garmentFlatMeasures: size ? { ...size.flatMeasuresCm } : {},
+  });
 }
 
 export interface GarmentPanelProps {
@@ -64,6 +93,8 @@ export interface GarmentPanelProps {
 export function GarmentPanel({ fitReport }: GarmentPanelProps) {
   const unit = useFittingStore((s) => s.unit);
   const garmentEnabled = useFittingStore((s) => s.garmentEnabled);
+  const garmentSource = useFittingStore((s) => s.garmentSource);
+  const selectedClosetGarmentId = useFittingStore((s) => s.selectedClosetGarmentId);
   const garmentCategory = useFittingStore((s) => s.garmentCategory);
   const garmentName = useFittingStore((s) => s.garmentName);
   const garmentSizeLabel = useFittingStore((s) => s.garmentSizeLabel);
@@ -71,6 +102,7 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
   const garmentFlatMeasures = useFittingStore((s) => s.garmentFlatMeasures);
   const fitPreference = useFittingStore((s) => s.fitPreference);
 
+  const setGarmentSource = useFittingStore((s) => s.setGarmentSource);
   const setGarmentCategory = useFittingStore((s) => s.setGarmentCategory);
   const setGarmentName = useFittingStore((s) => s.setGarmentName);
   const setGarmentSizeLabel = useFittingStore((s) => s.setGarmentSizeLabel);
@@ -80,23 +112,85 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
   const restoreDefaultGarment = useFittingStore((s) => s.restoreDefaultGarment);
   const setFitPreference = useFittingStore((s) => s.setFitPreference);
 
+  const closetItems = useClosetStore((s) => s.items);
+  const closetLoaded = useClosetStore((s) => s.loaded);
+  const loadCloset = useClosetStore((s) => s.loadCloset);
+  const autoSelectedRef = useRef(false);
+
+  useEffect(() => {
+    if (!closetLoaded) {
+      void loadCloset();
+    }
+  }, [closetLoaded, loadCloset]);
+
+  // Si hay prendas guardadas al abrir el Probador, activa el desplegable de Mi clóset automáticamente.
+  useEffect(() => {
+    if (autoSelectedRef.current) return;
+    if (closetItems.length === 0) return;
+
+    autoSelectedRef.current = true;
+    if (selectedClosetGarmentId) {
+      const existing = closetItems.find((item) => item.garment.id === selectedClosetGarmentId);
+      if (existing) {
+        applyClosetItemToFitting(existing, garmentSizeLabel);
+        return;
+      }
+    }
+    applyClosetItemToFitting(closetItems[0]!);
+  }, [closetItems, garmentSizeLabel, selectedClosetGarmentId]);
+
+  const selectedClosetItem =
+    closetItems.find((item) => item.garment.id === selectedClosetGarmentId) ?? null;
+
+  const handleSwitchToCloset = () => {
+    autoSelectedRef.current = true;
+    if (selectedClosetItem) {
+      setGarmentSource('closet');
+      return;
+    }
+    if (closetItems.length > 0) {
+      applyClosetItemToFitting(closetItems[0]!);
+    } else {
+      setGarmentSource('closet');
+    }
+  };
+
+  const handleSwitchToQuick = () => {
+    autoSelectedRef.current = true;
+    restoreDefaultGarment(garmentCategory);
+    useFittingStore.setState({
+      garmentSource: 'quick',
+      selectedClosetGarmentId: null,
+    });
+  };
+
   if (!garmentEnabled) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Prenda temporal</CardTitle>
-          <CardDescription>Sin prenda activa en el probador</CardDescription>
+          <CardTitle>Prenda</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-start gap-3 text-sm text-muted">
-          <p>
-            Elige una plantilla de prenda para ingresar medidas en plano y ver el mapa de calor en
-            tiempo real.
-          </p>
+          <p>Sin prenda activa en el probador.</p>
           <div className="flex flex-wrap gap-2">
+            {closetItems.length > 0 && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => applyClosetItemToFitting(closetItems[0]!)}
+              >
+                <Shirt className="h-3.5 w-3.5" aria-hidden="true" />
+                Elegir de mi clóset
+              </Button>
+            )}
             <Button
               type="button"
               size="sm"
-              onClick={() => restoreDefaultGarment('tshirt')}
+              variant={closetItems.length > 0 ? 'secondary' : 'primary'}
+              onClick={() => {
+                restoreDefaultGarment('tshirt');
+                useFittingStore.setState({ garmentSource: 'quick', selectedClosetGarmentId: null });
+              }}
             >
               <Shirt className="h-3.5 w-3.5" aria-hidden="true" />
               Probar camiseta
@@ -105,7 +199,10 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
               type="button"
               size="sm"
               variant="secondary"
-              onClick={() => restoreDefaultGarment('pants')}
+              onClick={() => {
+                restoreDefaultGarment('pants');
+                useFittingStore.setState({ garmentSource: 'quick', selectedClosetGarmentId: null });
+              }}
             >
               Probar pantalón
             </Button>
@@ -121,10 +218,7 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
-          <div>
-            <CardTitle>Prenda</CardTitle>
-            <CardDescription>Medidas en plano (tabla de tallas)</CardDescription>
-          </div>
+          <CardTitle>Prenda</CardTitle>
           <Button
             type="button"
             variant="ghost"
@@ -139,55 +233,139 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4">
-        {/* Selector de categoría */}
-        <div className="flex gap-1.5" role="group" aria-label="Tipo de prenda">
+        {/* Conmutador de origen: Mi clóset (desplegable de prendas guardadas) vs Prenda rápida */}
+        <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="Origen de la prenda">
           <Button
             type="button"
             size="sm"
-            variant={garmentCategory === 'tshirt' ? 'primary' : 'outline'}
-            aria-pressed={garmentCategory === 'tshirt'}
-            onClick={() => setGarmentCategory('tshirt')}
+            variant={garmentSource === 'closet' ? 'primary' : 'outline'}
+            aria-pressed={garmentSource === 'closet'}
+            onClick={handleSwitchToCloset}
           >
-            Camiseta
+            <Shirt className="h-3.5 w-3.5" aria-hidden="true" />
+            Mi clóset ({closetItems.length})
           </Button>
           <Button
             type="button"
             size="sm"
-            variant={garmentCategory === 'pants' ? 'primary' : 'outline'}
-            aria-pressed={garmentCategory === 'pants'}
-            onClick={() => setGarmentCategory('pants')}
+            variant={garmentSource === 'quick' ? 'primary' : 'outline'}
+            aria-pressed={garmentSource === 'quick'}
+            onClick={handleSwitchToQuick}
           >
-            Pantalón
+            <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+            Prenda rápida
           </Button>
         </div>
 
-        {/* Nombre y talla */}
-        <div className="grid grid-cols-[1fr_76px] gap-2">
-          <div className="flex flex-col gap-1">
-            <label htmlFor="garment-name" className="text-xs font-medium text-muted">
-              Nombre
-            </label>
-            <input
-              id="garment-name"
-              type="text"
-              value={garmentName}
-              onChange={(event) => setGarmentName(event.target.value)}
-              className="rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-sm text-ink"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="garment-size" className="text-xs font-medium text-muted">
-              Talla
-            </label>
-            <input
-              id="garment-size"
-              type="text"
-              value={garmentSizeLabel}
-              onChange={(event) => setGarmentSizeLabel(event.target.value)}
-              className="rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-center text-sm font-medium text-ink"
-            />
-          </div>
-        </div>
+        {garmentSource === 'closet' ? (
+          closetItems.length === 0 ? (
+            <div className="flex flex-col gap-2 rounded-[var(--radius-sm)] border border-border bg-bg p-3 text-xs text-muted">
+              <p>Aún no tienes prendas guardadas en tu clóset.</p>
+              <div>
+                <Button type="button" size="sm" variant="secondary" onClick={handleSwitchToQuick}>
+                  Ajustar prenda rápida
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-[1fr_84px] gap-2">
+              <div className="flex flex-col gap-1">
+                <label htmlFor="closet-garment-select" className="text-xs font-medium text-muted">
+                  Prenda guardada
+                </label>
+                <select
+                  id="closet-garment-select"
+                  value={selectedClosetItem?.garment.id ?? closetItems[0]!.garment.id}
+                  onChange={(event) => {
+                    const found = closetItems.find((item) => item.garment.id === event.target.value);
+                    if (found) applyClosetItemToFitting(found);
+                  }}
+                  className="w-full truncate rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-sm text-ink"
+                >
+                  {closetItems.map((item) => (
+                    <option key={item.garment.id} value={item.garment.id}>
+                      {item.garment.name} · {CATEGORY_LABELS[item.garment.category]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label htmlFor="closet-size-select" className="text-xs font-medium text-muted">
+                  Talla
+                </label>
+                <select
+                  id="closet-size-select"
+                  value={garmentSizeLabel}
+                  onChange={(event) => {
+                    if (selectedClosetItem) {
+                      applyClosetItemToFitting(selectedClosetItem, event.target.value);
+                    }
+                  }}
+                  className="w-full rounded-[var(--radius-sm)] border border-border bg-bg px-2 py-1.5 text-center text-sm font-medium text-ink"
+                >
+                  {(selectedClosetItem?.sizes ?? []).map((size) => (
+                    <option key={size.id} value={size.label}>
+                      {size.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )
+        ) : (
+          <>
+            {/* Selector de categoría en modo prenda rápida */}
+            <div className="flex gap-1.5" role="group" aria-label="Tipo de prenda">
+              <Button
+                type="button"
+                size="sm"
+                variant={garmentCategory === 'tshirt' ? 'primary' : 'outline'}
+                aria-pressed={garmentCategory === 'tshirt'}
+                onClick={() => setGarmentCategory('tshirt')}
+              >
+                Camiseta
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={garmentCategory === 'pants' ? 'primary' : 'outline'}
+                aria-pressed={garmentCategory === 'pants'}
+                onClick={() => setGarmentCategory('pants')}
+              >
+                Pantalón
+              </Button>
+            </div>
+
+            {/* Nombre y talla libres solo en prenda rápida */}
+            <div className="grid grid-cols-[1fr_76px] gap-2">
+              <div className="flex flex-col gap-1">
+                <label htmlFor="garment-name" className="text-xs font-medium text-muted">
+                  Nombre
+                </label>
+                <input
+                  id="garment-name"
+                  type="text"
+                  value={garmentName}
+                  onChange={(event) => setGarmentName(event.target.value)}
+                  className="rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-sm text-ink"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="garment-size" className="text-xs font-medium text-muted">
+                  Talla
+                </label>
+                <input
+                  id="garment-size"
+                  type="text"
+                  value={garmentSizeLabel}
+                  onChange={(event) => setGarmentSizeLabel(event.target.value)}
+                  className="rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-center text-sm font-medium text-ink"
+                />
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Medidas en plano */}
         <div className="flex flex-col gap-2.5">

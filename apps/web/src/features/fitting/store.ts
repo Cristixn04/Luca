@@ -10,6 +10,7 @@ import { create } from 'zustand';
 
 export type M2GarmentCategory = 'tshirt' | 'pants';
 export type ViewerMode = AvatarView | 'all';
+export type FittingGarmentSource = 'closet' | 'quick';
 
 export const DEFAULT_BODY_MEASUREMENTS: RequiredBodyMeasurements = {
   height: 175,
@@ -59,6 +60,8 @@ export interface FittingState {
   optionalMeasurements: OptionalBodyMeasurements;
   viewMode: ViewerMode;
   garmentEnabled: boolean;
+  garmentSource: FittingGarmentSource;
+  selectedClosetGarmentId: string | null;
   garmentCategory: M2GarmentCategory;
   garmentName: string;
   garmentColorHex: string;
@@ -74,6 +77,8 @@ export interface FittingState {
   setOptionalMeasure: (field: keyof OptionalBodyMeasurements, valueCm: number | undefined) => void;
   resetBodyMeasures: () => void;
   setViewMode: (mode: ViewerMode) => void;
+  setGarmentSource: (source: FittingGarmentSource) => void;
+  setSelectedClosetGarmentId: (id: string | null) => void;
   setGarmentCategory: (category: M2GarmentCategory) => void;
   setGarmentName: (name: string) => void;
   setGarmentSizeLabel: (sizeLabel: string) => void;
@@ -92,6 +97,8 @@ export const useFittingStore = create<FittingState>((set) => ({
   optionalMeasurements: {},
   viewMode: 'front',
   garmentEnabled: true,
+  garmentSource: 'quick',
+  selectedClosetGarmentId: null,
   garmentCategory: 'tshirt',
   garmentName: DEFAULT_GARMENT_PRESETS.tshirt.name,
   garmentColorHex: '#1F5F6B',
@@ -123,13 +130,18 @@ export const useFittingStore = create<FittingState>((set) => ({
   resetBodyMeasures: () =>
     set({ bodyMeasurements: { ...DEFAULT_BODY_MEASUREMENTS }, optionalMeasurements: {} }),
   setViewMode: (viewMode) => set({ viewMode }),
+  setGarmentSource: (garmentSource) => set({ garmentSource }),
+  setSelectedClosetGarmentId: (selectedClosetGarmentId) => set({ selectedClosetGarmentId }),
 
   setGarmentCategory: (category) => {
     const preset = DEFAULT_GARMENT_PRESETS[category];
     set({
       garmentEnabled: true,
+      garmentSource: 'quick',
+      selectedClosetGarmentId: null,
       garmentCategory: category,
       garmentName: preset.name,
+      garmentColorHex: '#1F5F6B',
       garmentSizeLabel: preset.sizeLabel,
       garmentElasticity: preset.elasticity,
       garmentFlatMeasures: { ...preset.flatMeasuresCm },
