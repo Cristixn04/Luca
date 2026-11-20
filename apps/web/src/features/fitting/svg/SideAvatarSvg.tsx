@@ -11,6 +11,7 @@ export function SideAvatarSvg({
   garmentCategory,
   fitReport,
   showHeatmap,
+  garmentColorHex,
   compact = false,
 }: SingleAvatarViewProps) {
   const anchors = computeSideAvatarAnchors(model);
@@ -92,6 +93,7 @@ export function SideAvatarSvg({
             fitReport={fitReport}
             showHeatmap={showHeatmap}
             patternPrefix={patternPrefix}
+            garmentColorHex={garmentColorHex}
           />
         )}
         {fitReport && garmentCategory === 'pants' && (
@@ -101,6 +103,7 @@ export function SideAvatarSvg({
             fitReport={fitReport}
             showHeatmap={showHeatmap}
             patternPrefix={patternPrefix}
+            garmentColorHex={garmentColorHex}
           />
         )}
       </svg>

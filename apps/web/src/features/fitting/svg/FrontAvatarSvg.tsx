@@ -11,6 +11,7 @@ export interface SingleAvatarViewProps {
   garmentCategory: M2GarmentCategory;
   fitReport: FitReport | null;
   showHeatmap: boolean;
+  garmentColorHex?: string;
   compact?: boolean;
 }
 
@@ -19,6 +20,7 @@ export function FrontAvatarSvg({
   garmentCategory,
   fitReport,
   showHeatmap,
+  garmentColorHex,
   compact = false,
 }: SingleAvatarViewProps) {
   const anchors = computeFrontAvatarAnchors(model);
@@ -103,6 +105,7 @@ export function FrontAvatarSvg({
             fitReport={fitReport}
             showHeatmap={showHeatmap}
             patternPrefix={patternPrefix}
+            garmentColorHex={garmentColorHex}
           />
         )}
         {fitReport && garmentCategory === 'pants' && (
@@ -111,6 +114,7 @@ export function FrontAvatarSvg({
             fitReport={fitReport}
             showHeatmap={showHeatmap}
             patternPrefix={patternPrefix}
+            garmentColorHex={garmentColorHex}
           />
         )}
       </svg>

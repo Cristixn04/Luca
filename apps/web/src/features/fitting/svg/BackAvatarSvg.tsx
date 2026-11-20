@@ -10,6 +10,7 @@ export function BackAvatarSvg({
   garmentCategory,
   fitReport,
   showHeatmap,
+  garmentColorHex,
   compact = false,
 }: SingleAvatarViewProps) {
   const anchors = computeFrontAvatarAnchors(model);
@@ -98,6 +99,7 @@ export function BackAvatarSvg({
             fitReport={fitReport}
             showHeatmap={showHeatmap}
             patternPrefix={patternPrefix}
+            garmentColorHex={garmentColorHex}
           />
         )}
         {fitReport && garmentCategory === 'pants' && (
@@ -106,6 +108,7 @@ export function BackAvatarSvg({
             fitReport={fitReport}
             showHeatmap={showHeatmap}
             patternPrefix={patternPrefix}
+            garmentColorHex={garmentColorHex}
           />
         )}
       </svg>

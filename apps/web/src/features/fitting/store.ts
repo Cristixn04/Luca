@@ -61,6 +61,7 @@ export interface FittingState {
   garmentEnabled: boolean;
   garmentCategory: M2GarmentCategory;
   garmentName: string;
+  garmentColorHex: string;
   garmentSizeLabel: string;
   garmentElasticity: number;
   garmentFlatMeasures: GarmentFlatMeasurements;
@@ -93,6 +94,7 @@ export const useFittingStore = create<FittingState>((set) => ({
   garmentEnabled: true,
   garmentCategory: 'tshirt',
   garmentName: DEFAULT_GARMENT_PRESETS.tshirt.name,
+  garmentColorHex: '#1F5F6B',
   garmentSizeLabel: DEFAULT_GARMENT_PRESETS.tshirt.sizeLabel,
   garmentElasticity: DEFAULT_GARMENT_PRESETS.tshirt.elasticity,
   garmentFlatMeasures: { ...DEFAULT_GARMENT_PRESETS.tshirt.flatMeasuresCm },

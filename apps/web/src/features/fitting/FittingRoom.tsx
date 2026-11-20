@@ -27,6 +27,7 @@ export function FittingRoom() {
   const setViewMode = useFittingStore((s) => s.setViewMode);
   const garmentEnabled = useFittingStore((s) => s.garmentEnabled);
   const garmentCategory = useFittingStore((s) => s.garmentCategory);
+  const garmentColorHex = useFittingStore((s) => s.garmentColorHex);
   const garmentSizeLabel = useFittingStore((s) => s.garmentSizeLabel);
   const garmentElasticity = useFittingStore((s) => s.garmentElasticity);
   const garmentFlatMeasures = useFittingStore((s) => s.garmentFlatMeasures);
@@ -156,6 +157,7 @@ export function FittingRoom() {
                 garmentCategory={garmentCategory}
                 fitReport={fitReport}
                 showHeatmap={showHeatmap}
+                garmentColorHex={garmentColorHex}
                 viewMode={viewMode}
                 onChangeViewMode={setViewMode}
               />

@@ -8,6 +8,7 @@ export interface SidePantsTemplateProps {
   anchors: SideAvatarAnchors;
   fitReport: FitReport;
   showHeatmap: boolean;
+  garmentColorHex?: string;
   patternPrefix: string;
 }
 
@@ -21,6 +22,7 @@ export function SidePantsTemplate({
   anchors,
   fitReport,
   showHeatmap,
+  garmentColorHex,
   patternPrefix,
 }: SidePantsTemplateProps) {
   const waistZone = fitReport.evaluatedZones.find((item) => item.zone === 'waist');
@@ -72,8 +74,8 @@ export function SidePantsTemplate({
     <g data-garment="pants-side" aria-label="Plantilla de pantalón en vista de perfil">
       <path
         d={path}
-        fill="var(--accent)"
-        fillOpacity={showHeatmap ? 0.08 : 0.16}
+        fill={garmentColorHex ?? 'var(--accent)'}
+        fillOpacity={showHeatmap ? 0.1 : 0.36}
         stroke="var(--ink)"
         strokeWidth="1.75"
         strokeLinejoin="round"

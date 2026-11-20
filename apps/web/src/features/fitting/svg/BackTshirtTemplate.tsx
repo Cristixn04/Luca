@@ -7,6 +7,7 @@ export interface BackTshirtTemplateProps {
   anchors: FrontAvatarAnchors;
   fitReport: FitReport;
   showHeatmap: boolean;
+  garmentColorHex?: string;
   patternPrefix: string;
 }
 
@@ -20,6 +21,7 @@ export function BackTshirtTemplate({
   anchors,
   fitReport,
   showHeatmap,
+  garmentColorHex,
   patternPrefix,
 }: BackTshirtTemplateProps) {
   const chestZone = fitReport.evaluatedZones.find((item) => item.zone === 'chest');
@@ -62,8 +64,8 @@ export function BackTshirtTemplate({
     <g data-garment="tshirt-back" aria-label="Plantilla de camiseta en vista de espalda">
       <path
         d={garmentPath}
-        fill="var(--accent)"
-        fillOpacity={showHeatmap ? 0.08 : 0.16}
+        fill={garmentColorHex ?? 'var(--accent)'}
+        fillOpacity={showHeatmap ? 0.1 : 0.36}
         stroke="var(--ink)"
         strokeWidth="1.75"
         strokeLinejoin="round"

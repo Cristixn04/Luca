@@ -6,6 +6,7 @@ export interface PantsTemplateProps {
   anchors: FrontAvatarAnchors;
   fitReport: FitReport;
   showHeatmap: boolean;
+  garmentColorHex?: string;
   patternPrefix?: string;
 }
 
@@ -22,6 +23,7 @@ export function PantsTemplate({
   anchors,
   fitReport,
   showHeatmap,
+  garmentColorHex,
   patternPrefix = 'front',
 }: PantsTemplateProps) {
   const waistZone = findZone(fitReport, 'waist');
@@ -54,8 +56,8 @@ export function PantsTemplate({
     <g data-garment="pants" aria-label="Plantilla de pantalón sobre el avatar">
       <path
         d={pantsPath}
-        fill="var(--accent)"
-        fillOpacity={showHeatmap ? 0.08 : 0.16}
+        fill={garmentColorHex ?? 'var(--accent)'}
+        fillOpacity={showHeatmap ? 0.1 : 0.36}
         stroke="var(--ink)"
         strokeWidth="1.75"
         strokeLinejoin="round"

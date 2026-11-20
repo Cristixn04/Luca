@@ -6,6 +6,7 @@ export interface TshirtTemplateProps {
   anchors: FrontAvatarAnchors;
   fitReport: FitReport;
   showHeatmap: boolean;
+  garmentColorHex?: string;
   patternPrefix?: string;
 }
 
@@ -22,6 +23,7 @@ export function TshirtTemplate({
   anchors,
   fitReport,
   showHeatmap,
+  garmentColorHex,
   patternPrefix = 'front',
 }: TshirtTemplateProps) {
   const chestZone = findZone(fitReport, 'chest');
@@ -62,8 +64,8 @@ export function TshirtTemplate({
       {/* Contorno principal de la camiseta */}
       <path
         d={garmentPath}
-        fill="var(--accent)"
-        fillOpacity={showHeatmap ? 0.08 : 0.16}
+        fill={garmentColorHex ?? 'var(--accent)'}
+        fillOpacity={showHeatmap ? 0.1 : 0.36}
         stroke="var(--ink)"
         strokeWidth="1.75"
         strokeLinejoin="round"

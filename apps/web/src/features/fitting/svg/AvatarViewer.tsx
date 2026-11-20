@@ -23,6 +23,7 @@ export interface AvatarViewerProps {
   garmentCategory: M2GarmentCategory;
   fitReport: FitReport | null;
   showHeatmap: boolean;
+  garmentColorHex?: string;
   viewMode: ViewerMode;
   onChangeViewMode: (mode: ViewerMode) => void;
 }
@@ -32,6 +33,7 @@ export function AvatarViewer({
   garmentCategory,
   fitReport,
   showHeatmap,
+  garmentColorHex,
   viewMode,
   onChangeViewMode,
 }: AvatarViewerProps) {
@@ -99,6 +101,7 @@ export function AvatarViewer({
             garmentCategory={garmentCategory}
             fitReport={fitReport}
             showHeatmap={showHeatmap}
+            garmentColorHex={garmentColorHex}
             compact={viewMode === 'all'}
           />
         )}
@@ -108,6 +111,7 @@ export function AvatarViewer({
             garmentCategory={garmentCategory}
             fitReport={fitReport}
             showHeatmap={showHeatmap}
+            garmentColorHex={garmentColorHex}
             compact={viewMode === 'all'}
           />
         )}
@@ -117,6 +121,7 @@ export function AvatarViewer({
             garmentCategory={garmentCategory}
             fitReport={fitReport}
             showHeatmap={showHeatmap}
+            garmentColorHex={garmentColorHex}
             compact={viewMode === 'all'}
           />
         )}
