@@ -456,6 +456,18 @@
               }
             ],
             "description": "Etiquetas sugeridas con confianza por el puerto Tagger (si include_tags=true)"
+          },
+          "tagging_warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tagging Warning",
+            "description": "Aviso no bloqueante si el proveedor de etiquetado IA no respondió a tiempo"
           }
         },
         "type": "object",

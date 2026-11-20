@@ -1,8 +1,12 @@
 from fastapi.testclient import TestClient
 
+from app.adapters.tagging.gemini_tagger import DisabledTagger
+from app.adapters.vision.rembg_remover import SimpleBorderBackgroundRemover
 from app.main import API_VERSION, create_app
 
-client = TestClient(create_app())
+client = TestClient(
+    create_app(remover=SimpleBorderBackgroundRemover(), tagger=DisabledTagger())
+)
 
 
 def test_health_v1_returns_ok_and_security_headers() -> None:

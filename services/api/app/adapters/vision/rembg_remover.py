@@ -1,5 +1,6 @@
 import io
 import os
+from collections import deque
 from collections.abc import Callable
 
 import numpy as np
@@ -11,7 +12,8 @@ from app.ports.vision import BackgroundRemover
 class SimpleBorderBackgroundRemover:
     """
     Adaptador determinista en memoria (Pillow + NumPy) que remueve fondos uniformes
-    estimando el color del borde de la imagen. Útil en CI, pruebas y entornos sin pesos ONNX.
+    conectados a los 4 bordes de la imagen (flood-fill). Nunca perfora zonas internas
+    de la prenda del mismo color que el fondo.
     """
 
     def __init__(self, threshold: float = 34.0) -> None:
@@ -26,6 +28,7 @@ class SimpleBorderBackgroundRemover:
             rgba = img.convert("RGBA")
             arr = np.asarray(rgba, dtype=np.float32).copy()
 
+        height, width = arr.shape[:2]
         rgb = arr[:, :, :3]
         # Muestrea los 4 bordes para estimar el color de fondo predominante.
         top = rgb[0, :, :]
@@ -36,7 +39,42 @@ class SimpleBorderBackgroundRemover:
         bg_color = np.median(border_pixels, axis=0)
 
         dist = np.linalg.norm(rgb - bg_color, axis=2)
-        bg_mask = dist < self._threshold
+        candidate = dist < self._threshold
+
+        # Flood-fill desde el perímetro exterior para remover solo fondo conectado a los bordes.
+        bg_mask = np.zeros((height, width), dtype=bool)
+        queue: deque[tuple[int, int]] = deque()
+
+        for x in range(width):
+            if candidate[0, x] and not bg_mask[0, x]:
+                bg_mask[0, x] = True
+                queue.append((0, x))
+            if candidate[height - 1, x] and not bg_mask[height - 1, x]:
+                bg_mask[height - 1, x] = True
+                queue.append((height - 1, x))
+
+        for y in range(height):
+            if candidate[y, 0] and not bg_mask[y, 0]:
+                bg_mask[y, 0] = True
+                queue.append((y, 0))
+            if candidate[y, width - 1] and not bg_mask[y, width - 1]:
+                bg_mask[y, width - 1] = True
+                queue.append((y, width - 1))
+
+        while queue:
+            cy, cx = queue.popleft()
+            if cy > 0 and candidate[cy - 1, cx] and not bg_mask[cy - 1, cx]:
+                bg_mask[cy - 1, cx] = True
+                queue.append((cy - 1, cx))
+            if cy + 1 < height and candidate[cy + 1, cx] and not bg_mask[cy + 1, cx]:
+                bg_mask[cy + 1, cx] = True
+                queue.append((cy + 1, cx))
+            if cx > 0 and candidate[cy, cx - 1] and not bg_mask[cy, cx - 1]:
+                bg_mask[cy, cx - 1] = True
+                queue.append((cy, cx - 1))
+            if cx + 1 < width and candidate[cy, cx + 1] and not bg_mask[cy, cx + 1]:
+                bg_mask[cy, cx + 1] = True
+                queue.append((cy, cx + 1))
 
         # Evita borrar toda la prenda si la foto ya es de un color uniforme:
         # solo aplica la máscara si conserva al menos 5 % de píxeles en primer plano.

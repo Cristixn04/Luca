@@ -32,6 +32,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        navigateFallbackDenylist: [/^\/v1\//],
       },
     }),
   ],
@@ -41,6 +42,14 @@ export default defineConfig({
     },
   },
   server: {
+    proxy: {
+      '/v1': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+    },
+  },
+  preview: {
     proxy: {
       '/v1': {
         target: 'http://127.0.0.1:8000',

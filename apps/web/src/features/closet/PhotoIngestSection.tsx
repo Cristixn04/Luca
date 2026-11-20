@@ -176,10 +176,22 @@ export function PhotoIngestSection({
 
       if (response.tagging) {
         setTagSuggestion(response.tagging);
+      } else if (includeAiTags) {
+        setTagSuggestion(
+          suggestManualTags({
+            category,
+            dominantColorHex: response.dominant_color_hex,
+            formality,
+            elasticity,
+            hasBackPhoto: Boolean(nextBackDataUrl),
+          }),
+        );
       }
 
       setProgressNote(
-        `Recorte completado en ${response.processing_ms} ms (${response.provider}). Puedes editar color y etiquetas.`,
+        response.tagging_warning
+          ? `Recorte completado en ${response.processing_ms} ms (${response.provider}). ${response.tagging_warning} Se cargaron sugerencias locales de respaldo.`
+          : `Recorte completado en ${response.processing_ms} ms (${response.provider}). Puedes editar color y etiquetas.`,
       );
     } catch (err) {
       if (controller.signal.aborted) {

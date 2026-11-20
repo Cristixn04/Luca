@@ -27,6 +27,7 @@ from app.security.controls import DailyBudgetGuard, InMemoryRateLimiter, validat
 ALLOWED_IMAGE_FORMATS = frozenset({"JPEG", "PNG", "WEBP"})
 DEFAULT_MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MiB
 DEFAULT_VISION_TIMEOUT_SECONDS = 15.0
+DEFAULT_TAGGING_TIMEOUT_SECONDS = 12.0
 VISION_CALL_COST_USD = 0.002
 TAGGING_CALL_COST_USD = 0.008
 
@@ -57,6 +58,10 @@ class VisionAnalyzeResponse(BaseModel):
     tagging: GarmentTagSuggestion | None = Field(
         default=None,
         description="Etiquetas sugeridas con confianza por el puerto Tagger (si include_tags=true)",
+    )
+    tagging_warning: str | None = Field(
+        default=None,
+        description="Aviso no bloqueante si el proveedor de etiquetado IA no respondió a tiempo",
     )
 
 
@@ -160,7 +165,7 @@ def create_vision_router(
 
         started = time.perf_counter()
 
-        def _process_in_memory() -> tuple[
+        def _process_vision_in_memory() -> tuple[
             bytes,
             bytes | None,
             int,
@@ -169,7 +174,6 @@ def create_vision_router(
             tuple[float, float, float],
             list[str],
             float,
-            GarmentTagSuggestion | None,
         ]:
             cutout_front = remover.remove_background(raw_front)
             cutout_back = remover.remove_background(raw_back) if raw_back is not None else None
@@ -178,9 +182,6 @@ def create_vision_router(
                 width, height = cut_img.size
 
             color = extract_dominant_color(cutout_front)
-            tagging_result: GarmentTagSuggestion | None = None
-            if include_tags:
-                tagging_result = tagger.tag_garment(cutout_front, cutout_back)
 
             return (
                 cutout_front,
@@ -191,7 +192,6 @@ def create_vision_router(
                 (color.lab.l, color.lab.a, color.lab.b),
                 color.palette_hex,
                 color.coverage,
-                tagging_result,
             )
 
         try:
@@ -204,9 +204,8 @@ def create_vision_router(
                 lab_tuple,
                 palette_hex,
                 coverage,
-                tagging_result,
             ) = await asyncio.wait_for(
-                asyncio.to_thread(_process_in_memory),
+                asyncio.to_thread(_process_vision_in_memory),
                 timeout=effective_timeout,
             )
         except TimeoutError as exc:
@@ -214,6 +213,30 @@ def create_vision_router(
                 status_code=status.HTTP_504_GATEWAY_TIMEOUT,
                 detail="El análisis de la foto superó el tiempo máximo permitido.",
             ) from exc
+
+        # El etiquetado IA se ejecuta de forma desacoplada: si el LLM está saturado o tarda,
+        # el recorte de fondo y el color dominante CIELAB se devuelven igualmente (degradación elegante).
+        tagging_result: GarmentTagSuggestion | None = None
+        tagging_warning: str | None = None
+        if include_tags and tagger.provider_name != "none":
+            tagging_timeout = float(
+                os.getenv("LUCA_LLM_TIMEOUT_SECONDS", str(DEFAULT_TAGGING_TIMEOUT_SECONDS))
+            )
+            try:
+                tagging_result = await asyncio.wait_for(
+                    asyncio.to_thread(tagger.tag_garment, cutout_front, cutout_back),
+                    timeout=min(effective_timeout, tagging_timeout),
+                )
+            except TimeoutError:
+                tagging_warning = (
+                    "El etiquetado con IA superó el tiempo de espera; "
+                    "el recorte y el color dominante se completaron correctamente."
+                )
+            except Exception:  # noqa: BLE001 - degradación elegante ante cualquier fallo del LLM externo
+                tagging_warning = (
+                    "El servicio de IA no está disponible temporalmente; "
+                    "el recorte y el color dominante se completaron correctamente."
+                )
 
         elapsed_ms = int((time.perf_counter() - started) * 1000)
 
@@ -235,6 +258,7 @@ def create_vision_router(
             provider=remover.provider_name,
             processing_ms=elapsed_ms,
             tagging=tagging_result,
+            tagging_warning=tagging_warning,
         )
 
     return router

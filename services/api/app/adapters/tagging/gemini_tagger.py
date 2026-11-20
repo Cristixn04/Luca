@@ -117,16 +117,22 @@ class GeminiVisionTagger:
         api_key: str,
         model: str = DEFAULT_GEMINI_MODEL,
         client: Any | None = None,
+        timeout_seconds: float = 12.0,
     ) -> None:
         if not api_key and client is None:
             raise ValueError("LUCA_LLM_API_KEY es obligatoria para usar GeminiVisionTagger.")
         self._model = model
+        self._timeout_seconds = max(2.0, timeout_seconds)
         if client is not None:
             self._client = client
         else:
             from google import genai
+            from google.genai import types
 
-            self._client = genai.Client(api_key=api_key)
+            self._client = genai.Client(
+                api_key=api_key,
+                http_options=types.HttpOptions(timeout=int(self._timeout_seconds * 1000)),
+            )
 
     @property
     def provider_name(self) -> str:
@@ -158,7 +164,14 @@ class GeminiVisionTagger:
             },
         )
 
-        raw_text = interaction.output_text
+        raw_text = getattr(interaction, "output_text", None)
+        if not raw_text:
+            outputs = getattr(interaction, "outputs", None) or []
+            for block in outputs:
+                text = getattr(block, "text", None)
+                if isinstance(text, str) and text.strip():
+                    raw_text = text
+                    break
         if not raw_text:
             raise RuntimeError("Gemini no devolvió salida estructurada para el etiquetado.")
 
@@ -177,12 +190,25 @@ def build_tagger(provider: str | None = None) -> Tagger:
     if chosen == "mock":
         return MockDeterministicTagger()
 
-    if chosen == "llm":
+    if chosen in {"llm", "gemini"}:
         api_key = os.getenv("LUCA_LLM_API_KEY", "").strip()
-        model = os.getenv("LUCA_LLM_MODEL", DEFAULT_GEMINI_MODEL).strip() or DEFAULT_GEMINI_MODEL
+        model = (
+            os.getenv("LUCA_LLM_MODEL", "").strip()
+            or os.getenv("LUCA_GEMINI_MODEL", "").strip()
+            or DEFAULT_GEMINI_MODEL
+        )
+        timeout_raw = os.getenv("LUCA_LLM_TIMEOUT_SECONDS", "12.0").strip()
+        try:
+            timeout_seconds = float(timeout_raw)
+        except ValueError:
+            timeout_seconds = 12.0
         if not api_key:
             # Degradación elegante si LUCA_TAGGER_PROVIDER=llm pero aún no se configuró la clave.
             return DisabledTagger()
-        return GeminiVisionTagger(api_key=api_key, model=model)
+        return GeminiVisionTagger(
+            api_key=api_key,
+            model=model,
+            timeout_seconds=timeout_seconds,
+        )
 
     return DisabledTagger()

@@ -94,6 +94,7 @@ def main() -> None:
         "  readonly provider: string;",
         "  readonly processing_ms: number;",
         "  readonly tagging: GarmentTagSuggestion | null;",
+        "  readonly tagging_warning: string | null;",
         "}",
         "",
     ]
