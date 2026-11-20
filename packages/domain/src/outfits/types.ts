@@ -1,5 +1,6 @@
 import type { BodyModel, FitPreference, FitState, GarmentCategory, GarmentFlatMeasurements } from '../index.js';
 import type { ColorSeasonId } from '../color/types.js';
+import type { TasteProfile } from '../taste/types.js';
 
 export const OUTFIT_OCCASIONS = [
   'casual',
@@ -101,6 +102,7 @@ export interface OutfitGenerationContext {
   readonly bodyModel?: BodyModel | null;
   readonly fitPreference?: FitPreference;
   readonly seasonId?: ColorSeasonId | null;
+  readonly tasteProfile?: TasteProfile | null;
   readonly referenceDateIso?: string;
   /** Máximo de candidatas por ranura (sección 10.4: K = 15) */
   readonly topKPerSlot?: number;
@@ -115,6 +117,8 @@ export interface OutfitScoreBreakdown {
   readonly fit: number;
   readonly occasion: number;
   readonly variety: number;
+  readonly taste: number | null;
+  readonly tasteActive: boolean;
 }
 
 export interface OutfitProposal {

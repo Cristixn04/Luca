@@ -3,6 +3,7 @@ import { evaluateGarmentColorHarmony } from '../color/harmony.js';
 import type { ColorSeasonId } from '../color/types.js';
 import { evaluateGarmentFit } from '../fit/engine.js';
 import type { FitState } from '../fit/types.js';
+import { evaluateOutfitTasteScore } from '../taste/engine.js';
 import {
   OCCASION_RULES,
   classifyTemperatureBand,
@@ -15,13 +16,23 @@ import {
   type TemperatureBand,
 } from './types.js';
 
-/** Pesos sección 10.4 (antes de M10 Gusto): Color 0.30, Estilo 0.20, Calce 0.25, Ocasión 0.15, Variedad 0.10 */
+/** Pesos sección 10.4 sin Gusto (arranque en frío < 10 eventos) */
 export const OUTFIT_SCORE_WEIGHTS = {
   color: 0.3,
   style: 0.2,
   fit: 0.25,
   occasion: 0.15,
   variety: 0.1,
+} as const;
+
+/** Pesos sección 10.4 con Gusto activo (>= 10 eventos o reglas explícitas · T10.4) */
+export const OUTFIT_SCORE_WEIGHTS_WITH_TASTE = {
+  color: 0.25,
+  style: 0.15,
+  fit: 0.2,
+  occasion: 0.15,
+  variety: 0.1,
+  taste: 0.15,
 } as const;
 
 const DEFAULT_TOP_K = 15;
@@ -344,12 +355,23 @@ export function scoreOutfitCandidate(
   const occasion = evaluateOccasionAndWeather(items, context, band);
   const variety = evaluateVarietyScore(items, referenceTimeMs);
 
-  const weighted =
-    OUTFIT_SCORE_WEIGHTS.color * color +
-    OUTFIT_SCORE_WEIGHTS.style * style +
-    OUTFIT_SCORE_WEIGHTS.fit * fit +
-    OUTFIT_SCORE_WEIGHTS.occasion * occasion +
-    OUTFIT_SCORE_WEIGHTS.variety * variety;
+  const tasteActive = Boolean(context.tasteProfile?.activeInScoring);
+  const tasteResult = tasteActive
+    ? evaluateOutfitTasteScore(items, context.tasteProfile, fitStatesByGarmentId)
+    : null;
+
+  const weighted = tasteActive && tasteResult
+    ? OUTFIT_SCORE_WEIGHTS_WITH_TASTE.color * color +
+      OUTFIT_SCORE_WEIGHTS_WITH_TASTE.style * style +
+      OUTFIT_SCORE_WEIGHTS_WITH_TASTE.fit * fit +
+      OUTFIT_SCORE_WEIGHTS_WITH_TASTE.occasion * occasion +
+      OUTFIT_SCORE_WEIGHTS_WITH_TASTE.variety * variety +
+      OUTFIT_SCORE_WEIGHTS_WITH_TASTE.taste * tasteResult.score
+    : OUTFIT_SCORE_WEIGHTS.color * color +
+      OUTFIT_SCORE_WEIGHTS.style * style +
+      OUTFIT_SCORE_WEIGHTS.fit * fit +
+      OUTFIT_SCORE_WEIGHTS.occasion * occasion +
+      OUTFIT_SCORE_WEIGHTS.variety * variety;
 
   const breakdown: OutfitScoreBreakdown = {
     total: round1(weighted * 100),
@@ -358,6 +380,8 @@ export function scoreOutfitCandidate(
     fit: Math.round(fit * 100),
     occasion: Math.round(occasion * 100),
     variety: Math.round(variety * 100),
+    taste: tasteResult ? Math.round(tasteResult.score * 100) : null,
+    tasteActive,
   };
 
   const sortedIds = items.map((i) => i.id).sort().join('+');

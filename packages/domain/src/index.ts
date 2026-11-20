@@ -152,6 +152,7 @@ export {
 
 export {
   OUTFIT_SCORE_WEIGHTS,
+  OUTFIT_SCORE_WEIGHTS_WITH_TASTE,
   generateAllOutfitCandidates,
   generateDiverseOutfits,
   scoreOutfitCandidate,
@@ -165,3 +166,29 @@ export {
   computeProjectedCpw,
   simulateWishlistUnlock,
 } from './outfits/metrics.js';
+
+export {
+  TASTE_COLD_START_THRESHOLD,
+  TASTE_EVENT_VALUES,
+  TASTE_FEATURE_CATEGORIES,
+  TASTE_HALF_LIFE_DAYS,
+  serializeTasteKey,
+  type TasteExplicitOverrides,
+  type TasteExplicitRule,
+  type TasteFeatureAffinity,
+  type TasteFeatureCategory,
+  type TasteFeatureKey,
+  type TasteInteractionSignal,
+  type TasteProfile,
+  type TasteSignalType,
+  type TasteSnapshotAggregate,
+} from './taste/types.js';
+
+export {
+  buildTasteProfile,
+  classifyTasteColorFamily,
+  computeLaplaceAffinity,
+  computeTasteEventDecay,
+  evaluateOutfitTasteScore,
+  extractGarmentTasteFeatures,
+} from './taste/engine.js';
