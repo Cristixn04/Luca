@@ -6,6 +6,9 @@ test.describe('Flujo e2e M2: medidas → prenda → mapa de calor (T2.9)', () =>
   }) => {
     await page.goto('/');
 
+    // Primer arranque en M3: continuar sin cifrado para probar el flujo rápido del probador
+    await page.getByRole('button', { name: 'Continuar sin cifrado' }).click();
+
     await expect(page.getByRole('heading', { level: 1, name: 'Probador de calce' })).toBeVisible();
 
     // 1. Ajustar medida corporal de pecho a 92 cm

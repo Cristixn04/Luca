@@ -1,10 +1,14 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '@/App';
+import { resetVaultServiceForTests } from '@/features/vault/vaultStore';
+import { DexieLocalStore } from '@/infrastructure/storage/dexieStore';
+
+let testStore: DexieLocalStore | null = null;
 
 describe('AppShell y navegación base (T0.4)', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     window.localStorage.clear();
     document.head.innerHTML = '<meta name="color-scheme" content="light dark">';
     Object.defineProperty(window, 'matchMedia', {
@@ -18,13 +22,28 @@ describe('AppShell y navegación base (T0.4)', () => {
         dispatchEvent: vi.fn(),
       })),
     });
+
+    const dbName = `luca-appshell-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+    testStore = new DexieLocalStore(dbName);
+    const vault = resetVaultServiceForTests(testStore, { kdfIterations: 1_000 });
+    await vault.enablePlaintextMode();
+  });
+
+  afterEach(async () => {
+    if (testStore) {
+      await testStore.wipeAll();
+      testStore.close();
+      testStore = null;
+    }
   });
 
   it('renderiza la marca, la navegación principal y marca la sección activa con aria-current="page"', async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Probador de calce' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Probador de calce' }),
+    ).toBeInTheDocument();
 
     const fittingLink = screen.getByRole('link', { name: 'Probador' });
     expect(fittingLink).toHaveAttribute('aria-current', 'page');
@@ -41,6 +60,7 @@ describe('AppShell y navegación base (T0.4)', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await screen.findByRole('heading', { level: 1, name: 'Probador de calce' });
     const toggle = screen.getByRole('button', { name: 'Cambiar a tema oscuro' });
     await user.click(toggle);
 
@@ -54,6 +74,7 @@ describe('AppShell y navegación base (T0.4)', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await screen.findByRole('heading', { level: 1, name: 'Probador de calce' });
     const menuButton = screen.getByRole('button', { name: 'Abrir menú de navegación' });
     expect(menuButton).toHaveAttribute('aria-expanded', 'false');
 
@@ -62,8 +83,9 @@ describe('AppShell y navegación base (T0.4)', () => {
     expect(screen.getByRole('navigation', { name: 'Navegación móvil' })).toBeInTheDocument();
   });
 
-  it('no contiene emojis en el texto renderizado de la interfaz', () => {
+  it('no contiene emojis en el texto renderizado de la interfaz', async () => {
     const { container } = render(<App />);
+    await screen.findByRole('heading', { level: 1, name: 'Probador de calce' });
     const emojiPattern = /\p{Extended_Pictographic}/u;
     expect(container.textContent ?? '').not.toMatch(emojiPattern);
   });

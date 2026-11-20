@@ -6,6 +6,18 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-20
+
+### Added
+- **M3 · Almacenamiento local seguro y bóveda cifrada (`v0.2`)**:
+  - Puerto `LocalStore` y adaptador `DexieLocalStore` sobre IndexedDB con esquema versionado (`v1 → v2`) y respaldo previo automático de migraciones (`infrastructure/storage/`).
+  - Capa criptográfica nativa sobre WebCrypto (`infrastructure/crypto/webcrypto.ts`): AES-256-GCM con nonce aleatorio de 96 bits por registro, AAD ligado a `store` e `id`, PBKDF2-HMAC-SHA256 con 600.000 iteraciones y clave de recuperación aleatoria de 256 bits.
+  - `VaultService` (`infrastructure/vault/vaultService.ts`): creación de bóveda con DEK doblemente envuelta (contraseña y clave de recuperación), modo sin cifrado con advertencia explícita, desbloqueo, bloqueo automático por inactividad, cambio de contraseña sin recifrar registros (ADR-004), exportación/importación atómica de respaldos cifrados y borrado total.
+  - Infraestructura de registro de eventos de solo añadir (`INTERACTION_EVENT`) con compactación mensual en `TASTE_SNAPSHOT` (`infrastructure/storage/eventLog.ts`).
+  - Monitor de almacenamiento persistente (`navigator.storage.persist()`), estimación de cuota, aviso para Safari iOS sin instalar y recordatorio periódico de respaldo (`infrastructure/storage/persistence.ts`).
+  - Pantallas `VaultGate` (creación, visualización única de clave de recuperación, desbloqueo y recuperación) y `MemoryVaultPanel` integradas con persistencia cifrada de medidas en `FittingRoom`.
+  - Pruebas de vectores conocidos (NIST SP 800-38D AES-256-GCM y RFC 6070 PBKDF2-HMAC-SHA256), detección de manipulación de ciphertext/IV/AAD, migración Dexie `v1 → v2`, compactación, respaldo cifrado y flujo e2e Playwright (`apps/web/e2e/vault.spec.ts`).
+
 ## [0.1.0] - 2026-11-19
 
 ### Added
