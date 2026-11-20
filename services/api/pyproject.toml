@@ -4,15 +4,23 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "luca-api"
-version = "0.0.0"
+version = "0.5.0"
 description = "API sin estado para Luca (visión, etiquetado y clima)"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0,<1.0.0",
+    "numpy>=2.0.0,<3.0.0",
+    "pillow>=11.0.0,<13.0.0",
+    "python-multipart>=0.0.20,<1.0.0",
+    "scikit-learn>=1.6.0,<2.0.0",
     "uvicorn[standard]>=0.34.0,<1.0.0",
 ]
 
 [project.optional-dependencies]
+vision = [
+    "onnxruntime>=1.20.0",
+    "rembg>=2.0.60",
+]
 dev = [
     "httpx>=0.28.0,<1.0.0",
     "mypy>=1.15.0,<2.0.0",
@@ -33,3 +41,7 @@ target-version = "py312"
 [tool.mypy]
 python_version = "3.12"
 strict = true
+
+[[tool.mypy.overrides]]
+module = ["rembg", "rembg.*", "sklearn", "sklearn.*"]
+ignore_missing_imports = true
