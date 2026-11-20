@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from '@/design-system/components/Card';
 import { useFittingStore } from '@/features/fitting/store';
+import { createClosetSearchIndex } from './closetSearch';
 import { useClosetStore, type ClosetSortBy } from './closetStore';
 import { GarmentDetailView } from './GarmentDetailView';
 import { GarmentFormDialog } from './GarmentFormDialog';
@@ -75,27 +76,22 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
     return validateBodyMeasurements(m).valid ? createBodyModel(m) : null;
   }, [bodyMeasurements]);
 
-  const filteredItems = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  const searchIndex = useMemo(() => createClosetSearchIndex(items), [items]);
 
-    const matched = items.filter(({ garment }) => {
+  const filteredItems = useMemo(() => {
+    const query = search.trim();
+    const candidates = query.length > 0 ? searchIndex.search(query) : items;
+
+    const matched = candidates.filter(({ garment }) => {
       if (categoryFilter !== 'all' && garment.category !== categoryFilter) return false;
       if (statusFilter !== 'all' && garment.status !== statusFilter) return false;
       if (formalityFilter !== 'all' && garment.formality !== formalityFilter) return false;
-
-      if (query.length > 0) {
-        const haystack = [
-          garment.name,
-          garment.brand,
-          CATEGORY_LABELS[garment.category],
-          ...garment.tags,
-        ]
-          .join(' ')
-          .toLowerCase();
-        if (!haystack.includes(query)) return false;
-      }
       return true;
     });
+
+    if (query.length > 0 && sortBy === 'recent') {
+      return matched;
+    }
 
     return [...matched].sort((a, b) => {
       switch (sortBy) {
@@ -110,7 +106,7 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
           return b.garment.updatedAt.localeCompare(a.garment.updatedAt);
       }
     });
-  }, [categoryFilter, formalityFilter, items, search, sortBy, statusFilter]);
+  }, [categoryFilter, formalityFilter, items, search, searchIndex, sortBy, statusFilter]);
 
   const selectedItem = useMemo(
     () => (selectedId ? items.find((item) => item.garment.id === selectedId) ?? null : null),
@@ -129,8 +125,11 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
     return (
       <>
         <GarmentDetailView
+          key={selectedItem.garment.id}
           item={selectedItem}
+          allItems={items}
           onBack={() => selectGarment(null)}
+          onSelectGarment={(id) => selectGarment(id)}
           onEdit={(target) => {
             setEditingItem(target);
             setFormOpen(true);
@@ -161,7 +160,7 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
       >
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
-            <Badge variant="accent">Clóset local · v0.3</Badge>
+            <Badge variant="accent">Clóset local · v0.6</Badge>
             <Badge className="tabular-nums">{items.length} prendas</Badge>
           </div>
           <h1 id="closet-heading" className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -195,7 +194,7 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
           <input
             type="search"
             aria-label="Buscar prendas en el clóset"
-            placeholder="Buscar por nombre, marca o etiqueta..."
+            placeholder="Buscar texto libre (ej. camisa lino verano)..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             className="w-full rounded-[var(--radius-sm)] border border-border bg-bg py-1.5 pr-3 pl-9 text-sm text-ink"

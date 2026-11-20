@@ -3,16 +3,26 @@ import { GARMENT_CATEGORIES, type GarmentCategory } from '@luca/domain';
 import { X } from 'lucide-react';
 import { Button } from '@/design-system/components/Button';
 import { useFittingStore } from '@/features/fitting/store';
+import type { GarmentTagSuggestion } from '@/infrastructure/api-client/generated.types';
 import { validateGarmentDraft } from './closetService';
 import { PhotoIngestSection, type PhotoIngestValue } from './PhotoIngestSection';
 import { SizeTableEditor } from './SizeTableEditor';
 import {
   CATEGORY_LABELS,
   FORMALITY_LABELS,
+  GARMENT_PATTERNS,
+  GARMENT_SEASONS,
+  GARMENT_STYLES,
+  PATTERN_LABELS,
+  SEASON_LABELS,
   STATUS_LABELS,
+  STYLE_LABELS,
   type FormalityLevel,
   type GarmentDraft,
+  type GarmentPattern,
+  type GarmentSeason,
   type GarmentStatus,
+  type GarmentStyle,
   type GarmentWithSizes,
   type SizeOptionDraft,
 } from './types';
@@ -57,6 +67,9 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
   const [priceText, setPriceText] = useState('');
   const [elasticityPct, setElasticityPct] = useState('5');
   const [formality, setFormality] = useState<FormalityLevel>(2);
+  const [pattern, setPattern] = useState<GarmentPattern | ''>('');
+  const [style, setStyle] = useState<GarmentStyle | ''>('');
+  const [seasons, setSeasons] = useState<GarmentSeason[]>([]);
   const [tagsText, setTagsText] = useState('');
   const [dominantColorHex, setDominantColorHex] = useState('#1F5F6B');
   const [photo, setPhoto] = useState<PhotoIngestValue>({ dominantColorHex: '#1F5F6B' });
@@ -75,6 +88,9 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
       setPriceText(editing.garment.price !== undefined ? String(editing.garment.price) : '');
       setElasticityPct(String(Math.round(editing.garment.elasticity * 100)));
       setFormality(editing.garment.formality);
+      setPattern(editing.garment.pattern ?? '');
+      setStyle(editing.garment.style ?? '');
+      setSeasons([...(editing.garment.seasons ?? [])]);
       setTagsText(editing.garment.tags.join(', '));
       const colorHex = editing.garment.dominantColorHex ?? '#1F5F6B';
       setDominantColorHex(colorHex);
@@ -83,6 +99,7 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
         ...(editing.image
           ? {
               dataUrl: editing.image.dataUrl,
+              ...(editing.image.backDataUrl ? { backDataUrl: editing.image.backDataUrl } : {}),
               width: editing.image.width,
               height: editing.image.height,
               source: editing.image.source,
@@ -104,6 +121,9 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
       setPriceText('');
       setElasticityPct('5');
       setFormality(2);
+      setPattern('');
+      setStyle('');
+      setSeasons([]);
       setTagsText('');
       setDominantColorHex('#1F5F6B');
       setPhoto({ dominantColorHex: '#1F5F6B' });
@@ -138,6 +158,29 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
     }
   };
 
+  const handleToggleSeason = (season: GarmentSeason) => {
+    setSeasons((prev) =>
+      prev.includes(season) ? prev.filter((item) => item !== season) : [...prev, season],
+    );
+  };
+
+  const handleApplyTagSuggestion = (suggestion: GarmentTagSuggestion) => {
+    if (suggestion.category !== category) {
+      handleCategoryChange(suggestion.category);
+    }
+    setPattern(suggestion.pattern);
+    setStyle(suggestion.style);
+    setFormality(suggestion.formality);
+    setSeasons([...suggestion.seasons]);
+
+    const existing = tagsText
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const merged = Array.from(new Set([...existing, ...suggestion.suggested_tags]));
+    setTagsText(merged.join(', '));
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     const parsedPrice = priceText.trim() === '' ? undefined : Number.parseFloat(priceText);
@@ -151,6 +194,9 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
       ...(parsedPrice !== undefined ? { price: parsedPrice } : {}),
       elasticity: Number.isFinite(parsedElasticity) ? parsedElasticity : 0,
       formality,
+      ...(pattern ? { pattern } : {}),
+      ...(style ? { style } : {}),
+      ...(seasons.length > 0 ? { seasons } : {}),
       tags: tagsText
         .split(',')
         .map((t) => t.trim())
@@ -159,6 +205,7 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
       image: photo.dataUrl
         ? {
             dataUrl: photo.dataUrl,
+            ...(photo.backDataUrl ? { backDataUrl: photo.backDataUrl } : {}),
             width: photo.width,
             height: photo.height,
             source: photo.source ?? 'manual',
@@ -351,6 +398,73 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
             </div>
           </div>
 
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="garment-form-pattern" className="text-xs font-medium text-muted">
+                Patrón (opcional)
+              </label>
+              <select
+                id="garment-form-pattern"
+                value={pattern}
+                onChange={(event) => setPattern(event.target.value as GarmentPattern | '')}
+                className="rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
+              >
+                <option value="">Sin especificar</option>
+                {GARMENT_PATTERNS.map((item) => (
+                  <option key={item} value={item}>
+                    {PATTERN_LABELS[item]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="garment-form-style" className="text-xs font-medium text-muted">
+                Estilo (opcional)
+              </label>
+              <select
+                id="garment-form-style"
+                value={style}
+                onChange={(event) => setStyle(event.target.value as GarmentStyle | '')}
+                className="rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
+              >
+                <option value="">Sin especificar</option>
+                {GARMENT_STYLES.map((item) => (
+                  <option key={item} value={item}>
+                    {STYLE_LABELS[item]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <fieldset className="flex flex-col gap-1.5">
+            <legend className="text-xs font-medium text-muted">Temporadas (opcional)</legend>
+            <div className="flex flex-wrap gap-2">
+              {GARMENT_SEASONS.map((season) => {
+                const checked = seasons.includes(season);
+                return (
+                  <label
+                    key={season}
+                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-[var(--radius-sm)] border px-2.5 py-1 text-xs ${
+                      checked
+                        ? 'border-accent bg-surface font-medium text-accent'
+                        : 'border-border bg-bg text-muted'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => handleToggleSeason(season)}
+                      className="h-3.5 w-3.5 accent-[var(--accent)]"
+                    />
+                    {SEASON_LABELS[season]}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
           <div className="flex flex-col gap-1">
             <label htmlFor="garment-form-tags" className="text-xs font-medium text-muted">
               Etiquetas (separadas por coma)
@@ -367,10 +481,14 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
 
           <PhotoIngestSection
             value={{ ...photo, dominantColorHex }}
+            category={category}
+            formality={formality}
+            elasticity={Number.isFinite(Number.parseFloat(elasticityPct)) ? Number.parseFloat(elasticityPct) / 100 : 0.05}
             onChange={(next) => {
               setPhoto(next);
               setDominantColorHex(next.dominantColorHex);
             }}
+            onApplyTagSuggestion={handleApplyTagSuggestion}
           />
 
           <SizeTableEditor category={category} unit={unit} sizes={sizes} onChange={setSizes} />

@@ -75,7 +75,7 @@ export function AppShell({
             >
               Luca
             </a>
-            <Badge variant="accent">v0.5</Badge>
+            <Badge variant="accent">v0.6</Badge>
           </div>
 
           <nav aria-label="Navegación principal" className="hidden md:block">
@@ -200,7 +200,7 @@ export function AppShell({
       <footer className="border-t border-border bg-surface">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-xs text-muted sm:px-6">
           <span>Luca · Datos cifrados solo en tu dispositivo</span>
-          <span className="tabular-nums">Luca v0.5 · Fotos cifradas y API sin estado</span>
+          <span className="tabular-nums">Luca v0.6 · Etiquetado y búsqueda local</span>
         </div>
       </footer>
     </div>

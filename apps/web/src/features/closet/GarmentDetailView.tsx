@@ -7,7 +7,7 @@ import {
   type FitZone,
   type GarmentSizeInput,
 } from '@luca/domain';
-import { ArrowLeft, CheckCircle2, Pencil, Ruler, Trash2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Pencil, Ruler, Shirt, Trash2 } from 'lucide-react';
 import { Badge } from '@/design-system/components/Badge';
 import { Button } from '@/design-system/components/Button';
 import {
@@ -20,7 +20,16 @@ import {
 import { useFittingStore, type M2GarmentCategory, type ViewerMode } from '@/features/fitting/store';
 import { AvatarViewer } from '@/features/fitting/svg/AvatarViewer';
 import { FIT_STATE_HEX, FIT_STATE_LABELS } from '@/features/fitting/svg/heatmapMeta';
-import { CATEGORY_LABELS, FORMALITY_LABELS, STATUS_LABELS, type GarmentWithSizes } from './types';
+import { findSimilarGarments } from './closetSearch';
+import {
+  CATEGORY_LABELS,
+  FORMALITY_LABELS,
+  PATTERN_LABELS,
+  SEASON_LABELS,
+  STATUS_LABELS,
+  STYLE_LABELS,
+  type GarmentWithSizes,
+} from './types';
 
 const ZONE_LABELS: Readonly<Record<FitZone, string>> = {
   chest: 'Pecho',
@@ -44,7 +53,9 @@ function formatEase(easeCm: number, unit: 'cm' | 'in'): string {
 
 export interface GarmentDetailViewProps {
   item: GarmentWithSizes;
+  allItems?: readonly GarmentWithSizes[];
   onBack: () => void;
+  onSelectGarment?: (garmentId: string) => void;
   onEdit: (item: GarmentWithSizes) => void;
   onDelete: (garmentId: string) => Promise<void>;
   onOpenInFitting: () => void;
@@ -52,7 +63,9 @@ export interface GarmentDetailViewProps {
 
 export function GarmentDetailView({
   item,
+  allItems = [],
   onBack,
+  onSelectGarment,
   onEdit,
   onDelete,
   onOpenInFitting,
@@ -65,6 +78,12 @@ export function GarmentDetailView({
   const showHeatmap = useFittingStore((s) => s.showHeatmap);
   const toggleHeatmap = useFittingStore((s) => s.toggleHeatmap);
   const [detailViewMode, setDetailViewMode] = useState<ViewerMode>('front');
+  const [photoSide, setPhotoSide] = useState<'front' | 'back'>('front');
+
+  const similarGarments = useMemo(
+    () => findSimilarGarments(item, allItems, 4),
+    [allItems, item],
+  );
 
   const measurements = useMemo(
     () => ({
@@ -115,6 +134,7 @@ export function GarmentDetailView({
       garmentEnabled: true,
       garmentCategory: mapToFrontTemplate(garment.category),
       garmentName: garment.name,
+      garmentColorHex: garment.dominantColorHex ?? '#1F5F6B',
       garmentSizeLabel: selectedSize.label,
       garmentElasticity: garment.elasticity,
       garmentFlatMeasures: { ...selectedSize.flatMeasuresCm },
@@ -157,6 +177,11 @@ export function GarmentDetailView({
           <Badge variant="accent">{CATEGORY_LABELS[garment.category]}</Badge>
           <Badge>{STATUS_LABELS[garment.status]}</Badge>
           <Badge>{FORMALITY_LABELS[garment.formality]}</Badge>
+          {garment.style && <Badge>{STYLE_LABELS[garment.style]}</Badge>}
+          {garment.pattern && <Badge>{PATTERN_LABELS[garment.pattern]}</Badge>}
+          {garment.seasons && garment.seasons.length > 0 && (
+            <Badge>{garment.seasons.map((s) => SEASON_LABELS[s]).join(' · ')}</Badge>
+          )}
           {garment.price !== undefined && (
             <Badge className="tabular-nums">${garment.price.toFixed(2)}</Badge>
           )}
@@ -229,6 +254,7 @@ export function GarmentDetailView({
                 garmentCategory={mapToFrontTemplate(garment.category)}
                 fitReport={activeEvaluation.report}
                 showHeatmap={showHeatmap}
+                garmentColorHex={garment.dominantColorHex}
                 viewMode={detailViewMode}
                 onChangeViewMode={setDetailViewMode}
               />
@@ -244,18 +270,56 @@ export function GarmentDetailView({
           {item.image?.dataUrl && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle>Foto guardada</CardTitle>
-                <CardDescription>
-                  {item.image.source === 'api'
-                    ? 'Fondo recortado vía API · guardada cifrada en tu dispositivo'
-                    : 'Recorte manual local · guardada cifrada en tu dispositivo'}
-                </CardDescription>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <CardTitle>Foto guardada</CardTitle>
+                    <CardDescription>
+                      {item.image.source === 'api'
+                        ? 'Fondo recortado vía API · guardada cifrada en tu dispositivo'
+                        : 'Recorte manual local · guardada cifrada en tu dispositivo'}
+                    </CardDescription>
+                  </div>
+                  {item.image.backDataUrl && (
+                    <div
+                      role="group"
+                      aria-label="Seleccionar cara de la foto"
+                      className="flex items-center gap-1"
+                    >
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={photoSide === 'front' ? 'primary' : 'outline'}
+                        aria-pressed={photoSide === 'front'}
+                        onClick={() => setPhotoSide('front')}
+                      >
+                        Frente
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={photoSide === 'back' ? 'primary' : 'outline'}
+                        aria-pressed={photoSide === 'back'}
+                        onClick={() => setPhotoSide('back')}
+                      >
+                        Espalda
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="flex h-44 w-full items-center justify-center overflow-hidden rounded-[var(--radius-sm)] border border-border bg-bg p-2">
                   <img
-                    src={item.image.dataUrl}
-                    alt={`Foto de ${garment.name}`}
+                    src={
+                      photoSide === 'back' && item.image.backDataUrl
+                        ? item.image.backDataUrl
+                        : item.image.dataUrl
+                    }
+                    alt={
+                      photoSide === 'back' && item.image.backDataUrl
+                        ? `Foto de espalda de ${garment.name}`
+                        : `Foto de frente de ${garment.name}`
+                    }
                     className="max-h-full max-w-full object-contain"
                     onError={(event) => {
                       event.currentTarget.style.display = 'none';
@@ -349,6 +413,51 @@ export function GarmentDetailView({
                     </tbody>
                   </table>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {similarGarments.length > 0 && (
+            <Card data-testid="similar-garments-card">
+              <CardHeader className="pb-3">
+                <CardTitle>Prendas similares</CardTitle>
+                <CardDescription>
+                  Coincidencias locales por categoría, estilo, temporada y etiquetas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="flex flex-col gap-2">
+                  {similarGarments.map((match) => (
+                    <li key={match.item.garment.id}>
+                      <button
+                        type="button"
+                        onClick={() => onSelectGarment?.(match.item.garment.id)}
+                        className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-2 text-left transition-colors hover:border-accent"
+                      >
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <span
+                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border"
+                            style={{
+                              backgroundColor: match.item.garment.dominantColorHex ?? '#1F5F6B',
+                            }}
+                            aria-hidden="true"
+                          >
+                            <Shirt className="h-3.5 w-3.5 text-white" />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-semibold text-ink">
+                              {match.item.garment.name}
+                            </p>
+                            <p className="truncate text-[11px] text-muted">
+                              {match.reasons.join(' · ')}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge className="shrink-0 tabular-nums">{match.scorePercent} %</Badge>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               </CardContent>
             </Card>
           )}
