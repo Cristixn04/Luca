@@ -6,12 +6,20 @@ import { HeatmapPatternDefs } from './heatmapPatterns';
 import { PantsTemplate } from './PantsTemplate';
 import { TshirtTemplate } from './TshirtTemplate';
 
+export interface OutfitLayerOverlay {
+  readonly topFitReport?: FitReport | null;
+  readonly topColorHex?: string;
+  readonly bottomFitReport?: FitReport | null;
+  readonly bottomColorHex?: string;
+}
+
 export interface SingleAvatarViewProps {
   model: BodyModel;
   garmentCategory: M2GarmentCategory;
   fitReport: FitReport | null;
   showHeatmap: boolean;
   garmentColorHex?: string;
+  outfitLayers?: OutfitLayerOverlay;
   compact?: boolean;
 }
 
@@ -21,6 +29,7 @@ export function FrontAvatarSvg({
   fitReport,
   showHeatmap,
   garmentColorHex,
+  outfitLayers,
   compact = false,
 }: SingleAvatarViewProps) {
   const anchors = computeFrontAvatarAnchors(model);
@@ -99,23 +108,48 @@ export function FrontAvatarSvg({
           data-avatar-body="front"
         />
 
-        {fitReport && garmentCategory === 'tshirt' && (
-          <TshirtTemplate
-            anchors={anchors}
-            fitReport={fitReport}
-            showHeatmap={showHeatmap}
-            patternPrefix={patternPrefix}
-            garmentColorHex={garmentColorHex}
-          />
-        )}
-        {fitReport && garmentCategory === 'pants' && (
-          <PantsTemplate
-            anchors={anchors}
-            fitReport={fitReport}
-            showHeatmap={showHeatmap}
-            patternPrefix={patternPrefix}
-            garmentColorHex={garmentColorHex}
-          />
+        {outfitLayers ? (
+          <>
+            {outfitLayers.bottomFitReport && (
+              <PantsTemplate
+                anchors={anchors}
+                fitReport={outfitLayers.bottomFitReport}
+                showHeatmap={showHeatmap}
+                patternPrefix={patternPrefix}
+                garmentColorHex={outfitLayers.bottomColorHex}
+              />
+            )}
+            {outfitLayers.topFitReport && (
+              <TshirtTemplate
+                anchors={anchors}
+                fitReport={outfitLayers.topFitReport}
+                showHeatmap={showHeatmap}
+                patternPrefix={patternPrefix}
+                garmentColorHex={outfitLayers.topColorHex}
+              />
+            )}
+          </>
+        ) : (
+          <>
+            {fitReport && garmentCategory === 'tshirt' && (
+              <TshirtTemplate
+                anchors={anchors}
+                fitReport={fitReport}
+                showHeatmap={showHeatmap}
+                patternPrefix={patternPrefix}
+                garmentColorHex={garmentColorHex}
+              />
+            )}
+            {fitReport && garmentCategory === 'pants' && (
+              <PantsTemplate
+                anchors={anchors}
+                fitReport={fitReport}
+                showHeatmap={showHeatmap}
+                patternPrefix={patternPrefix}
+                garmentColorHex={garmentColorHex}
+              />
+            )}
+          </>
         )}
       </svg>
     </div>

@@ -12,6 +12,7 @@ export function SideAvatarSvg({
   fitReport,
   showHeatmap,
   garmentColorHex,
+  outfitLayers,
   compact = false,
 }: SingleAvatarViewProps) {
   const anchors = computeSideAvatarAnchors(model);
@@ -86,25 +87,52 @@ export function SideAvatarSvg({
           data-avatar-body="side"
         />
 
-        {fitReport && garmentCategory === 'tshirt' && (
-          <SideTshirtTemplate
-            model={model}
-            anchors={anchors}
-            fitReport={fitReport}
-            showHeatmap={showHeatmap}
-            patternPrefix={patternPrefix}
-            garmentColorHex={garmentColorHex}
-          />
-        )}
-        {fitReport && garmentCategory === 'pants' && (
-          <SidePantsTemplate
-            model={model}
-            anchors={anchors}
-            fitReport={fitReport}
-            showHeatmap={showHeatmap}
-            patternPrefix={patternPrefix}
-            garmentColorHex={garmentColorHex}
-          />
+        {outfitLayers ? (
+          <>
+            {outfitLayers.bottomFitReport && (
+              <SidePantsTemplate
+                model={model}
+                anchors={anchors}
+                fitReport={outfitLayers.bottomFitReport}
+                showHeatmap={showHeatmap}
+                patternPrefix={patternPrefix}
+                garmentColorHex={outfitLayers.bottomColorHex}
+              />
+            )}
+            {outfitLayers.topFitReport && (
+              <SideTshirtTemplate
+                model={model}
+                anchors={anchors}
+                fitReport={outfitLayers.topFitReport}
+                showHeatmap={showHeatmap}
+                patternPrefix={patternPrefix}
+                garmentColorHex={outfitLayers.topColorHex}
+              />
+            )}
+          </>
+        ) : (
+          <>
+            {fitReport && garmentCategory === 'tshirt' && (
+              <SideTshirtTemplate
+                model={model}
+                anchors={anchors}
+                fitReport={fitReport}
+                showHeatmap={showHeatmap}
+                patternPrefix={patternPrefix}
+                garmentColorHex={garmentColorHex}
+              />
+            )}
+            {fitReport && garmentCategory === 'pants' && (
+              <SidePantsTemplate
+                model={model}
+                anchors={anchors}
+                fitReport={fitReport}
+                showHeatmap={showHeatmap}
+                patternPrefix={patternPrefix}
+                garmentColorHex={garmentColorHex}
+              />
+            )}
+          </>
         )}
       </svg>
     </div>

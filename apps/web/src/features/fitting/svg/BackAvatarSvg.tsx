@@ -11,6 +11,7 @@ export function BackAvatarSvg({
   fitReport,
   showHeatmap,
   garmentColorHex,
+  outfitLayers,
   compact = false,
 }: SingleAvatarViewProps) {
   const anchors = computeFrontAvatarAnchors(model);
@@ -92,24 +93,50 @@ export function BackAvatarSvg({
           data-avatar-body="back"
         />
 
-        {fitReport && garmentCategory === 'tshirt' && (
-          <BackTshirtTemplate
-            model={model}
-            anchors={anchors}
-            fitReport={fitReport}
-            showHeatmap={showHeatmap}
-            patternPrefix={patternPrefix}
-            garmentColorHex={garmentColorHex}
-          />
-        )}
-        {fitReport && garmentCategory === 'pants' && (
-          <BackPantsTemplate
-            anchors={anchors}
-            fitReport={fitReport}
-            showHeatmap={showHeatmap}
-            patternPrefix={patternPrefix}
-            garmentColorHex={garmentColorHex}
-          />
+        {outfitLayers ? (
+          <>
+            {outfitLayers.bottomFitReport && (
+              <BackPantsTemplate
+                anchors={anchors}
+                fitReport={outfitLayers.bottomFitReport}
+                showHeatmap={showHeatmap}
+                patternPrefix={patternPrefix}
+                garmentColorHex={outfitLayers.bottomColorHex}
+              />
+            )}
+            {outfitLayers.topFitReport && (
+              <BackTshirtTemplate
+                model={model}
+                anchors={anchors}
+                fitReport={outfitLayers.topFitReport}
+                showHeatmap={showHeatmap}
+                patternPrefix={patternPrefix}
+                garmentColorHex={outfitLayers.topColorHex}
+              />
+            )}
+          </>
+        ) : (
+          <>
+            {fitReport && garmentCategory === 'tshirt' && (
+              <BackTshirtTemplate
+                model={model}
+                anchors={anchors}
+                fitReport={fitReport}
+                showHeatmap={showHeatmap}
+                patternPrefix={patternPrefix}
+                garmentColorHex={garmentColorHex}
+              />
+            )}
+            {fitReport && garmentCategory === 'pants' && (
+              <BackPantsTemplate
+                anchors={anchors}
+                fitReport={fitReport}
+                showHeatmap={showHeatmap}
+                patternPrefix={patternPrefix}
+                garmentColorHex={garmentColorHex}
+              />
+            )}
+          </>
         )}
       </svg>
     </div>
