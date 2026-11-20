@@ -131,3 +131,37 @@ export {
 export { analyzeColorDimensions, classifyColorProfile } from './color/classifier.js';
 
 export { evaluateGarmentColorHarmony } from './color/harmony.js';
+
+export {
+  OCCASION_RULES,
+  OUTFIT_OCCASIONS,
+  classifyTemperatureBand,
+  getGarmentSlot,
+  type ColorHarmonyMode,
+  type GarmentUsageMetrics,
+  type OccasionRule,
+  type OutfitGarmentInput,
+  type OutfitGenerationContext,
+  type OutfitOccasion,
+  type OutfitProposal,
+  type OutfitScoreBreakdown,
+  type OutfitSlot,
+  type TemperatureBand,
+  type WishlistUnlockResult,
+} from './outfits/types.js';
+
+export {
+  OUTFIT_SCORE_WEIGHTS,
+  generateAllOutfitCandidates,
+  generateDiverseOutfits,
+  scoreOutfitCandidate,
+} from './outfits/engine.js';
+
+export {
+  DEFAULT_EXPECTED_WEARS,
+  VERSATILITY_SCORE_THRESHOLD,
+  analyzeClosetUsage,
+  computeCpw,
+  computeProjectedCpw,
+  simulateWishlistUnlock,
+} from './outfits/metrics.js';
