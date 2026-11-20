@@ -203,19 +203,13 @@ export function ColorView({ onOpenGarmentInCloset }: ColorViewProps) {
   return (
     <div className="flex flex-col gap-6">
       <section aria-labelledby="color-heading" className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="accent">Colorimetría · v0.7</Badge>
-            <Badge>12 estaciones · CIEDE2000</Badge>
-            {isIgnored && <Badge>Ignorada por preferencia</Badge>}
+            <h1 id="color-heading" className="text-2xl font-bold tracking-tight sm:text-3xl">
+              Colorimetría estacional
+            </h1>
+            {isIgnored && <Badge>Pausada</Badge>}
           </div>
-          <h1 id="color-heading" className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Colorimetría estacional
-          </h1>
-          <p className="max-w-2xl text-sm text-muted">
-            Selecciona muestras guiadas de piel, cabello y ojos para estimar tus dos estaciones más
-            probables y medir la armonía de cada prenda en CIELAB.
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -284,10 +278,7 @@ export function ColorView({ onOpenGarmentInCloset }: ColorViewProps) {
           {/* Selector guiado de piel, cabello y ojos */}
           <Card>
             <CardHeader>
-              <CardTitle>Muestras guiadas (100 % en tu dispositivo)</CardTitle>
-              <CardDescription>
-                Ninguna foto ni muestra sale de tu navegador. Ajusta cada tono y guarda tu perfil.
-              </CardDescription>
+              <CardTitle>Tus rasgos</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-6">
               <SwatchPicker
@@ -473,9 +464,7 @@ export function ColorView({ onOpenGarmentInCloset }: ColorViewProps) {
             <Card data-testid="closet-harmony-card">
               <CardHeader className="pb-3">
                 <CardTitle>Afinidad de tu clóset</CardTitle>
-                <CardDescription>
-                  Puntaje perceptual A = exp(-ΔE₀₀ / 15) contra {activePalette.label}
-                </CardDescription>
+                <CardDescription>Prendas más afines a {activePalette.label}</CardDescription>
               </CardHeader>
               <CardContent>
                 {closetHarmony.length === 0 ? (

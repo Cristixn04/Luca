@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   GARMENT_CATEGORIES,
+  analyzeClosetUsage,
   createBodyModel,
   evaluateGarmentColorHarmony,
   recommendSize,
+  simulateWishlistUnlock,
   validateBodyMeasurements,
   type GarmentCategory,
 } from '@luca/domain';
@@ -19,6 +21,7 @@ import {
 } from '@/design-system/components/Card';
 import { getActiveSeasonId, useColorStore } from '@/features/color/colorStore';
 import { useFittingStore } from '@/features/fitting/store';
+import { toOutfitGarmentInputs, useOutfitsStore } from '@/features/outfits/outfitsStore';
 import { createClosetSearchIndex } from './closetSearch';
 import { useClosetStore, type ClosetSortBy } from './closetStore';
 import { GarmentDetailView } from './GarmentDetailView';
@@ -68,6 +71,10 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
   const colorLoaded = useColorStore((s) => s.loaded);
   const loadColorProfile = useColorStore((s) => s.loadProfile);
 
+  const wearLogs = useOutfitsStore((s) => s.wearLogs);
+  const outfitsLoaded = useOutfitsStore((s) => s.loaded);
+  const loadOutfits = useOutfitsStore((s) => s.loadAll);
+
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<GarmentWithSizes | null>(null);
 
@@ -83,12 +90,52 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
     }
   }, [colorLoaded, loadColorProfile]);
 
+  useEffect(() => {
+    if (!outfitsLoaded) {
+      void loadOutfits();
+    }
+  }, [loadOutfits, outfitsLoaded]);
+
   const activeSeasonId = useMemo(() => getActiveSeasonId(colorProfile), [colorProfile]);
 
   const bodyModel = useMemo(() => {
     const m = { required: bodyMeasurements };
     return validateBodyMeasurements(m).valid ? createBodyModel(m) : null;
   }, [bodyMeasurements]);
+
+  const outfitInputs = useMemo(
+    () => toOutfitGarmentInputs(items, wearLogs, bodyModel, fitPreference),
+    [bodyModel, fitPreference, items, wearLogs],
+  );
+
+  const usageMetricsById = useMemo(
+    () =>
+      analyzeClosetUsage(outfitInputs, {
+        occasion: 'casual',
+        temperatureC: 21,
+        bodyModel,
+        fitPreference,
+        seasonId: activeSeasonId,
+      }),
+    [activeSeasonId, bodyModel, fitPreference, outfitInputs],
+  );
+
+  const wishlistUnlocksById = useMemo(() => {
+    const ownedInputs = outfitInputs.filter((g) => g.status === 'owned');
+    const result: Record<string, number> = {};
+    for (const input of outfitInputs) {
+      if (input.status === 'wishlist') {
+        result[input.id] = simulateWishlistUnlock(input, ownedInputs, {
+          occasion: 'casual',
+          temperatureC: 21,
+          bodyModel,
+          fitPreference,
+          seasonId: activeSeasonId,
+        }).unlocksOutfitsCount;
+      }
+    }
+    return result;
+  }, [activeSeasonId, bodyModel, fitPreference, outfitInputs]);
 
   const searchIndex = useMemo(() => createClosetSearchIndex(items), [items]);
 
@@ -172,18 +219,11 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
         aria-labelledby="closet-heading"
         className="flex flex-wrap items-end justify-between gap-4"
       >
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-2">
-            <Badge variant="accent">Clóset local · v0.6</Badge>
-            <Badge className="tabular-nums">{items.length} prendas</Badge>
-          </div>
+        <div className="flex items-center gap-2.5">
           <h1 id="closet-heading" className="text-2xl font-bold tracking-tight sm:text-3xl">
             Clóset local
           </h1>
-          <p className="max-w-2xl text-sm text-muted">
-            Registra tus prendas con sus tablas de tallas en plano para ver al instante qué talla te
-            favorece según tu preferencia de calce.
-          </p>
+          <Badge className="tabular-nums">{items.length} prendas</Badge>
         </div>
 
         <Button
@@ -342,6 +382,8 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
               activeSeasonId && garment.dominantColorHex
                 ? evaluateGarmentColorHarmony(garment.dominantColorHex, activeSeasonId)
                 : null;
+            const usage = usageMetricsById[garment.id];
+            const wishlistUnlocks = wishlistUnlocksById[garment.id];
 
             return (
               <Card
@@ -400,6 +442,27 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
                       <span className="tabular-nums font-semibold text-ink">
                         {harmony.scorePercent} %
                       </span>
+                    </div>
+                  )}
+                  {garment.status === 'wishlist' && wishlistUnlocks !== undefined && (
+                    <div className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-xs">
+                      <span className="text-muted">Desbloquea</span>
+                      <span className="tabular-nums font-semibold text-accent">
+                        {wishlistUnlocks} outfit(s)
+                      </span>
+                    </div>
+                  )}
+                  {garment.status === 'owned' && usage && (
+                    <div className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-xs">
+                      <span className="tabular-nums text-muted">
+                        {usage.wearCount} uso(s)
+                        {usage.cpw !== null ? ` · $${usage.cpw.toFixed(0)}/uso` : ''}
+                      </span>
+                      {usage.isOrphan ? (
+                        <Badge>Huérfana</Badge>
+                      ) : (
+                        <span className="tabular-nums text-muted">{usage.versatility} outfit(s)</span>
+                      )}
                     </div>
                   )}
 

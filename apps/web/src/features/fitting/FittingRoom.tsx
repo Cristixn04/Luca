@@ -6,14 +6,7 @@ import {
   type BodyMeasurements,
 } from '@luca/domain';
 import { AlertCircle } from 'lucide-react';
-import { Badge } from '@/design-system/components/Badge';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/design-system/components/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/design-system/components/Card';
 import { useVaultStore } from '@/features/vault/vaultStore';
 import { GarmentPanel } from './GarmentPanel';
 import { MeasurementsPanel } from './MeasurementsPanel';
@@ -104,18 +97,10 @@ export function FittingRoom() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section aria-labelledby="fitting-heading" className="flex flex-col gap-1.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="accent">Probador · v0.4</Badge>
-          <Badge>Frente · Perfil · Espalda</Badge>
-        </div>
+      <section aria-labelledby="fitting-heading" className="flex flex-col gap-1">
         <h1 id="fitting-heading" className="text-2xl font-bold tracking-tight sm:text-3xl">
           Probador de calce
         </h1>
-        <p className="max-w-2xl text-sm text-muted">
-          Ajusta tus medidas obligatorias u opcionales y evalúa la holgura real por zona en tres
-          vistas coherentes desde un único modelo corporal.
-        </p>
       </section>
 
       <div
@@ -131,12 +116,7 @@ export function FittingRoom() {
           <CardHeader className="pb-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <CardTitle>Avatar en tres vistas</CardTitle>
-                <CardDescription>
-                  {bodyModel && bodyModel.estimatedFields.length === 0
-                    ? 'Todas las dimensiones medidas'
-                    : 'Proyección elíptica determinista · zonas sin medir marcadas como estimadas'}
-                </CardDescription>
+                <CardTitle>Avatar</CardTitle>
               </div>
               <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-ink">
                 <input

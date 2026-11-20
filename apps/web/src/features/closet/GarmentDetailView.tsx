@@ -1,14 +1,16 @@
 import { useMemo, useState } from 'react';
 import {
+  analyzeClosetUsage,
   createBodyModel,
   evaluateGarmentColorHarmony,
   fromCm,
   recommendSize,
+  simulateWishlistUnlock,
   validateBodyMeasurements,
   type FitZone,
   type GarmentSizeInput,
 } from '@luca/domain';
-import { ArrowLeft, CheckCircle2, Pencil, Ruler, Shirt, Trash2 } from 'lucide-react';
+import { ArrowLeft, CalendarCheck, CheckCircle2, Pencil, Ruler, Shirt, Trash2 } from 'lucide-react';
 import { Badge } from '@/design-system/components/Badge';
 import { Button } from '@/design-system/components/Button';
 import {
@@ -20,6 +22,7 @@ import {
 } from '@/design-system/components/Card';
 import { getActiveSeasonId, useColorStore } from '@/features/color/colorStore';
 import { useFittingStore, type M2GarmentCategory, type ViewerMode } from '@/features/fitting/store';
+import { toOutfitGarmentInputs, useOutfitsStore } from '@/features/outfits/outfitsStore';
 import { AvatarViewer } from '@/features/fitting/svg/AvatarViewer';
 import { FIT_STATE_HEX, FIT_STATE_LABELS } from '@/features/fitting/svg/heatmapMeta';
 import { findSimilarGarments } from './closetSearch';
@@ -89,6 +92,10 @@ export function GarmentDetailView({
     return evaluateGarmentColorHarmony(garment.dominantColorHex, activeSeasonId);
   }, [activeSeasonId, garment.dominantColorHex]);
 
+  const wearLogs = useOutfitsStore((s) => s.wearLogs);
+  const logGarmentWear = useOutfitsStore((s) => s.logGarmentWear);
+  const [wearNotice, setWearNotice] = useState<string | null>(null);
+
   const similarGarments = useMemo(
     () => findSimilarGarments(item, allItems, 4),
     [allItems, item],
@@ -107,6 +114,37 @@ export function GarmentDetailView({
     () => (validation.valid ? createBodyModel(measurements) : null),
     [measurements, validation.valid],
   );
+
+  const closetUsage = useMemo(() => {
+    const pool = allItems.length > 0 ? allItems : [item];
+    const inputs = toOutfitGarmentInputs(pool, wearLogs, bodyModel, fitPreference);
+    const metrics = analyzeClosetUsage(inputs, {
+      occasion: 'casual',
+      temperatureC: 21,
+      bodyModel,
+      fitPreference,
+      seasonId: activeSeasonId,
+    });
+    const currentInput = inputs.find((g) => g.id === garment.id);
+    const wishlistUnlock =
+      garment.status === 'wishlist' && currentInput
+        ? simulateWishlistUnlock(
+            currentInput,
+            inputs.filter((g) => g.status === 'owned'),
+            {
+              occasion: 'casual',
+              temperatureC: 21,
+              bodyModel,
+              fitPreference,
+              seasonId: activeSeasonId,
+            },
+          )
+        : null;
+    return {
+      metrics: metrics[garment.id] ?? null,
+      wishlistUnlock,
+    };
+  }, [activeSeasonId, allItems, bodyModel, fitPreference, garment.id, garment.status, item, wearLogs]);
 
   const sizeInputs: GarmentSizeInput[] = useMemo(
     () =>
@@ -160,6 +198,20 @@ export function GarmentDetailView({
         </Button>
 
         <div className="flex flex-wrap items-center gap-2">
+          {garment.status === 'owned' && (
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={async () => {
+                await logGarmentWear(garment.id);
+                setWearNotice('Uso registrado hoy.');
+              }}
+            >
+              <CalendarCheck className="h-3.5 w-3.5" aria-hidden="true" />
+              Registrar uso hoy
+            </Button>
+          )}
           <Button type="button" variant="secondary" size="sm" onClick={handleLoadInFitting}>
             <Ruler className="h-3.5 w-3.5" aria-hidden="true" />
             Abrir en Probador
@@ -243,7 +295,6 @@ export function GarmentDetailView({
             <div className="flex items-center justify-between gap-2">
               <div>
                 <CardTitle>Probador · Talla {activeLabel}</CardTitle>
-                <CardDescription>Vista de frente con mapa de calor</CardDescription>
               </div>
               <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-ink">
                 <input
@@ -282,11 +333,6 @@ export function GarmentDetailView({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <CardTitle>Foto guardada</CardTitle>
-                    <CardDescription>
-                      {item.image.source === 'api'
-                        ? 'Fondo recortado vía API · guardada cifrada en tu dispositivo'
-                        : 'Recorte manual local · guardada cifrada en tu dispositivo'}
-                    </CardDescription>
                   </div>
                   {item.image.backDataUrl && (
                     <div
@@ -426,6 +472,67 @@ export function GarmentDetailView({
             </Card>
           )}
 
+          {closetUsage.metrics && (
+            <Card data-testid="garment-usage-card">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle>Uso y costo por uso</CardTitle>
+                  {closetUsage.metrics.isOrphan && <Badge>Prenda huérfana</Badge>}
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3 text-xs">
+                {garment.status === 'wishlist' && closetUsage.wishlistUnlock ? (
+                  <div className="flex items-center justify-between rounded-[var(--radius-sm)] border border-accent/40 bg-bg px-3 py-2">
+                    <span className="text-muted">Al comprarla desbloquea</span>
+                    <span className="tabular-nums font-semibold text-accent">
+                      {closetUsage.wishlistUnlock.unlocksOutfitsCount} outfit(s) nuevos
+                    </span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-[var(--radius-sm)] border border-border bg-bg p-2.5">
+                      <p className="text-muted">Usos registrados</p>
+                      <p data-testid="garment-wear-count" className="tabular-nums text-base font-bold text-ink">
+                        {closetUsage.metrics.wearCount}
+                      </p>
+                    </div>
+                    <div className="rounded-[var(--radius-sm)] border border-border bg-bg p-2.5">
+                      <p className="text-muted">Versatilidad</p>
+                      <p className="tabular-nums text-base font-bold text-ink">
+                        {closetUsage.metrics.versatility} outfit(s)
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {closetUsage.metrics.cpw !== null && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-[var(--radius-sm)] border border-border bg-bg p-2.5">
+                      <p className="text-muted">Costo por uso actual</p>
+                      <p data-testid="garment-cpw-value" className="tabular-nums font-semibold text-ink">
+                        ${closetUsage.metrics.cpw.toFixed(2)}
+                      </p>
+                    </div>
+                    {closetUsage.metrics.projectedCpw !== null && (
+                      <div className="rounded-[var(--radius-sm)] border border-border bg-bg p-2.5">
+                        <p className="text-muted">Proyectado (30 usos)</p>
+                        <p className="tabular-nums font-semibold text-ink">
+                          ${closetUsage.metrics.projectedCpw.toFixed(2)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {wearNotice && (
+                  <p role="status" className="font-medium text-accent">
+                    {wearNotice}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {colorHarmony && (
             <Card data-testid="garment-color-harmony-card">
               <CardHeader className="pb-3">
@@ -491,9 +598,6 @@ export function GarmentDetailView({
             <Card data-testid="similar-garments-card">
               <CardHeader className="pb-3">
                 <CardTitle>Prendas similares</CardTitle>
-                <CardDescription>
-                  Coincidencias locales por categoría, estilo, temporada y etiquetas
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ul className="flex flex-col gap-2">

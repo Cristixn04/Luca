@@ -134,18 +134,10 @@ export function MemoryVaultPanel() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section aria-labelledby="vault-heading" className="flex flex-col gap-1.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="accent">Bóveda y memoria · v0.2</Badge>
-          <Badge>Esquema v{meta?.schemaVersion ?? 2}</Badge>
-        </div>
+      <section aria-labelledby="vault-heading" className="flex flex-col gap-1">
         <h1 id="vault-heading" className="text-2xl font-bold tracking-tight sm:text-3xl">
           Memoria y bóveda local
         </h1>
-        <p className="max-w-2xl text-sm text-muted">
-          Tus medidas, historial y configuraciones permanecen en IndexedDB dentro de este
-          dispositivo. El servidor no tiene cuentas ni copias de tus datos.
-        </p>
       </section>
 
       {/* Avisos críticos: modo sin cifrado, iOS Safari y recordatorio de respaldo (T3.6) */}
@@ -211,9 +203,7 @@ export function MemoryVaultPanel() {
               )}
             </div>
             <CardDescription>
-              {isEncrypted
-                ? `AES-256-GCM · PBKDF2-SHA256 (${(meta?.kdfParams?.iterations ?? 600_000).toLocaleString()} iteraciones)`
-                : 'Almacenamiento local sin cifrado'}
+              {isEncrypted ? 'Protegida con contraseña en este dispositivo' : 'Guardado local sin contraseña'}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 text-sm">
