@@ -95,6 +95,8 @@ export async function fetchApiHealth(options?: {
 export async function analyzeGarmentPhoto(
   sanitizedBlob: Blob,
   options?: {
+    backBlob?: Blob;
+    includeTags?: boolean;
     baseUrl?: string;
     signal?: AbortSignal;
     timeoutMs?: number;
@@ -117,6 +119,12 @@ export async function analyzeGarmentPhoto(
   try {
     const form = new FormData();
     form.append('file', sanitizedBlob, 'garment.png');
+    if (options?.backBlob) {
+      form.append('back_file', options.backBlob, 'garment-back.png');
+    }
+    if (options?.includeTags) {
+      form.append('include_tags', 'true');
+    }
 
     const res = await fetch(`${baseUrl}/v1/vision/analyze`, {
       method: 'POST',

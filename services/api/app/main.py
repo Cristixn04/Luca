@@ -1,17 +1,24 @@
 import os
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 from typing import Literal
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from app.adapters.tagging.gemini_tagger import build_tagger
 from app.adapters.vision.rembg_remover import build_background_remover
+from app.ports.tagging import Tagger
 from app.ports.vision import BackgroundRemover
 from app.routers.vision import create_vision_router
 from app.security.controls import DailyBudgetGuard, InMemoryRateLimiter
 
-API_VERSION = "0.5.0"
+# Carga variables locales desde services/api/.env sin sobreescribir variables del entorno real.
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
+API_VERSION = "0.6.0"
 
 
 class HealthResponse(BaseModel):
@@ -19,6 +26,7 @@ class HealthResponse(BaseModel):
     service: Literal["luca-api"]
     version: str
     vision_provider: str
+    tagger_provider: str
 
 
 def _parse_allowed_origins() -> list[str]:
@@ -29,12 +37,14 @@ def _parse_allowed_origins() -> list[str]:
 def create_app(
     *,
     remover: BackgroundRemover | None = None,
+    tagger: Tagger | None = None,
     rate_limiter: InMemoryRateLimiter | None = None,
     budget_guard: DailyBudgetGuard | None = None,
     max_upload_bytes: int | None = None,
     timeout_seconds: float | None = None,
 ) -> FastAPI:
     active_remover = remover or build_background_remover()
+    active_tagger = tagger or build_tagger()
     active_limiter = rate_limiter or InMemoryRateLimiter.from_env()
     active_budget = budget_guard or DailyBudgetGuard.from_env()
 
@@ -78,11 +88,13 @@ def create_app(
             service="luca-api",
             version=API_VERSION,
             vision_provider=active_remover.provider_name,
+            tagger_provider=active_tagger.provider_name,
         )
 
     application.include_router(
         create_vision_router(
             remover=active_remover,
+            tagger=active_tagger,
             rate_limiter=active_limiter,
             budget_guard=active_budget,
             max_upload_bytes=max_upload_bytes,

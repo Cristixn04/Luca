@@ -3,7 +3,7 @@
   "info": {
     "title": "Luca API",
     "description": "API sin estado para servicios auxiliares de Luca (visión, etiquetado y clima).",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   "paths": {
     "/v1/health": {
@@ -53,7 +53,7 @@
         "tags": [
           "vision"
         ],
-        "summary": "Recorta el fondo y calcula el color dominante en CIELAB",
+        "summary": "Recorta fondo, extrae color dominante CIELAB y opcionalmente etiqueta la prenda",
         "operationId": "analyze_garment_photo_v1_vision_analyze_post",
         "parameters": [
           {
@@ -116,7 +116,26 @@
             "type": "string",
             "contentMediaType": "application/octet-stream",
             "title": "File",
-            "description": "Foto reducida de la prenda sin EXIF"
+            "description": "Foto frontal reducida de la prenda sin EXIF"
+          },
+          "back_file": {
+            "anyOf": [
+              {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Back File",
+            "description": "Foto trasera opcional de la prenda sin EXIF"
+          },
+          "include_tags": {
+            "type": "boolean",
+            "title": "Include Tags",
+            "description": "Si es true, sugiere etiquetas estructuradas vía puerto Tagger",
+            "default": false
           }
         },
         "type": "object",
@@ -124,6 +143,135 @@
           "file"
         ],
         "title": "Body_analyze_garment_photo_v1_vision_analyze_post"
+      },
+      "GarmentTagSuggestion": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "tshirt",
+              "long_sleeve",
+              "jacket",
+              "pants",
+              "shorts",
+              "skirt",
+              "dress"
+            ],
+            "title": "Category"
+          },
+          "category_confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Category Confidence"
+          },
+          "pattern": {
+            "type": "string",
+            "enum": [
+              "solid",
+              "striped",
+              "plaid",
+              "floral",
+              "graphic",
+              "textured",
+              "other"
+            ],
+            "title": "Pattern"
+          },
+          "pattern_confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Pattern Confidence"
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "casual",
+              "minimalist",
+              "sporty",
+              "formal",
+              "streetwear",
+              "classic",
+              "bohemian"
+            ],
+            "title": "Style"
+          },
+          "style_confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Style Confidence"
+          },
+          "formality": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Formality"
+          },
+          "formality_confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Formality Confidence"
+          },
+          "seasons": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "spring",
+                "summer",
+                "autumn",
+                "winter"
+              ]
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 1,
+            "title": "Seasons"
+          },
+          "seasons_confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Seasons Confidence"
+          },
+          "suggested_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Suggested Tags"
+          },
+          "overall_confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Overall Confidence"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "unknown"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "category_confidence",
+          "pattern",
+          "pattern_confidence",
+          "style",
+          "style_confidence",
+          "formality",
+          "formality_confidence",
+          "seasons",
+          "seasons_confidence",
+          "overall_confidence"
+        ],
+        "title": "GarmentTagSuggestion",
+        "description": "Salida JSON estructurada del puerto Tagger (RF-11 / T7.1)."
       },
       "HTTPValidationError": {
         "properties": {
@@ -157,6 +305,10 @@
           "vision_provider": {
             "type": "string",
             "title": "Vision Provider"
+          },
+          "tagger_provider": {
+            "type": "string",
+            "title": "Tagger Provider"
           }
         },
         "type": "object",
@@ -164,7 +316,8 @@
           "status",
           "service",
           "version",
-          "vision_provider"
+          "vision_provider",
+          "tagger_provider"
         ],
         "title": "HealthResponse"
       },
@@ -239,7 +392,19 @@
           "cutout_png_base64": {
             "type": "string",
             "title": "Cutout Png Base64",
-            "description": "Imagen PNG RGBA recortada codificada en Base64"
+            "description": "Imagen PNG RGBA frontal recortada en Base64"
+          },
+          "back_cutout_png_base64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Back Cutout Png Base64",
+            "description": "Imagen PNG RGBA trasera recortada en Base64 (si se envió foto de espalda)"
           },
           "width": {
             "type": "integer",
@@ -280,6 +445,17 @@
             "type": "integer",
             "minimum": 0.0,
             "title": "Processing Ms"
+          },
+          "tagging": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GarmentTagSuggestion"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Etiquetas sugeridas con confianza por el puerto Tagger (si include_tags=true)"
           }
         },
         "type": "object",

@@ -4,13 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "luca-api"
-version = "0.5.0"
+version = "0.6.0"
 description = "API sin estado para Luca (visión, etiquetado y clima)"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0,<1.0.0",
+    "google-genai>=3.2.0,<4.0.0",
     "numpy>=2.0.0,<3.0.0",
     "pillow>=11.0.0,<13.0.0",
+    "python-dotenv>=1.0.0,<2.0.0",
     "python-multipart>=0.0.20,<1.0.0",
     "scikit-learn>=1.6.0,<2.0.0",
     "uvicorn[standard]>=0.34.0,<1.0.0",
@@ -43,5 +45,5 @@ python_version = "3.12"
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["rembg", "rembg.*", "sklearn", "sklearn.*"]
+module = ["rembg", "rembg.*", "sklearn", "sklearn.*", "google", "google.*"]
 ignore_missing_imports = true

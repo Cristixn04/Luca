@@ -21,7 +21,7 @@ describe('Cliente API OpenAPI v1 y sanitizador de imágenes (T6.1, T6.5, T6.6)',
   });
 
   it('expone la versión del contrato OpenAPI generado y genera un token anónimo estable', () => {
-    expect(OPENAPI_CONTRACT_VERSION).toBe('0.5.0');
+    expect(OPENAPI_CONTRACT_VERSION).toBe('0.6.0');
 
     const token1 = getOrCreateInstallToken();
     const token2 = getOrCreateInstallToken();
@@ -40,10 +40,11 @@ describe('Cliente API OpenAPI v1 y sanitizador de imágenes (T6.1, T6.5, T6.6)',
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('envía la foto con X-Luca-Install-Token tras otorgar consentimiento y maneja errores HTTP', async () => {
+  it('envía la foto frontal, foto trasera opcional y bandera include_tags con X-Luca-Install-Token', async () => {
     setApiConsent(true);
     const mockResponse = {
       cutout_png_base64: 'iVBORw0KGgo=',
+      back_cutout_png_base64: 'iVBORw0KGgo=',
       width: 256,
       height: 256,
       dominant_color_hex: '#2A9D8F',
@@ -52,6 +53,21 @@ describe('Cliente API OpenAPI v1 y sanitizador de imágenes (T6.1, T6.5, T6.6)',
       coverage: 0.92,
       provider: 'simple-border',
       processing_ms: 14,
+      tagging: {
+        category: 'tshirt',
+        category_confidence: 0.91,
+        pattern: 'solid',
+        pattern_confidence: 0.88,
+        style: 'minimalist',
+        style_confidence: 0.86,
+        formality: 2,
+        formality_confidence: 0.84,
+        seasons: ['spring', 'summer'],
+        seasons_confidence: 0.85,
+        suggested_tags: ['lino', 'verano'],
+        overall_confidence: 0.87,
+        provider: 'mock-deterministic',
+      },
     };
 
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
@@ -62,14 +78,22 @@ describe('Cliente API OpenAPI v1 y sanitizador de imágenes (T6.1, T6.5, T6.6)',
     );
 
     const result = await analyzeGarmentPhoto(new Blob(['png'], { type: 'image/png' }), {
+      backBlob: new Blob(['back'], { type: 'image/png' }),
+      includeTags: true,
       baseUrl: '',
     });
 
     expect(result.dominant_color_hex).toBe('#2A9D8F');
+    expect(result.back_cutout_png_base64).toBe('iVBORw0KGgo=');
+    expect(result.tagging?.provider).toBe('mock-deterministic');
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const [, init] = fetchSpy.mock.calls[0]!;
     const headers = init?.headers as Record<string, string>;
     expect(headers['X-Luca-Install-Token']).toMatch(/^luca_[0-9a-f]{32}$/);
+    const sentForm = init?.body as FormData;
+    expect(sentForm.get('file')).toBeTruthy();
+    expect(sentForm.get('back_file')).toBeTruthy();
+    expect(sentForm.get('include_tags')).toBe('true');
 
     // Error HTTP 429
     fetchSpy.mockResolvedValueOnce(

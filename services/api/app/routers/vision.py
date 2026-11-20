@@ -5,11 +5,22 @@ import os
 import time
 from typing import Annotated
 
-from fastapi import APIRouter, File, Header, HTTPException, Request, Response, UploadFile, status
+from fastapi import (
+    APIRouter,
+    File,
+    Form,
+    Header,
+    HTTPException,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, Field
 
 from app.adapters.vision.dominant_color import extract_dominant_color
+from app.ports.tagging import GarmentTagSuggestion, Tagger
 from app.ports.vision import BackgroundRemover
 from app.security.controls import DailyBudgetGuard, InMemoryRateLimiter, validate_install_token
 
@@ -17,6 +28,7 @@ ALLOWED_IMAGE_FORMATS = frozenset({"JPEG", "PNG", "WEBP"})
 DEFAULT_MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MiB
 DEFAULT_VISION_TIMEOUT_SECONDS = 15.0
 VISION_CALL_COST_USD = 0.002
+TAGGING_CALL_COST_USD = 0.008
 
 # Protección contra decompression bombs (Pillow)
 Image.MAX_IMAGE_PIXELS = 25_000_000
@@ -29,7 +41,11 @@ class LabColorSchema(BaseModel):
 
 
 class VisionAnalyzeResponse(BaseModel):
-    cutout_png_base64: str = Field(..., description="Imagen PNG RGBA recortada codificada en Base64")
+    cutout_png_base64: str = Field(..., description="Imagen PNG RGBA frontal recortada en Base64")
+    back_cutout_png_base64: str | None = Field(
+        default=None,
+        description="Imagen PNG RGBA trasera recortada en Base64 (si se envió foto de espalda)",
+    )
     width: int = Field(..., ge=1)
     height: int = Field(..., ge=1)
     dominant_color_hex: str = Field(..., pattern=r"^#[0-9A-Fa-f]{6}$")
@@ -38,6 +54,10 @@ class VisionAnalyzeResponse(BaseModel):
     coverage: float = Field(..., ge=0.0, le=1.0)
     provider: str
     processing_ms: int = Field(..., ge=0)
+    tagging: GarmentTagSuggestion | None = Field(
+        default=None,
+        description="Etiquetas sugeridas con confianza por el puerto Tagger (si include_tags=true)",
+    )
 
 
 def _validate_and_read_image(raw_bytes: bytes, max_bytes: int) -> tuple[int, int]:
@@ -75,6 +95,7 @@ def _validate_and_read_image(raw_bytes: bytes, max_bytes: int) -> tuple[int, int
 
 def create_vision_router(
     remover: BackgroundRemover,
+    tagger: Tagger,
     rate_limiter: InMemoryRateLimiter,
     budget_guard: DailyBudgetGuard,
     max_upload_bytes: int | None = None,
@@ -96,12 +117,20 @@ def create_vision_router(
     @router.post(
         "/analyze",
         response_model=VisionAnalyzeResponse,
-        summary="Recorta el fondo y calcula el color dominante en CIELAB",
+        summary="Recorta fondo, extrae color dominante CIELAB y opcionalmente etiqueta la prenda",
     )
     async def analyze_garment_photo(
         request: Request,
         response: Response,
-        file: Annotated[UploadFile, File(description="Foto reducida de la prenda sin EXIF")],
+        file: Annotated[UploadFile, File(description="Foto frontal reducida de la prenda sin EXIF")],
+        back_file: Annotated[
+            UploadFile | None,
+            File(description="Foto trasera opcional de la prenda sin EXIF"),
+        ] = None,
+        include_tags: Annotated[
+            bool,
+            Form(description="Si es true, sugiere etiquetas estructuradas vía puerto Tagger"),
+        ] = False,
         x_luca_install_token: Annotated[
             str | None,
             Header(alias="X-Luca-Install-Token"),
@@ -113,40 +142,69 @@ def create_vision_router(
         client_ip = request.client.host if request.client else "unknown"
         rate_limiter.check(f"token:{token}")
         rate_limiter.check(f"ip:{client_ip}")
-        budget_guard.consume(VISION_CALL_COST_USD)
 
-        # Lectura acotada en memoria (lee 1 byte adicional para detectar exceso de tamaño sin agotar RAM)
-        raw_bytes = await file.read(effective_max_bytes + 1)
+        call_cost = VISION_CALL_COST_USD + (
+            TAGGING_CALL_COST_USD if include_tags and tagger.provider_name != "none" else 0.0
+        )
+        budget_guard.consume(call_cost)
+
+        raw_front = await file.read(effective_max_bytes + 1)
         await file.close()
+        _validate_and_read_image(raw_front, effective_max_bytes)
 
-        _validate_and_read_image(raw_bytes, effective_max_bytes)
+        raw_back: bytes | None = None
+        if back_file is not None:
+            raw_back = await back_file.read(effective_max_bytes + 1)
+            await back_file.close()
+            _validate_and_read_image(raw_back, effective_max_bytes)
 
         started = time.perf_counter()
 
-        def _process_in_memory() -> tuple[bytes, int, int, str, tuple[float, float, float], list[str], float]:
-            cutout_bytes = remover.remove_background(raw_bytes)
-            with Image.open(io.BytesIO(cutout_bytes)) as cut_img:
+        def _process_in_memory() -> tuple[
+            bytes,
+            bytes | None,
+            int,
+            int,
+            str,
+            tuple[float, float, float],
+            list[str],
+            float,
+            GarmentTagSuggestion | None,
+        ]:
+            cutout_front = remover.remove_background(raw_front)
+            cutout_back = remover.remove_background(raw_back) if raw_back is not None else None
+
+            with Image.open(io.BytesIO(cutout_front)) as cut_img:
                 width, height = cut_img.size
-            color = extract_dominant_color(cutout_bytes)
+
+            color = extract_dominant_color(cutout_front)
+            tagging_result: GarmentTagSuggestion | None = None
+            if include_tags:
+                tagging_result = tagger.tag_garment(cutout_front, cutout_back)
+
             return (
-                cutout_bytes,
+                cutout_front,
+                cutout_back,
                 width,
                 height,
                 color.hex,
                 (color.lab.l, color.lab.a, color.lab.b),
                 color.palette_hex,
                 color.coverage,
+                tagging_result,
             )
 
         try:
             (
-                cutout_bytes,
+                cutout_front,
+                cutout_back,
                 width,
                 height,
                 dominant_hex,
                 lab_tuple,
                 palette_hex,
                 coverage,
+                tagging_result,
             ) = await asyncio.wait_for(
                 asyncio.to_thread(_process_in_memory),
                 timeout=effective_timeout,
@@ -160,7 +218,10 @@ def create_vision_router(
         elapsed_ms = int((time.perf_counter() - started) * 1000)
 
         return VisionAnalyzeResponse(
-            cutout_png_base64=base64.b64encode(cutout_bytes).decode("ascii"),
+            cutout_png_base64=base64.b64encode(cutout_front).decode("ascii"),
+            back_cutout_png_base64=(
+                base64.b64encode(cutout_back).decode("ascii") if cutout_back is not None else None
+            ),
             width=width,
             height=height,
             dominant_color_hex=dominant_hex,
@@ -173,6 +234,7 @@ def create_vision_router(
             coverage=coverage,
             provider=remover.provider_name,
             processing_ms=elapsed_ms,
+            tagging=tagging_result,
         )
 
     return router

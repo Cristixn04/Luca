@@ -18,6 +18,7 @@ def test_health_v1_returns_ok_and_security_headers() -> None:
         "service": "luca-api",
         "version": API_VERSION,
         "vision_provider": "simple-border",
+        "tagger_provider": "none",
     }
 
 
