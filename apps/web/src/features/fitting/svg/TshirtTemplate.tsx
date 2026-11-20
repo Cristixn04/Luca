@@ -6,6 +6,7 @@ export interface TshirtTemplateProps {
   anchors: FrontAvatarAnchors;
   fitReport: FitReport;
   showHeatmap: boolean;
+  patternPrefix?: string;
 }
 
 function findZone(report: FitReport, zone: 'chest' | 'shoulders'): ZoneFitResult | undefined {
@@ -17,7 +18,12 @@ function formatEase(easeCm: number): string {
   return `${sign}${easeCm.toFixed(1)} cm`;
 }
 
-export function TshirtTemplate({ anchors, fitReport, showHeatmap }: TshirtTemplateProps) {
+export function TshirtTemplate({
+  anchors,
+  fitReport,
+  showHeatmap,
+  patternPrefix = 'front',
+}: TshirtTemplateProps) {
   const chestZone = findZone(fitReport, 'chest');
   const shouldersZone = findZone(fitReport, 'shoulders');
 
@@ -72,7 +78,7 @@ export function TshirtTemplate({ anchors, fitReport, showHeatmap }: TshirtTempla
             width={shHalf * 2}
             height={16}
             rx={6}
-            fill={`url(#${getHeatmapPatternId(shouldersZone.state)})`}
+            fill={`url(#${getHeatmapPatternId(shouldersZone.state, patternPrefix)})`}
             stroke={FIT_STATE_HEX[shouldersZone.state]}
             strokeWidth="1.5"
           />
@@ -98,7 +104,7 @@ export function TshirtTemplate({ anchors, fitReport, showHeatmap }: TshirtTempla
             width={chHalf * 2}
             height={36}
             rx={8}
-            fill={`url(#${getHeatmapPatternId(chestZone.state)})`}
+            fill={`url(#${getHeatmapPatternId(chestZone.state, patternPrefix)})`}
             stroke={FIT_STATE_HEX[chestZone.state]}
             strokeWidth="1.75"
           />

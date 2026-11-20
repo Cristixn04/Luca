@@ -6,6 +6,7 @@ export interface PantsTemplateProps {
   anchors: FrontAvatarAnchors;
   fitReport: FitReport;
   showHeatmap: boolean;
+  patternPrefix?: string;
 }
 
 function findZone(report: FitReport, zone: 'waist' | 'hip'): ZoneFitResult | undefined {
@@ -17,7 +18,12 @@ function formatEase(easeCm: number): string {
   return `${sign}${easeCm.toFixed(1)} cm`;
 }
 
-export function PantsTemplate({ anchors, fitReport, showHeatmap }: PantsTemplateProps) {
+export function PantsTemplate({
+  anchors,
+  fitReport,
+  showHeatmap,
+  patternPrefix = 'front',
+}: PantsTemplateProps) {
   const waistZone = findZone(fitReport, 'waist');
   const hipZone = findZone(fitReport, 'hip');
 
@@ -64,7 +70,7 @@ export function PantsTemplate({ anchors, fitReport, showHeatmap }: PantsTemplate
             width={wHalf * 2}
             height={22}
             rx={6}
-            fill={`url(#${getHeatmapPatternId(waistZone.state)})`}
+            fill={`url(#${getHeatmapPatternId(waistZone.state, patternPrefix)})`}
             stroke={FIT_STATE_HEX[waistZone.state]}
             strokeWidth="1.6"
           />
@@ -91,7 +97,7 @@ export function PantsTemplate({ anchors, fitReport, showHeatmap }: PantsTemplate
             width={hHalf * 2}
             height={28}
             rx={8}
-            fill={`url(#${getHeatmapPatternId(hipZone.state)})`}
+            fill={`url(#${getHeatmapPatternId(hipZone.state, patternPrefix)})`}
             stroke={FIT_STATE_HEX[hipZone.state]}
             strokeWidth="1.6"
           />

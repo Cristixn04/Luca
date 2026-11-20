@@ -32,6 +32,16 @@ const GUIDE_ITEMS = [
     name: 'Entrepierna',
     detail: 'Desde el tiro hasta el tobillo por la cara interna de la pierna.',
   },
+  {
+    name: 'Fondos de pecho, cintura y cadera (opcional)',
+    detail:
+      'Distancia horizontal de frente a espalda (profundidad) de perfil; puedes medirla entre dos libros paralelos o contra una pared.',
+  },
+  {
+    name: 'Ancho y largo de espalda (opcional)',
+    detail:
+      'Ancho horizontal entre pliegues de axilas por la espalda, y largo vertical desde la base del cuello hasta la cintura.',
+  },
 ] as const;
 
 export function MeasuringGuideDialog({ open, onClose }: MeasuringGuideDialogProps) {

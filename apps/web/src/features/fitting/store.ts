@@ -1,12 +1,15 @@
 import type {
+  AvatarView,
   FitPreference,
   GarmentFlatMeasurements,
   MeasurementUnit,
+  OptionalBodyMeasurements,
   RequiredBodyMeasurements,
 } from '@luca/domain';
 import { create } from 'zustand';
 
 export type M2GarmentCategory = 'tshirt' | 'pants';
+export type ViewerMode = AvatarView | 'all';
 
 export const DEFAULT_BODY_MEASUREMENTS: RequiredBodyMeasurements = {
   height: 175,
@@ -53,6 +56,8 @@ export interface FittingState {
   unit: MeasurementUnit;
   hideNumbers: boolean;
   bodyMeasurements: RequiredBodyMeasurements;
+  optionalMeasurements: OptionalBodyMeasurements;
+  viewMode: ViewerMode;
   garmentEnabled: boolean;
   garmentCategory: M2GarmentCategory;
   garmentName: string;
@@ -65,7 +70,9 @@ export interface FittingState {
   setUnit: (unit: MeasurementUnit) => void;
   toggleHideNumbers: () => void;
   setBodyMeasure: (field: keyof RequiredBodyMeasurements, valueCm: number) => void;
+  setOptionalMeasure: (field: keyof OptionalBodyMeasurements, valueCm: number | undefined) => void;
   resetBodyMeasures: () => void;
+  setViewMode: (mode: ViewerMode) => void;
   setGarmentCategory: (category: M2GarmentCategory) => void;
   setGarmentName: (name: string) => void;
   setGarmentSizeLabel: (sizeLabel: string) => void;
@@ -81,6 +88,8 @@ export const useFittingStore = create<FittingState>((set) => ({
   unit: 'cm',
   hideNumbers: false,
   bodyMeasurements: { ...DEFAULT_BODY_MEASUREMENTS },
+  optionalMeasurements: {},
+  viewMode: 'front',
   garmentEnabled: true,
   garmentCategory: 'tshirt',
   garmentName: DEFAULT_GARMENT_PRESETS.tshirt.name,
@@ -99,7 +108,19 @@ export const useFittingStore = create<FittingState>((set) => ({
         [field]: valueCm,
       },
     })),
-  resetBodyMeasures: () => set({ bodyMeasurements: { ...DEFAULT_BODY_MEASUREMENTS } }),
+  setOptionalMeasure: (field, valueCm) =>
+    set((state) => {
+      const next = { ...state.optionalMeasurements };
+      if (valueCm === undefined) {
+        delete next[field];
+      } else {
+        next[field] = valueCm;
+      }
+      return { optionalMeasurements: next };
+    }),
+  resetBodyMeasures: () =>
+    set({ bodyMeasurements: { ...DEFAULT_BODY_MEASUREMENTS }, optionalMeasurements: {} }),
+  setViewMode: (viewMode) => set({ viewMode }),
 
   setGarmentCategory: (category) => {
     const preset = DEFAULT_GARMENT_PRESETS[category];

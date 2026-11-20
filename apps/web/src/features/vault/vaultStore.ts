@@ -1,4 +1,4 @@
-import type { RequiredBodyMeasurements } from '@luca/domain';
+import type { OptionalBodyMeasurements, RequiredBodyMeasurements } from '@luca/domain';
 import { create } from 'zustand';
 import { DEFAULT_BODY_MEASUREMENTS, useFittingStore } from '@/features/fitting/store';
 import { useClosetStore } from '@/features/closet/closetStore';
@@ -26,6 +26,7 @@ export interface PersistedMeasurementSet {
   readonly id: 'current';
   readonly measuredOn: string;
   readonly requiredCm: RequiredBodyMeasurements;
+  readonly optionalCm?: OptionalBodyMeasurements;
 }
 
 export type UiVaultStatus = 'loading' | VaultStatus;
@@ -59,7 +60,10 @@ export function resetVaultServiceForTests(
 async function hydrateFromVault(): Promise<{ eventCount: number; snapshotCount: number }> {
   const saved = await activeVault.getRecord<PersistedMeasurementSet>('measurement_set', 'current');
   if (saved?.requiredCm) {
-    useFittingStore.setState({ bodyMeasurements: { ...saved.requiredCm } });
+    useFittingStore.setState({
+      bodyMeasurements: { ...saved.requiredCm },
+      optionalMeasurements: saved.optionalCm ? { ...saved.optionalCm } : {},
+    });
   }
 
   const [events, snapshots] = await Promise.all([
@@ -91,7 +95,10 @@ export interface VaultStoreState {
   recover: (recoveryKey: string, newPassword: string) => Promise<void>;
   lock: () => void;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
-  persistCurrentMeasurements: (measures: RequiredBodyMeasurements) => Promise<void>;
+  persistCurrentMeasurements: (
+    measures: RequiredBodyMeasurements,
+    optional?: OptionalBodyMeasurements,
+  ) => Promise<void>;
   exportBackup: () => Promise<string>;
   importBackup: (
     rawJson: string,
@@ -151,11 +158,13 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
     try {
       const { recoveryKey, meta } = await activeVault.createEncryptedVault(password);
       const currentMeasures = useFittingStore.getState().bodyMeasurements;
+      const currentOptionals = useFittingStore.getState().optionalMeasurements;
 
       await activeVault.putRecord<PersistedMeasurementSet>('measurement_set', 'current', {
         id: 'current',
         measuredOn: new Date().toISOString().slice(0, 10),
         requiredCm: currentMeasures,
+        ...(Object.keys(currentOptionals).length > 0 ? { optionalCm: currentOptionals } : {}),
       });
 
       await appendInteractionEvent(activeVault, {
@@ -268,7 +277,10 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
   lock: () => {
     activeVault.lock();
     // Limpia las medidas y el clóset descifrado en memoria al bloquear la bóveda.
-    useFittingStore.setState({ bodyMeasurements: { ...DEFAULT_BODY_MEASUREMENTS } });
+    useFittingStore.setState({
+      bodyMeasurements: { ...DEFAULT_BODY_MEASUREMENTS },
+      optionalMeasurements: {},
+    });
     useClosetStore.getState().clearMemory();
     set({
       status: activeVault.getStatus(),
@@ -291,21 +303,27 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
     }
   },
 
-  persistCurrentMeasurements: async (measures) => {
+  persistCurrentMeasurements: async (measures, optional) => {
     const status = get().status;
     if (status !== 'unlocked' && status !== 'plaintext') {
       return;
     }
 
+    const hasOptionals = optional && Object.keys(optional).length > 0;
+
     await activeVault.putRecord<PersistedMeasurementSet>('measurement_set', 'current', {
       id: 'current',
       measuredOn: new Date().toISOString().slice(0, 10),
       requiredCm: measures,
+      ...(hasOptionals ? { optionalCm: optional } : {}),
     });
 
     await appendInteractionEvent(activeVault, {
       type: 'measurements_updated',
-      payload: { fields: Object.keys(measures) },
+      payload: {
+        fields: Object.keys(measures),
+        optionalFields: hasOptionals ? Object.keys(optional) : [],
+      },
     });
 
     set((state) => ({ eventCount: state.eventCount + 1 }));
@@ -375,7 +393,10 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
   wipeAll: async () => {
     set({ busy: true, error: null });
     await activeVault.wipeAllData();
-    useFittingStore.setState({ bodyMeasurements: { ...DEFAULT_BODY_MEASUREMENTS } });
+    useFittingStore.setState({
+      bodyMeasurements: { ...DEFAULT_BODY_MEASUREMENTS },
+      optionalMeasurements: {},
+    });
     useClosetStore.getState().clearMemory();
     const persistence = await getStoragePersistenceInfo(undefined);
     set({
