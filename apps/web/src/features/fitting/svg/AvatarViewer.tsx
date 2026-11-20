@@ -5,6 +5,7 @@ import { HEATMAP_TOKENS } from '@/design-system/tokens';
 import type { M2GarmentCategory, ViewerMode } from '../store';
 import { BackAvatarSvg } from './BackAvatarSvg';
 import { FrontAvatarSvg, type OutfitLayerOverlay } from './FrontAvatarSvg';
+import type { GarmentVisualMeta } from './garmentVisuals';
 import { getHeatmapPatternId } from './heatmapMeta';
 import { HeatmapPatternDefs } from './heatmapPatterns';
 import { SideAvatarSvg } from './SideAvatarSvg';
@@ -24,6 +25,7 @@ export interface AvatarViewerProps {
   fitReport: FitReport | null;
   showHeatmap: boolean;
   garmentColorHex?: string;
+  garmentMeta?: GarmentVisualMeta;
   outfitLayers?: OutfitLayerOverlay;
   viewMode: ViewerMode;
   onChangeViewMode: (mode: ViewerMode) => void;
@@ -35,6 +37,7 @@ export function AvatarViewer({
   fitReport,
   showHeatmap,
   garmentColorHex,
+  garmentMeta,
   outfitLayers,
   viewMode,
   onChangeViewMode,
@@ -104,6 +107,7 @@ export function AvatarViewer({
             fitReport={fitReport}
             showHeatmap={showHeatmap}
             garmentColorHex={garmentColorHex}
+            garmentMeta={garmentMeta}
             outfitLayers={outfitLayers}
             compact={viewMode === 'all'}
           />
@@ -115,6 +119,7 @@ export function AvatarViewer({
             fitReport={fitReport}
             showHeatmap={showHeatmap}
             garmentColorHex={garmentColorHex}
+            garmentMeta={garmentMeta}
             outfitLayers={outfitLayers}
             compact={viewMode === 'all'}
           />
@@ -126,6 +131,7 @@ export function AvatarViewer({
             fitReport={fitReport}
             showHeatmap={showHeatmap}
             garmentColorHex={garmentColorHex}
+            garmentMeta={garmentMeta}
             outfitLayers={outfitLayers}
             compact={viewMode === 'all'}
           />

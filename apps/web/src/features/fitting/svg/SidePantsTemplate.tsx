@@ -1,5 +1,11 @@
 import { solveGarmentSection, type BodyModel, type FitReport } from '@luca/domain';
 import { clampVisualEaseOffsetPx } from './anchors';
+import {
+  resolveGarmentAccentStroke,
+  resolveGarmentSeamColor,
+  resolveLowerSubtype,
+  type GarmentVisualMeta,
+} from './garmentVisuals';
 import { FIT_STATE_HEX, getHeatmapPatternId } from './heatmapMeta';
 import type { LowerGarmentVariant } from './PantsTemplate';
 import type { SideAvatarAnchors } from './sideAnchors';
@@ -10,6 +16,7 @@ export interface SidePantsTemplateProps {
   fitReport: FitReport;
   showHeatmap: boolean;
   garmentColorHex?: string;
+  garmentMeta?: GarmentVisualMeta;
   patternPrefix: string;
   variant?: LowerGarmentVariant;
 }
@@ -25,6 +32,7 @@ export function SidePantsTemplate({
   fitReport,
   showHeatmap,
   garmentColorHex,
+  garmentMeta,
   patternPrefix,
   variant = 'pants',
 }: SidePantsTemplateProps) {
@@ -55,6 +63,7 @@ export function SidePantsTemplate({
     );
   }
 
+  const subtype = resolveLowerSubtype(variant, garmentMeta);
   const wBack = anchors.waistBackX - waistOffset;
   const wFront = anchors.waistFrontX + waistOffset;
   const hBack = anchors.hipBackX - hipOffset;
@@ -66,40 +75,78 @@ export function SidePantsTemplate({
     variant === 'shorts'
       ? anchors.crotchY + legLength * 0.28
       : variant === 'skirt'
-        ? anchors.crotchY + legLength * 0.5
-        : anchors.ankleY;
+        ? subtype === 'skirt_mini'
+          ? anchors.crotchY + legLength * 0.26
+          : subtype === 'skirt_maxi'
+            ? anchors.ankleY - 12
+            : anchors.crotchY + legLength * 0.54
+        : anchors.ankleY - 6;
 
   const path =
     variant === 'skirt'
       ? [
           `M ${wBack} ${anchors.waistY}`,
           `L ${wFront} ${anchors.waistY}`,
-          `Q ${hFront + 3} ${anchors.hipY} ${hFront + 6} ${hemY}`,
-          `L ${hBack - 6} ${hemY}`,
-          `Q ${hBack - 3} ${anchors.hipY} ${wBack} ${anchors.waistY}`,
+          `C ${hFront + 3} ${anchors.hipY - 4}, ${hFront + 9} ${hemY - 26}, ${hFront + 9} ${hemY}`,
+          `Q ${anchors.centerX} ${hemY + 4} ${hBack - 9} ${hemY}`,
+          `C ${hBack - 9} ${hemY - 26}, ${hBack - 3} ${anchors.hipY - 4}, ${wBack} ${anchors.waistY}`,
           'Z',
         ].join(' ')
       : [
           `M ${wBack} ${anchors.waistY}`,
           `L ${wFront} ${anchors.waistY}`,
-          `Q ${hFront + 2} ${anchors.hipY} ${legFront} ${anchors.crotchY}`,
+          `C ${hFront + 2} ${anchors.hipY - 4}, ${legFront + 2} ${anchors.crotchY - 2}, ${legFront + 1} ${anchors.crotchY}`,
           `L ${legFront - 2} ${hemY}`,
           `L ${legBack + 2} ${hemY}`,
-          `L ${legBack} ${anchors.crotchY}`,
-          `Q ${hBack - 2} ${anchors.hipY} ${wBack} ${anchors.waistY}`,
+          `L ${legBack - 1} ${anchors.crotchY}`,
+          `C ${hBack - 3} ${anchors.hipY + 6}, ${hBack - 3} ${anchors.hipY - 8}, ${wBack} ${anchors.waistY}`,
           'Z',
         ].join(' ');
 
+  const baseFill = garmentColorHex ?? 'var(--accent)';
+  const strokeColor = resolveGarmentAccentStroke(garmentColorHex);
+  const seamColor = resolveGarmentSeamColor(garmentColorHex);
+  const patternId =
+    garmentMeta?.pattern === 'striped' ||
+    garmentMeta?.pattern === 'plaid' ||
+    garmentMeta?.pattern === 'textured'
+      ? `${patternPrefix}-pat-${garmentMeta.pattern}`
+      : null;
+
   return (
     <g data-garment={`${variant}-side`} aria-label={`Plantilla de ${variant} en vista de perfil`}>
-      <path
-        d={path}
-        fill={garmentColorHex ?? 'var(--accent)'}
-        fillOpacity={showHeatmap ? 0.1 : 0.36}
-        stroke="var(--ink)"
-        strokeWidth="1.75"
-        strokeLinejoin="round"
-      />
+      <path d={path} fill={baseFill} fillOpacity={showHeatmap ? 0.16 : 0.94} />
+      {patternId && !showHeatmap && <path d={path} fill={`url(#${patternId})`} opacity="0.85" />}
+      {!showHeatmap && (
+        <>
+          <path d={path} fill={`url(#${patternPrefix}-fabric-shade)`} opacity="0.62" />
+          <path d={path} fill={`url(#${patternPrefix}-fabric-drape)`} opacity="0.48" />
+        </>
+      )}
+      <path d={path} fill="none" stroke={strokeColor} strokeWidth="1.3" strokeLinejoin="round" />
+
+      {/* Costura lateral y pretina */}
+      {!showHeatmap && (
+        <g pointerEvents="none">
+          <line
+            x1={wBack + 1}
+            y1={anchors.waistY + 8}
+            x2={wFront - 1}
+            y2={anchors.waistY + 8}
+            stroke={seamColor}
+            strokeWidth="1"
+          />
+          <line
+            x1={anchors.centerX}
+            y1={anchors.waistY + 8}
+            x2={anchors.centerX}
+            y2={hemY - 4}
+            stroke={seamColor}
+            strokeWidth="0.9"
+            opacity="0.6"
+          />
+        </g>
+      )}
 
       {showHeatmap && waistZone && (
         <g data-heatmap-zone="waist" data-fit-state={waistZone.state}>

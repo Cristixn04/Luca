@@ -1,5 +1,12 @@
 import type { BodyModel, FitReport } from '@luca/domain';
 import { clampVisualEaseOffsetPx, type FrontAvatarAnchors } from './anchors';
+import {
+  isSafeDataImageUrl,
+  resolveGarmentAccentStroke,
+  resolveGarmentSeamColor,
+  resolveUpperSubtype,
+  type GarmentVisualMeta,
+} from './garmentVisuals';
 import { FIT_STATE_HEX, getHeatmapPatternId } from './heatmapMeta';
 import type { UpperGarmentVariant } from './TshirtTemplate';
 
@@ -9,6 +16,7 @@ export interface BackTshirtTemplateProps {
   fitReport: FitReport;
   showHeatmap: boolean;
   garmentColorHex?: string;
+  garmentMeta?: GarmentVisualMeta;
   patternPrefix: string;
   variant?: UpperGarmentVariant;
 }
@@ -24,6 +32,7 @@ export function BackTshirtTemplate({
   fitReport,
   showHeatmap,
   garmentColorHex,
+  garmentMeta,
   patternPrefix,
   variant = 'tshirt',
 }: BackTshirtTemplateProps) {
@@ -38,72 +47,252 @@ export function BackTshirtTemplate({
     ? clampVisualEaseOffsetPx(shouldersZone.easeCm * 2, anchors.scale)
     : 2;
 
+  const subtype = resolveUpperSubtype(variant, garmentMeta);
   const cx = anchors.centerX;
-  const jacketBoost = variant === 'jacket' ? 4 : 0;
-  const shHalf = Math.max(anchors.neckHalfW + 12, anchors.shoulderHalfW + shoulderOffset + jacketBoost * 0.5);
+  const legLen = anchors.ankleY - anchors.crotchY;
+  const bulkBoost =
+    variant === 'jacket'
+      ? 4.5
+      : subtype === 'hoodie' || subtype === 'sweater'
+        ? 3.2
+        : 0;
+
+  const shHalf = Math.max(
+    anchors.neckHalfW + 12,
+    anchors.shoulderHalfW + shoulderOffset * 0.7 + bulkBoost * 0.5,
+  );
   const backBodyHalf = (model.backWidthCm / 2) * anchors.scale;
   const chHalf = Math.max(
-    anchors.chestHalfW * 0.85,
-    Math.max(anchors.chestHalfW, backBodyHalf) + bodyOffset + jacketBoost,
+    anchors.chestHalfW * 0.9,
+    Math.max(anchors.chestHalfW, backBodyHalf) + bodyOffset + bulkBoost,
   );
-  const wHalf = Math.max(anchors.waistHalfW * 0.88, anchors.waistHalfW + 3);
-  const hHalf = Math.max(anchors.hipHalfW * 0.9, anchors.hipHalfW + 4);
-  const hemHalf = variant === 'dress' ? hHalf + 10 : Math.max(anchors.waistHalfW * 0.9, chHalf * 0.96);
+  const wHalf = Math.max(anchors.waistHalfW * 0.9, anchors.waistHalfW + 3 + bulkBoost * 0.6);
+  const hHalf = Math.max(anchors.hipHalfW * 0.92, anchors.hipHalfW + 4 + bulkBoost * 0.4);
+  const hemHalf =
+    variant === 'dress'
+      ? subtype === 'dress_maxi'
+        ? hHalf + 18
+        : subtype === 'dress_mini'
+          ? hHalf + 8
+          : hHalf + 14
+      : Math.max(wHalf + 2, chHalf * 0.97);
 
   const isLongSleeve = variant === 'long_sleeve' || variant === 'jacket';
-  const sleeveOutX = isLongSleeve ? shHalf + 24 : shHalf + 18;
-  const sleeveBottomY = isLongSleeve ? anchors.hipY + 8 : anchors.chestY + 12;
-  const sleeveInnerBottomX = isLongSleeve ? chHalf + 12 : chHalf + 6;
+  const isTank = subtype === 'tank';
+  const sleeveOuterX = isTank
+    ? shHalf - 4
+    : isLongSleeve
+      ? shHalf + 23 + bulkBoost * 0.4
+      : shHalf + 17;
+  const sleeveInnerX = isTank
+    ? chHalf
+    : isLongSleeve
+      ? shHalf + 9 + bulkBoost * 0.3
+      : chHalf + 8;
+  const sleeveEndY = isTank
+    ? anchors.chestY + 2
+    : isLongSleeve
+      ? anchors.hipY + 14
+      : anchors.chestY + 15;
+  const armpitY = anchors.chestY + 9;
+
   const hemY =
     variant === 'dress'
-      ? anchors.crotchY + (anchors.ankleY - anchors.crotchY) * 0.54
+      ? subtype === 'dress_mini'
+        ? anchors.crotchY + legLen * 0.34
+        : subtype === 'dress_maxi'
+          ? anchors.ankleY - 12
+          : anchors.crotchY + legLen * 0.58
       : variant === 'jacket'
-        ? anchors.hipY + 6
-        : anchors.hipY - 4;
+        ? anchors.hipY + 8
+        : subtype === 'hoodie' || subtype === 'sweater'
+          ? anchors.hipY + 2
+          : anchors.hipY - 3;
+
+  const neckHalf = anchors.neckHalfW + (variant === 'dress' ? 5 : 3);
+  const neckTopY = anchors.shoulderY - 6;
 
   const garmentPath =
     variant === 'dress'
       ? [
-          `M ${cx - anchors.neckHalfW - 4} ${anchors.shoulderY - 4}`,
-          `Q ${cx} ${anchors.shoulderY + 3} ${cx + anchors.neckHalfW + 4} ${anchors.shoulderY - 4}`,
+          `M ${cx - neckHalf} ${neckTopY}`,
+          `Q ${cx} ${neckTopY + 5} ${cx + neckHalf} ${neckTopY}`,
           `L ${cx + shHalf} ${anchors.shoulderY + 4}`,
-          `L ${cx + shHalf + 12} ${anchors.chestY + 6}`,
-          `L ${cx + chHalf} ${anchors.chestY + 8}`,
-          `L ${cx + wHalf} ${anchors.waistY}`,
-          `Q ${cx + hHalf + 3} ${anchors.hipY} ${cx + hemHalf} ${hemY}`,
-          `L ${cx - hemHalf} ${hemY}`,
-          `Q ${cx - hHalf - 3} ${anchors.hipY} ${cx - wHalf} ${anchors.waistY}`,
-          `L ${cx - chHalf} ${anchors.chestY + 8}`,
-          `L ${cx - shHalf - 12} ${anchors.chestY + 6}`,
-          `L ${cx - shHalf} ${anchors.shoulderY + 4}`,
+          `Q ${cx + shHalf + 9} ${anchors.shoulderY + 18} ${cx + shHalf + 7} ${anchors.chestY + 4}`,
+          `Q ${cx + chHalf + 2} ${anchors.chestY + 7} ${cx + chHalf} ${armpitY}`,
+          `C ${cx + chHalf} ${anchors.waistY - 12}, ${cx + wHalf} ${anchors.waistY - 6}, ${cx + wHalf} ${anchors.waistY}`,
+          `C ${cx + hHalf + 2} ${anchors.hipY - 8}, ${cx + hemHalf - 1} ${hemY - 36}, ${cx + hemHalf} ${hemY}`,
+          `Q ${cx} ${hemY + 7} ${cx - hemHalf} ${hemY}`,
+          `C ${cx - hemHalf + 1} ${hemY - 36}, ${cx - hHalf - 2} ${anchors.hipY - 8}, ${cx - wHalf} ${anchors.waistY}`,
+          `C ${cx - wHalf} ${anchors.waistY - 6}, ${cx - chHalf} ${anchors.waistY - 12}, ${cx - chHalf} ${armpitY}`,
+          `Q ${cx - chHalf - 2} ${anchors.chestY + 7} ${cx - shHalf - 7} ${anchors.chestY + 4}`,
+          `Q ${cx - shHalf - 9} ${anchors.shoulderY + 18} ${cx - shHalf} ${anchors.shoulderY + 4}`,
           'Z',
         ].join(' ')
-      : [
-          `M ${cx - anchors.neckHalfW - 4} ${anchors.shoulderY - 4}`,
-          `Q ${cx} ${anchors.shoulderY + 3} ${cx + anchors.neckHalfW + 4} ${anchors.shoulderY - 4}`,
-          `L ${cx + shHalf} ${anchors.shoulderY + 4}`,
-          `L ${cx + sleeveOutX} ${sleeveBottomY}`,
-          `L ${cx + sleeveInnerBottomX} ${sleeveBottomY + 8}`,
-          `L ${cx + chHalf} ${anchors.chestY + 8}`,
-          `L ${cx + hemHalf} ${hemY}`,
-          `L ${cx - hemHalf} ${hemY}`,
-          `L ${cx - chHalf} ${anchors.chestY + 8}`,
-          `L ${cx - sleeveInnerBottomX} ${sleeveBottomY + 8}`,
-          `L ${cx - sleeveOutX} ${sleeveBottomY}`,
-          `L ${cx - shHalf} ${anchors.shoulderY + 4}`,
-          'Z',
-        ].join(' ');
+      : isTank
+        ? [
+            `M ${cx - neckHalf} ${neckTopY}`,
+            `Q ${cx} ${neckTopY + 12} ${cx + neckHalf} ${neckTopY}`,
+            `L ${cx + shHalf - 8} ${anchors.shoulderY + 3}`,
+            `Q ${cx + chHalf - 2} ${anchors.chestY - 4} ${cx + chHalf} ${armpitY}`,
+            `C ${cx + chHalf} ${anchors.waistY - 8}, ${cx + wHalf} ${anchors.waistY + 6}, ${cx + hemHalf} ${hemY}`,
+            `Q ${cx} ${hemY + 4} ${cx - hemHalf} ${hemY}`,
+            `C ${cx - wHalf} ${anchors.waistY + 6}, ${cx - chHalf} ${anchors.waistY - 8}, ${cx - chHalf} ${armpitY}`,
+            `Q ${cx - chHalf + 2} ${anchors.chestY - 4} ${cx - shHalf + 8} ${anchors.shoulderY + 3}`,
+            'Z',
+          ].join(' ')
+        : [
+            `M ${cx - neckHalf} ${neckTopY}`,
+            `Q ${cx} ${neckTopY + 5} ${cx + neckHalf} ${neckTopY}`,
+            `L ${cx + shHalf} ${anchors.shoulderY + 4}`,
+            `C ${cx + shHalf + 10} ${anchors.shoulderY + 14}, ${cx + sleeveOuterX} ${(anchors.shoulderY + sleeveEndY) * 0.52}, ${cx + sleeveOuterX} ${sleeveEndY}`,
+            `L ${cx + sleeveInnerX} ${sleeveEndY + (isLongSleeve ? 3 : 6)}`,
+            `C ${cx + chHalf + 6} ${armpitY + 12}, ${cx + chHalf + 2} ${armpitY + 4}, ${cx + chHalf} ${armpitY}`,
+            `C ${cx + chHalf} ${anchors.waistY - 8}, ${cx + Math.max(wHalf, hemHalf * 0.96)} ${anchors.waistY + 8}, ${cx + hemHalf} ${hemY}`,
+            `Q ${cx} ${hemY + (subtype === 'shirt' ? 6 : 3)} ${cx - hemHalf} ${hemY}`,
+            `C ${cx - Math.max(wHalf, hemHalf * 0.96)} ${anchors.waistY + 8}, ${cx - chHalf} ${anchors.waistY - 8}, ${cx - chHalf} ${armpitY}`,
+            `C ${cx - chHalf - 2} ${armpitY + 4}, ${cx - chHalf - 6} ${armpitY + 12}, ${cx - sleeveInnerX} ${sleeveEndY + (isLongSleeve ? 3 : 6)}`,
+            `L ${cx - sleeveOuterX} ${sleeveEndY}`,
+            `C ${cx - sleeveOuterX} ${(anchors.shoulderY + sleeveEndY) * 0.52}, ${cx - shHalf - 10} ${anchors.shoulderY + 14}, ${cx - shHalf} ${anchors.shoulderY + 4}`,
+            'Z',
+          ].join(' ');
+
+  const baseFill = garmentColorHex ?? 'var(--accent)';
+  const strokeColor = resolveGarmentAccentStroke(garmentColorHex);
+  const seamColor = resolveGarmentSeamColor(garmentColorHex);
+  const hasBackPhoto = isSafeDataImageUrl(garmentMeta?.backImageUrl);
+  const clipId = `${patternPrefix}-${variant}-back-clip`;
+
+  const maxHalfX = Math.max(sleeveOuterX, hemHalf, chHalf) + 4;
+  const imgX = cx - maxHalfX;
+  const imgY = neckTopY - 4;
+  const imgW = maxHalfX * 2;
+  const imgH = hemY - neckTopY + 12;
+
+  const patternId =
+    !hasBackPhoto &&
+    (garmentMeta?.pattern === 'striped' ||
+      garmentMeta?.pattern === 'plaid' ||
+      garmentMeta?.pattern === 'textured')
+      ? `${patternPrefix}-pat-${garmentMeta.pattern}`
+      : null;
 
   return (
     <g data-garment={`${variant}-back`} aria-label={`Plantilla de ${variant} en vista de espalda`}>
+      <defs>
+        <clipPath id={clipId}>
+          <path d={garmentPath} />
+        </clipPath>
+      </defs>
+
+      <path d={garmentPath} fill={baseFill} fillOpacity={showHeatmap ? 0.16 : 0.95} />
+
+      {/* Proyección real de la foto trasera si el usuario la subió */}
+      {hasBackPhoto && (
+        <image
+          href={garmentMeta.backImageUrl}
+          x={imgX}
+          y={imgY}
+          width={imgW}
+          height={imgH}
+          preserveAspectRatio="xMidYMid slice"
+          clipPath={`url(#${clipId})`}
+          opacity={showHeatmap ? 0.3 : 0.96}
+          data-garment-photo="back"
+        />
+      )}
+
+      {patternId && !showHeatmap && (
+        <path d={garmentPath} fill={`url(#${patternId})`} opacity="0.85" />
+      )}
+
+      {!showHeatmap && (
+        <>
+          <path d={garmentPath} fill={`url(#${patternPrefix}-fabric-shade)`} opacity="0.62" />
+          <path d={garmentPath} fill={`url(#${patternPrefix}-fabric-drape)`} opacity="0.5" />
+        </>
+      )}
+
       <path
         d={garmentPath}
-        fill={garmentColorHex ?? 'var(--accent)'}
-        fillOpacity={showHeatmap ? 0.1 : 0.36}
-        stroke="var(--ink)"
-        strokeWidth="1.75"
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth="1.35"
         strokeLinejoin="round"
       />
+
+      {/* Detalles de espalda según prenda */}
+      {!showHeatmap && (
+        <g pointerEvents="none">
+          {/* Capucha descansando sobre la espalda en buzos/hoodies */}
+          {subtype === 'hoodie' && (
+            <path
+              d={`M ${cx - neckHalf - 5} ${neckTopY} C ${cx - shHalf * 0.62} ${anchors.shoulderY + 8}, ${cx - shHalf * 0.45} ${anchors.chestY + 2}, ${cx} ${anchors.chestY + 5} C ${cx + shHalf * 0.45} ${anchors.chestY + 2}, ${cx + shHalf * 0.62} ${anchors.shoulderY + 8}, ${cx + neckHalf + 5} ${neckTopY} Z`}
+              fill={baseFill}
+              fillOpacity="0.96"
+              stroke={strokeColor}
+              strokeWidth="1.15"
+              strokeLinejoin="round"
+            />
+          )}
+
+          {/* Canesú y pliegue trasero de camisa */}
+          {subtype === 'shirt' && (
+            <>
+              <line
+                x1={cx - shHalf + 5}
+                y1={anchors.shoulderY + 14}
+                x2={cx + shHalf - 5}
+                y2={anchors.shoulderY + 14}
+                stroke={seamColor}
+                strokeWidth="1"
+              />
+              <line
+                x1={cx}
+                y1={anchors.shoulderY + 14}
+                x2={cx}
+                y2={anchors.waistY + 6}
+                stroke={seamColor}
+                strokeWidth="0.9"
+                opacity="0.7"
+              />
+            </>
+          )}
+
+          {/* Costura central y abertura trasera de chaqueta / vestido */}
+          {(variant === 'jacket' || variant === 'dress') && (
+            <line
+              x1={cx}
+              y1={neckTopY + 5}
+              x2={cx}
+              y2={hemY - 2}
+              stroke={seamColor}
+              strokeWidth="0.95"
+            />
+          )}
+
+          {isLongSleeve && (
+            <>
+              <line
+                x1={cx - sleeveOuterX + 1}
+                y1={sleeveEndY - 8}
+                x2={cx - sleeveInnerX - 1}
+                y2={sleeveEndY - 6}
+                stroke={seamColor}
+                strokeWidth="1.05"
+              />
+              <line
+                x1={cx + sleeveInnerX + 1}
+                y1={sleeveEndY - 6}
+                x2={cx + sleeveOuterX - 1}
+                y2={sleeveEndY - 8}
+                stroke={seamColor}
+                strokeWidth="1.05"
+              />
+            </>
+          )}
+        </g>
+      )}
 
       {showHeatmap && shouldersZone && (
         <g data-heatmap-zone="shoulders" data-fit-state={shouldersZone.state}>

@@ -491,6 +491,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
           {/* Columna izquierda: Carrusel 3D flotante (totalmente libre, sin caja) */}
           <OutfitRunwayCarousel
             proposals={proposals}
+            itemsById={itemsById}
             selectedIndex={safeSelectedIndex}
             onSelectIndex={(idx) => {
               setSelectedIndex(idx);

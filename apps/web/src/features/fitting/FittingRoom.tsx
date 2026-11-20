@@ -7,12 +7,14 @@ import {
 } from '@luca/domain';
 import { AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/design-system/components/Card';
+import { useClosetStore } from '@/features/closet/closetStore';
 import { useVaultStore } from '@/features/vault/vaultStore';
 import { useT } from '@/i18n/i18nStore';
 import { GarmentPanel } from './GarmentPanel';
 import { MeasurementsPanel } from './MeasurementsPanel';
 import { useFittingStore } from './store';
 import { AvatarViewer } from './svg/AvatarViewer';
+import type { GarmentVisualMeta } from './svg/garmentVisuals';
 
 export function FittingRoom() {
   const t = useT();
@@ -21,13 +23,34 @@ export function FittingRoom() {
   const viewMode = useFittingStore((s) => s.viewMode);
   const setViewMode = useFittingStore((s) => s.setViewMode);
   const garmentEnabled = useFittingStore((s) => s.garmentEnabled);
+  const garmentSource = useFittingStore((s) => s.garmentSource);
+  const selectedClosetGarmentId = useFittingStore((s) => s.selectedClosetGarmentId);
   const garmentCategory = useFittingStore((s) => s.garmentCategory);
+  const garmentName = useFittingStore((s) => s.garmentName);
   const garmentColorHex = useFittingStore((s) => s.garmentColorHex);
   const garmentSizeLabel = useFittingStore((s) => s.garmentSizeLabel);
   const garmentElasticity = useFittingStore((s) => s.garmentElasticity);
   const garmentFlatMeasures = useFittingStore((s) => s.garmentFlatMeasures);
   const showHeatmap = useFittingStore((s) => s.showHeatmap);
   const toggleHeatmap = useFittingStore((s) => s.toggleHeatmap);
+  const closetItems = useClosetStore((s) => s.items);
+
+  const garmentVisualMeta: GarmentVisualMeta = useMemo(() => {
+    if (garmentSource === 'closet' && selectedClosetGarmentId) {
+      const selected = closetItems.find((item) => item.garment.id === selectedClosetGarmentId);
+      if (selected) {
+        return {
+          name: selected.garment.name,
+          pattern: selected.garment.pattern,
+          style: selected.garment.style,
+          tags: selected.garment.tags,
+          imageUrl: selected.image?.dataUrl,
+          backImageUrl: selected.image?.backDataUrl,
+        };
+      }
+    }
+    return { name: garmentName };
+  }, [closetItems, garmentName, garmentSource, selectedClosetGarmentId]);
 
   const measurements: BodyMeasurements = useMemo(
     () => ({
@@ -140,6 +163,7 @@ export function FittingRoom() {
                 fitReport={fitReport}
                 showHeatmap={showHeatmap}
                 garmentColorHex={garmentColorHex}
+                garmentMeta={garmentVisualMeta}
                 viewMode={viewMode}
                 onChangeViewMode={setViewMode}
               />

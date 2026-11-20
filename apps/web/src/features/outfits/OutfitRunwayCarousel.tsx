@@ -14,9 +14,11 @@ import {
   type OutfitProposal,
 } from '@luca/domain';
 import { ArrowLeft, ArrowRight, Pause, Play, X } from 'lucide-react';
+import type { GarmentWithSizes } from '@/features/closet/types';
 import type { ViewerMode } from '@/features/fitting/store';
 import { BackAvatarSvg } from '@/features/fitting/svg/BackAvatarSvg';
 import { FrontAvatarSvg, type OutfitLayerOverlay } from '@/features/fitting/svg/FrontAvatarSvg';
+import type { GarmentVisualMeta } from '@/features/fitting/svg/garmentVisuals';
 import { SideAvatarSvg } from '@/features/fitting/svg/SideAvatarSvg';
 
 const VIEW_OPTIONS: readonly { id: ViewerMode; label: string }[] = [
@@ -26,63 +28,85 @@ const VIEW_OPTIONS: readonly { id: ViewerMode; label: string }[] = [
   { id: 'all', label: '3 vistas' },
 ];
 
+function extractVisualMeta(
+  item: OutfitProposal['items'][number] | undefined,
+  itemsById: ReadonlyMap<string, GarmentWithSizes>,
+): GarmentVisualMeta | undefined {
+  if (!item) return undefined;
+  const full = itemsById.get(item.id);
+  return {
+    name: full?.garment.name ?? item.name,
+    pattern: full?.garment.pattern,
+    style: full?.garment.style,
+    tags: full?.garment.tags,
+    imageUrl: full?.image?.dataUrl,
+    backImageUrl: full?.image?.backDataUrl,
+  };
+}
+
 function buildOutfitLayers(
   proposal: OutfitProposal,
   bodyModel: BodyModel | null,
+  itemsById: ReadonlyMap<string, GarmentWithSizes>,
 ): OutfitLayerOverlay | undefined {
   if (!bodyModel) return undefined;
 
-  const topItem =
-    proposal.items.find((i) => getGarmentSlot(i.category) === 'outerwear') ??
+  const outerwearItem = proposal.items.find((i) => getGarmentSlot(i.category) === 'outerwear');
+  const innerTopItem =
     proposal.items.find((i) => getGarmentSlot(i.category) === 'top') ??
     proposal.items.find((i) => getGarmentSlot(i.category) === 'one_piece');
 
+  const primaryTopItem = innerTopItem ?? outerwearItem;
+  const separateOuterwear = innerTopItem && outerwearItem ? outerwearItem : undefined;
   const bottomItem = proposal.items.find((i) => getGarmentSlot(i.category) === 'bottom');
 
-  const topFitReport = topItem?.flatMeasuresCm
-    ? evaluateGarmentFit(bodyModel, {
-        category: 'tshirt',
-        sizeLabel: 'M',
-        elasticity: topItem.elasticity,
-        flatMeasuresCm: topItem.flatMeasuresCm,
-      })
-    : topItem
-      ? evaluateGarmentFit(bodyModel, {
-          category: 'tshirt',
-          sizeLabel: 'M',
-          elasticity: topItem.elasticity,
-          flatMeasuresCm: { chestFlat: 50, shoulders: 45, backWidth: 42 },
-        })
-      : null;
+  const evaluateUpper = (item: OutfitProposal['items'][number] | undefined) => {
+    if (!item) return null;
+    const cat =
+      item.category === 'tshirt' ||
+      item.category === 'long_sleeve' ||
+      item.category === 'jacket' ||
+      item.category === 'dress'
+        ? item.category
+        : 'tshirt';
+    return evaluateGarmentFit(bodyModel, {
+      category: cat,
+      sizeLabel: 'M',
+      elasticity: item.elasticity,
+      flatMeasuresCm: item.flatMeasuresCm ?? { chestFlat: 50, shoulders: 45, backWidth: 42 },
+    });
+  };
 
-  const bottomFitReport = bottomItem?.flatMeasuresCm
-    ? evaluateGarmentFit(bodyModel, {
-        category: 'pants',
-        sizeLabel: '32',
-        elasticity: bottomItem.elasticity,
-        flatMeasuresCm: bottomItem.flatMeasuresCm,
-      })
-    : bottomItem
-      ? evaluateGarmentFit(bodyModel, {
-          category: 'pants',
-          sizeLabel: '32',
-          elasticity: bottomItem.elasticity,
-          flatMeasuresCm: { waistFlat: 41, hipFlat: 52, inseam: 79 },
-        })
-      : null;
+  const evaluateLower = (item: OutfitProposal['items'][number] | undefined) => {
+    if (!item) return null;
+    const cat =
+      item.category === 'pants' || item.category === 'shorts' || item.category === 'skirt'
+        ? item.category
+        : 'pants';
+    return evaluateGarmentFit(bodyModel, {
+      category: cat,
+      sizeLabel: '32',
+      elasticity: item.elasticity,
+      flatMeasuresCm: item.flatMeasuresCm ?? { waistFlat: 41, hipFlat: 52, inseam: 79 },
+    });
+  };
 
   return {
-    topFitReport,
-    topColorHex: topItem?.dominantColorHex ?? '#1F5F6B',
+    topFitReport: evaluateUpper(primaryTopItem),
+    topColorHex: primaryTopItem?.dominantColorHex ?? '#1F5F6B',
     topVariant:
-      topItem &&
-      (topItem.category === 'tshirt' ||
-        topItem.category === 'long_sleeve' ||
-        topItem.category === 'jacket' ||
-        topItem.category === 'dress')
-        ? topItem.category
+      primaryTopItem &&
+      (primaryTopItem.category === 'tshirt' ||
+        primaryTopItem.category === 'long_sleeve' ||
+        primaryTopItem.category === 'jacket' ||
+        primaryTopItem.category === 'dress')
+        ? primaryTopItem.category
         : 'tshirt',
-    bottomFitReport,
+    topMeta: extractVisualMeta(primaryTopItem, itemsById),
+    outerwearFitReport: evaluateUpper(separateOuterwear),
+    outerwearColorHex: separateOuterwear?.dominantColorHex ?? '#4B5724',
+    outerwearMeta: extractVisualMeta(separateOuterwear, itemsById),
+    bottomFitReport: evaluateLower(bottomItem),
     bottomColorHex: bottomItem?.dominantColorHex ?? '#2B4263',
     bottomVariant:
       bottomItem &&
@@ -91,6 +115,7 @@ function buildOutfitLayers(
         bottomItem.category === 'skirt')
         ? bottomItem.category
         : 'pants',
+    bottomMeta: extractVisualMeta(bottomItem, itemsById),
   };
 }
 
@@ -179,6 +204,7 @@ function getPinPosition(category: OutfitProposal['items'][number]['category'], i
 
 export interface OutfitRunwayCarouselProps {
   proposals: readonly OutfitProposal[];
+  itemsById: ReadonlyMap<string, GarmentWithSizes>;
   selectedIndex: number;
   onSelectIndex: (index: number) => void;
   bodyModel: BodyModel | null;
@@ -194,6 +220,7 @@ export interface OutfitRunwayCarouselProps {
 
 export function OutfitRunwayCarousel({
   proposals,
+  itemsById,
   selectedIndex,
   onSelectIndex,
   bodyModel,
@@ -222,10 +249,10 @@ export function OutfitRunwayCarousel({
   const layersByProposalId = useMemo(() => {
     const map = new Map<string, OutfitLayerOverlay | undefined>();
     for (const proposal of proposals) {
-      map.set(proposal.id, buildOutfitLayers(proposal, bodyModel));
+      map.set(proposal.id, buildOutfitLayers(proposal, bodyModel, itemsById));
     }
     return map;
-  }, [bodyModel, proposals]);
+  }, [bodyModel, itemsById, proposals]);
 
   const goPrev = () => {
     if (proposals.length <= 1) return;

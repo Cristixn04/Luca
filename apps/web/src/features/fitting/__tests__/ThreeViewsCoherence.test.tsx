@@ -1,8 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { createBodyModel, evaluateGarmentFit } from '@luca/domain';
 import { FittingRoom } from '../FittingRoom';
 import { DEFAULT_BODY_MEASUREMENTS, DEFAULT_GARMENT_PRESETS, useFittingStore } from '../store';
+import { AvatarViewer } from '../svg/AvatarViewer';
 
 describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.7)', () => {
   beforeEach(() => {
@@ -150,5 +152,60 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
     fireEvent.touchStart(stage, { touches: [{ clientX: 100 }] });
     fireEvent.touchEnd(stage, { changedTouches: [{ clientX: 190 }] });
     expect(container.querySelector('[data-avatar-view="side"]')).not.toBeNull();
+  });
+
+  it('proyecta la foto frontal y trasera subida dentro de la silueta y rechaza URLs inseguras', () => {
+    const model = createBodyModel({ required: DEFAULT_BODY_MEASUREMENTS });
+    const fitReport = evaluateGarmentFit(model, {
+      category: 'long_sleeve',
+      sizeLabel: 'M',
+      elasticity: 0.04,
+      flatMeasuresCm: DEFAULT_GARMENT_PRESETS.long_sleeve.flatMeasuresCm,
+    });
+    const fakeDataUrl = 'data:image/png;base64,iVBORw0KGgo=';
+
+    const { container, rerender } = render(
+      <AvatarViewer
+        model={model}
+        garmentCategory="long_sleeve"
+        fitReport={fitReport}
+        showHeatmap={false}
+        garmentColorHex="#2F4858"
+        garmentMeta={{
+          name: 'Buzo urbano gris',
+          imageUrl: fakeDataUrl,
+          backImageUrl: fakeDataUrl,
+        }}
+        viewMode="all"
+        onChangeViewMode={() => {}}
+      />,
+    );
+
+    expect(container.querySelector('[data-garment-photo="front"]')).toHaveAttribute(
+      'href',
+      fakeDataUrl,
+    );
+    expect(container.querySelector('[data-garment-photo="back"]')).toHaveAttribute(
+      'href',
+      fakeDataUrl,
+    );
+
+    rerender(
+      <AvatarViewer
+        model={model}
+        garmentCategory="dress"
+        fitReport={fitReport}
+        showHeatmap={false}
+        garmentColorHex="#8B2635"
+        garmentMeta={{
+          name: 'Vestido midi',
+          imageUrl: 'https://evil.example/tracker.png',
+        }}
+        viewMode="front"
+        onChangeViewMode={() => {}}
+      />,
+    );
+
+    expect(container.querySelector('[data-garment-photo="front"]')).toBeNull();
   });
 });
