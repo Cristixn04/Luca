@@ -24,6 +24,7 @@ import {
   CardTitle,
 } from '@/design-system/components/Card';
 import { useClosetStore } from '@/features/closet/closetStore';
+import { useT } from '@/i18n/i18nStore';
 import { DEFAULT_COLOR_SWATCHES, useColorStore } from './colorStore';
 
 const ROLE_LABELS: Readonly<Record<PaletteColorRole, string>> = {
@@ -114,6 +115,7 @@ function SwatchPicker({
 }
 
 export function ColorView({ onOpenGarmentInCloset }: ColorViewProps) {
+  const t = useT();
   const profile = useColorStore((s) => s.profile);
   const loaded = useColorStore((s) => s.loaded);
   const busy = useColorStore((s) => s.busy);
@@ -206,7 +208,7 @@ export function ColorView({ onOpenGarmentInCloset }: ColorViewProps) {
         <div className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 id="color-heading" className="text-2xl font-bold tracking-tight sm:text-3xl">
-              Colorimetría estacional
+              {t.headings.color}
             </h1>
             {isIgnored && <Badge>Pausada</Badge>}
           </div>

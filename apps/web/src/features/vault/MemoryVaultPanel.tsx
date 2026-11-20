@@ -23,9 +23,11 @@ import {
 import { formatBytes } from '@/infrastructure/storage/persistence';
 import { MIN_PASSWORD_LENGTH } from '@/infrastructure/vault/vaultService';
 import { TasteMemorySection } from '@/features/taste/TasteMemorySection';
+import { useT } from '@/i18n/i18nStore';
 import { useVaultStore } from './vaultStore';
 
 export function MemoryVaultPanel() {
+  const t = useT();
   const status = useVaultStore((s) => s.status);
   const meta = useVaultStore((s) => s.meta);
   const persistence = useVaultStore((s) => s.persistence);
@@ -137,7 +139,7 @@ export function MemoryVaultPanel() {
     <div className="flex flex-col gap-6">
       <section aria-labelledby="vault-heading" className="flex flex-col gap-1">
         <h1 id="vault-heading" className="text-2xl font-bold tracking-tight sm:text-3xl">
-          Memoria y bóveda local
+          {t.headings.memory}
         </h1>
       </section>
 

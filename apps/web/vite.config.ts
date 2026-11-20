@@ -41,6 +41,17 @@ export default defineConfig({
       '@': resolve(import.meta.dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'storage-vendor': ['dexie', 'minisearch', 'zustand'],
+          'icons-vendor': ['lucide-react'],
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       '/v1': {

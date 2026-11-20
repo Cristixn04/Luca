@@ -22,6 +22,7 @@ import {
 import { getActiveSeasonId, useColorStore } from '@/features/color/colorStore';
 import { useFittingStore } from '@/features/fitting/store';
 import { toOutfitGarmentInputs, useOutfitsStore } from '@/features/outfits/outfitsStore';
+import { useT } from '@/i18n/i18nStore';
 import { createClosetSearchIndex } from './closetSearch';
 import { useClosetStore, type ClosetSortBy } from './closetStore';
 import { GarmentDetailView } from './GarmentDetailView';
@@ -40,6 +41,7 @@ export interface ClosetViewProps {
 }
 
 export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
+  const t = useT();
   const items = useClosetStore((s) => s.items);
   const loaded = useClosetStore((s) => s.loaded);
   const busy = useClosetStore((s) => s.busy);
@@ -221,7 +223,7 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
       >
         <div className="flex items-center gap-2.5">
           <h1 id="closet-heading" className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Clóset local
+            {t.headings.closet}
           </h1>
           <Badge className="tabular-nums">{items.length} prendas</Badge>
         </div>

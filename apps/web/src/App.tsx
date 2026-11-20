@@ -4,13 +4,16 @@ import { ClosetView } from '@/features/closet/ClosetView';
 import { useClosetStore } from '@/features/closet/closetStore';
 import { ColorView } from '@/features/color/ColorView';
 import { FittingRoom } from '@/features/fitting/FittingRoom';
+import { OnboardingDialog } from '@/features/onboarding/OnboardingDialog';
 import { OutfitsView } from '@/features/outfits/OutfitsView';
+import { PrivacyView } from '@/features/privacy/PrivacyView';
 import { MemoryVaultPanel } from '@/features/vault/MemoryVaultPanel';
 import { VaultGate } from '@/features/vault/VaultGate';
 import { useVaultStore } from '@/features/vault/vaultStore';
 
 export function App() {
   const [activeSection, setActiveSection] = useState<NavSection>('fitting');
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   const vaultStatus = useVaultStore((s) => s.status);
   const vaultMeta = useVaultStore((s) => s.meta);
@@ -75,6 +78,7 @@ export function App() {
       onSelectSection={setActiveSection}
       vaultStatus={vaultStatus}
       onLockVault={lock}
+      onOpenOnboarding={() => setOnboardingOpen(true)}
     >
       {activeSection === 'fitting' && <FittingRoom />}
       {activeSection === 'closet' && (
@@ -87,6 +91,18 @@ export function App() {
         <ColorView onOpenGarmentInCloset={openGarmentInCloset} />
       )}
       {activeSection === 'memory' && <MemoryVaultPanel />}
+      {activeSection === 'privacy' && (
+        <PrivacyView
+          onBack={() => setActiveSection('fitting')}
+          onOpenMemory={() => setActiveSection('memory')}
+        />
+      )}
+
+      <OnboardingDialog
+        open={onboardingOpen}
+        onClose={() => setOnboardingOpen(false)}
+        onFinishToSection={(section) => setActiveSection(section)}
+      />
     </AppShell>
   );
 }
