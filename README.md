@@ -2,7 +2,7 @@
 
 **Clóset inteligente, probador de calce en tres vistas y asesor de color. Una web instalable que recuerda tus gustos y guarda tus datos solo en tu dispositivo.**
 
-![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M10)-blue)
+![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M11)-blue)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green)
 ![Plataforma](https://img.shields.io/badge/plataforma-PWA-5A0FC8)
 ![Dominio](https://img.shields.io/badge/dominio-TypeScript-3178C6)
@@ -13,7 +13,7 @@ Luca te dice **cuánta holgura tendrá una prenda en cada zona de tu cuerpo** (v
 
 La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu perfil de color, tus gustos y tu historial nunca salen de tu dispositivo**, y se guardan cifrados con una contraseña que solo tú conoces. Los servicios en la nube son una API **sin estado y sin cuentas** que solo procesa lo mínimo, con tu permiso, y no guarda nada.
 
-> **Estado del documento:** hitos M0 a M9 completados (**`v0.8` — Motor de outfits explicable en 5 componentes, clima con coordenadas redondeadas, tablero en capas en 3 vistas, usos/CPW, huérfanas y simulación de lista de deseos**); siguiente hito activo: **M10 (`v0.9`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
+> **Estado del documento:** hitos M0 a M10 completados (**`v0.9` — Motor de gustos explicable con suavizado de Laplace, decaimiento de 90 días, componente Gusto en outfits, panel Memoria con fijar/vetar/pausar/olvidar y prueba de privacidad de red**); siguiente hito activo: **M11 (`v1.0`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
 
 ---
 
@@ -21,7 +21,7 @@ La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu 
 
 Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada hito.
 
-**Progreso global: 232 / 280 h** (núcleo M0–M11) · Hito actual: **M10**
+**Progreso global: 254 / 280 h** (núcleo M0–M11) · Hito actual: **M11**
 
 | Hito | Nombre | Release | Horas est. | Estado |
 | :-- | :-- | :-- | --: | :-- |
@@ -35,7 +35,7 @@ Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada
 | M7 | Etiquetado y búsqueda | v0.6 | 16 | Completado |
 | M8 | Colorimetría estacional | v0.7 | 26 | Completado |
 | M9 | Outfits, clima, uso y costo por uso | v0.8 | 28 | Completado |
-| M10 | Memoria y gustos | v0.9 | 22 | Pendiente |
+| M10 | Memoria y gustos | v0.9 | 22 | Completado |
 | M11 | Pulido, accesibilidad y lanzamiento | **v1.0** | 26 | Pendiente |
 | M12 | Opcional: asistente, calibración, sincronización (estudio) | v1.1 | 20 | Pendiente |
 
@@ -1074,14 +1074,14 @@ Planifica con el colchón: estimar siempre se queda corto. El **camino mínimo (
 
 ### M10 · Memoria y gustos (22 h) → v0.9
 
-- [ ] T10.1 Catálogo de eventos de interacción y su esquema versionado (2 h)
-- [ ] T10.2 Captura de feedback: me gusta, no me gusta, guardar, descartar y usar (3 h)
-- [ ] T10.3 Motor de gustos: afinidades por rasgo con suavizado y decaimiento (4 h)
-- [ ] T10.4 Componente Gusto en el puntaje de outfits y recalibración de pesos (3 h)
-- [ ] T10.5 Panel Memoria: ver, editar, fijar o vetar, pausar y olvidar por categoría (4 h)
-- [ ] T10.6 Políticas de retención: compactación de eventos antiguos en agregados (2 h)
-- [ ] T10.7 Pruebas del motor de gustos: arranque en frío, decaimiento y olvido total (2 h)
-- [ ] T10.8 Prueba de privacidad: con la red interceptada, ningún dato de memoria sale (2 h)
+- [x] T10.1 Catálogo de eventos de interacción y su esquema versionado (2 h)
+- [x] T10.2 Captura de feedback: me gusta, no me gusta, guardar, descartar y usar (3 h)
+- [x] T10.3 Motor de gustos: afinidades por rasgo con suavizado y decaimiento (4 h)
+- [x] T10.4 Componente Gusto en el puntaje de outfits y recalibración de pesos (3 h)
+- [x] T10.5 Panel Memoria: ver, editar, fijar o vetar, pausar y olvidar por categoría (4 h)
+- [x] T10.6 Políticas de retención: compactación de eventos antiguos en agregados (2 h)
+- [x] T10.7 Pruebas del motor de gustos: arranque en frío, decaimiento y olvido total (2 h)
+- [x] T10.8 Prueba de privacidad: con la red interceptada, ningún dato de memoria sale (2 h)
 
 **Hecho cuando:** tus "me gusta" cambian visiblemente las propuestas, el panel explica por qué, y "olvidar" elimina por completo esa influencia.
 

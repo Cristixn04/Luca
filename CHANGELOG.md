@@ -6,6 +6,17 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-20
+
+### Added
+- **M10 · Memoria y gustos (`v0.9`)**:
+  - Motor de gustos explicable en `@luca/domain` (`packages/domain/src/taste/`): suavizado de Laplace `(pos + 1)/(pos + neg + 2)`, decaimiento exponencial con vida media de 90 días, arranque en frío (`< 10` interacciones), anulación explícita (fijar/vetar) y soporte de snapshots compactados.
+  - Componente **Gusto** integrado en el motor de outfits con recalibración automática de pesos (`0.25 Color · 0.15 Estilo · 0.20 Calce · 0.15 Ocasión · 0.10 Variedad · 0.15 Gusto`).
+  - Captura de feedback en `OutfitsView` (*Me gusta*, *No me gusta*, *Descartar*, *Guardar/Favorito*, *Usar*) y barra **Gusto** visible cuando el perfil está activo.
+  - Sección **Tus gustos aprendidos** (`TasteMemorySection`) en el panel Memoria: ver afinidades e interacciones que las respaldan, fijar o vetar rasgos/colores, pausar o reanudar el aprendizaje, olvidar por categoría o por completo y aplicar política de retención (`6 / 12 / 24` meses) con compactación ponderada en `TASTE_SNAPSHOT`.
+  - Selector desplegable de prendas guardadas del clóset (`Mi clóset`) separado de `Prenda rápida` en `GarmentPanel`.
+  - Pruebas unitarias del motor de gustos (`taste.test.ts`), integración (`TasteMemory.test.tsx`) y prueba E2E de privacidad de red (`e2e/taste-memory.spec.ts` con cero peticiones externas).
+
 ## [0.8.0] - 2026-11-20
 
 ### Added
