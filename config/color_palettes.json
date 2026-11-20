@@ -1,0 +1,1044 @@
+{
+  "version": "0.7.0",
+  "colorSpace": "sRGB / CIELAB (D65, 2deg)",
+  "distanceMetric": "CIEDE2000 (Sharma, Wu & Dalal, 2005)",
+  "harmonyFormula": "A = exp(-minDeltaE00 / 15)",
+  "sources": [
+    "Kathryn Kalisz — 12-Tone Sci\\ART Personal Color Analysis System (Munsell dimensions: hue/temperature, value, chroma)",
+    "Sharma, Wu & Dalal (2005) — The CIEDE2000 Color-Difference Formula, Color Research & Application 30(1):21-30",
+    "IEC 61966-2-1 sRGB to CIE 1976 (L*a*b*) D65 standard transform"
+  ],
+  "seasons": {
+    "bright_spring": {
+      "id": "bright_spring",
+      "family": "spring",
+      "label": "Primavera Brillante",
+      "undertone": "warm",
+      "value": "medium",
+      "chroma": "bright",
+      "summary": "Colores vivos, cálidos-neutros y de alta claridad con contraste nítido.",
+      "bestMetals": [
+        "Oro claro",
+        "Oro rosa brillante",
+        "Plata pulida"
+      ],
+      "colors": [
+        {
+          "name": "Marfil limpio",
+          "hex": "#FBF7EE",
+          "role": "neutral"
+        },
+        {
+          "name": "Gris cálido claro",
+          "hex": "#C7BFB4",
+          "role": "neutral"
+        },
+        {
+          "name": "Camel vivo",
+          "hex": "#C9965B",
+          "role": "neutral"
+        },
+        {
+          "name": "Azul marino brillante",
+          "hex": "#1F3A68",
+          "role": "neutral"
+        },
+        {
+          "name": "Coral vibrante",
+          "hex": "#F25C54",
+          "role": "core"
+        },
+        {
+          "name": "Turquesa tropical",
+          "hex": "#1CA9B8",
+          "role": "core"
+        },
+        {
+          "name": "Verde esmeralda cálido",
+          "hex": "#1EA86B",
+          "role": "core"
+        },
+        {
+          "name": "Amarillo narciso",
+          "hex": "#F5C400",
+          "role": "accent"
+        },
+        {
+          "name": "Melocotón luminoso",
+          "hex": "#FF9E7D",
+          "role": "core"
+        },
+        {
+          "name": "Fucsia cálido",
+          "hex": "#E6397A",
+          "role": "accent"
+        },
+        {
+          "name": "Azul cobalto claro",
+          "hex": "#2F6FD6",
+          "role": "core"
+        },
+        {
+          "name": "Verde manzana",
+          "hex": "#7AC943",
+          "role": "accent"
+        },
+        {
+          "name": "Mandarina suave",
+          "hex": "#F37A2E",
+          "role": "accent"
+        },
+        {
+          "name": "Violeta orquídea",
+          "hex": "#8F5CD6",
+          "role": "accent"
+        }
+      ]
+    },
+    "warm_spring": {
+      "id": "warm_spring",
+      "family": "spring",
+      "label": "Primavera Cálida",
+      "undertone": "warm",
+      "value": "light",
+      "chroma": "bright",
+      "summary": "Tonos dorados, frescos y soleados sin tintes azulados ni cenizos.",
+      "bestMetals": [
+        "Oro amarillo",
+        "Oro cálido cepillado",
+        "Latón luminoso"
+      ],
+      "colors": [
+        {
+          "name": "Crema mantequilla",
+          "hex": "#FAF0D7",
+          "role": "neutral"
+        },
+        {
+          "name": "Arena dorada",
+          "hex": "#D8BD92",
+          "role": "neutral"
+        },
+        {
+          "name": "Caramelo claro",
+          "hex": "#B97A45",
+          "role": "neutral"
+        },
+        {
+          "name": "Chocolate con leche",
+          "hex": "#6E472B",
+          "role": "neutral"
+        },
+        {
+          "name": "Coral salmón",
+          "hex": "#F26A4B",
+          "role": "core"
+        },
+        {
+          "name": "Durazno cálido",
+          "hex": "#F7A278",
+          "role": "core"
+        },
+        {
+          "name": "Verde hoja fresca",
+          "hex": "#64A844",
+          "role": "core"
+        },
+        {
+          "name": "Turquesa cálido",
+          "hex": "#29A39A",
+          "role": "core"
+        },
+        {
+          "name": "Amarillo girasol",
+          "hex": "#F2B705",
+          "role": "accent"
+        },
+        {
+          "name": "Terracota clara",
+          "hex": "#D4623B",
+          "role": "core"
+        },
+        {
+          "name": "Rojo amapola",
+          "hex": "#DC3B2E",
+          "role": "accent"
+        },
+        {
+          "name": "Verde lima suave",
+          "hex": "#A5C63B",
+          "role": "accent"
+        },
+        {
+          "name": "Azul cielo cálido",
+          "hex": "#4FA3C7",
+          "role": "core"
+        },
+        {
+          "name": "Albaricoque",
+          "hex": "#F4975C",
+          "role": "accent"
+        }
+      ]
+    },
+    "light_spring": {
+      "id": "light_spring",
+      "family": "spring",
+      "label": "Primavera Clara",
+      "undertone": "warm",
+      "value": "light",
+      "chroma": "medium",
+      "summary": "Paleta luminosa, delicada y ligeramente cálida con contraste bajo a medio.",
+      "bestMetals": [
+        "Oro champagne",
+        "Oro rosa suave"
+      ],
+      "colors": [
+        {
+          "name": "Blanco marfil",
+          "hex": "#FCF8F0",
+          "role": "neutral"
+        },
+        {
+          "name": "Beige avena",
+          "hex": "#E3D5C1",
+          "role": "neutral"
+        },
+        {
+          "name": "Topo claro cálido",
+          "hex": "#B9ABA0",
+          "role": "neutral"
+        },
+        {
+          "name": "Azul vaquero claro",
+          "hex": "#5C7FA3",
+          "role": "neutral"
+        },
+        {
+          "name": "Melocotón pastel",
+          "hex": "#F9B89C",
+          "role": "core"
+        },
+        {
+          "name": "Coral suave",
+          "hex": "#F08074",
+          "role": "core"
+        },
+        {
+          "name": "Menta cálida",
+          "hex": "#7FD1AE",
+          "role": "core"
+        },
+        {
+          "name": "Amarillo vainilla",
+          "hex": "#F6DC75",
+          "role": "accent"
+        },
+        {
+          "name": "Aguamarina clara",
+          "hex": "#6CC7C9",
+          "role": "core"
+        },
+        {
+          "name": "Rosa flamenco suave",
+          "hex": "#F49AB4",
+          "role": "accent"
+        },
+        {
+          "name": "Lavanda cálida",
+          "hex": "#B59CE0",
+          "role": "accent"
+        },
+        {
+          "name": "Verde pistacho",
+          "hex": "#A8CF7A",
+          "role": "core"
+        },
+        {
+          "name": "Azul bígaro claro",
+          "hex": "#7A9CE0",
+          "role": "core"
+        },
+        {
+          "name": "Albaricoque claro",
+          "hex": "#F7C28D",
+          "role": "accent"
+        }
+      ]
+    },
+    "light_summer": {
+      "id": "light_summer",
+      "family": "summer",
+      "label": "Verano Claro",
+      "undertone": "cool",
+      "value": "light",
+      "chroma": "soft",
+      "summary": "Tonos claros, frescos y etéreos con base azulada o rosada suave.",
+      "bestMetals": [
+        "Plata suave",
+        "Oro blanco",
+        "Oro rosa frío"
+      ],
+      "colors": [
+        {
+          "name": "Blanco nube",
+          "hex": "#F6F7FA",
+          "role": "neutral"
+        },
+        {
+          "name": "Gris perla",
+          "hex": "#D0D5DD",
+          "role": "neutral"
+        },
+        {
+          "name": "Topo rosado",
+          "hex": "#B4A7AE",
+          "role": "neutral"
+        },
+        {
+          "name": "Azul pizarra suave",
+          "hex": "#5D708A",
+          "role": "neutral"
+        },
+        {
+          "name": "Rosa empolvado",
+          "hex": "#E6A4B4",
+          "role": "core"
+        },
+        {
+          "name": "Azul cielo empolvado",
+          "hex": "#8EB6DC",
+          "role": "core"
+        },
+        {
+          "name": "Lavanda fresca",
+          "hex": "#B3A4D8",
+          "role": "core"
+        },
+        {
+          "name": "Menta glaciar",
+          "hex": "#8DCAC1",
+          "role": "core"
+        },
+        {
+          "name": "Frambuesa pastel",
+          "hex": "#D96B8C",
+          "role": "accent"
+        },
+        {
+          "name": "Amarillo limón pálido",
+          "hex": "#EFE69B",
+          "role": "accent"
+        },
+        {
+          "name": "Azul aciano suave",
+          "hex": "#6D8EC9",
+          "role": "core"
+        },
+        {
+          "name": "Verde espuma de mar",
+          "hex": "#77B5A9",
+          "role": "core"
+        },
+        {
+          "name": "Lila orquídea suave",
+          "hex": "#C68EC8",
+          "role": "accent"
+        },
+        {
+          "name": "Sandía fría",
+          "hex": "#E1788E",
+          "role": "accent"
+        }
+      ]
+    },
+    "cool_summer": {
+      "id": "cool_summer",
+      "family": "summer",
+      "label": "Verano Frío",
+      "undertone": "cool",
+      "value": "medium",
+      "chroma": "soft",
+      "summary": "Colores frescos, elegantes y ligeramente atenuados con base azulada pura.",
+      "bestMetals": [
+        "Plata cepillada",
+        "Platino",
+        "Oro blanco"
+      ],
+      "colors": [
+        {
+          "name": "Blanco roto frío",
+          "hex": "#F2F4F7",
+          "role": "neutral"
+        },
+        {
+          "name": "Gris niebla",
+          "hex": "#A5AEBC",
+          "role": "neutral"
+        },
+        {
+          "name": "Gris grafito suave",
+          "hex": "#5C6470",
+          "role": "neutral"
+        },
+        {
+          "name": "Azul marino acero",
+          "hex": "#2B4263",
+          "role": "neutral"
+        },
+        {
+          "name": "Rosa malva",
+          "hex": "#C97B95",
+          "role": "core"
+        },
+        {
+          "name": "Azul acero",
+          "hex": "#4F77A1",
+          "role": "core"
+        },
+        {
+          "name": "Ciruela fría",
+          "hex": "#774D7E",
+          "role": "core"
+        },
+        {
+          "name": "Verde pino azulado",
+          "hex": "#347474",
+          "role": "core"
+        },
+        {
+          "name": "Frambuesa fría",
+          "hex": "#B83B68",
+          "role": "accent"
+        },
+        {
+          "name": "Lavanda grisácea",
+          "hex": "#8E84B5",
+          "role": "core"
+        },
+        {
+          "name": "Azul denim clásico",
+          "hex": "#3E608C",
+          "role": "core"
+        },
+        {
+          "name": "Verde menta profundo",
+          "hex": "#4F9A94",
+          "role": "accent"
+        },
+        {
+          "name": "Fucsia atenuado",
+          "hex": "#C24D82",
+          "role": "accent"
+        },
+        {
+          "name": "Baya oscura suave",
+          "hex": "#7C2E4F",
+          "role": "accent"
+        }
+      ]
+    },
+    "soft_summer": {
+      "id": "soft_summer",
+      "family": "summer",
+      "label": "Verano Suave",
+      "undertone": "cool",
+      "value": "medium",
+      "chroma": "soft",
+      "summary": "Paleta ahumada, aterciopelada y neutra-fría de bajo contraste.",
+      "bestMetals": [
+        "Plata mate",
+        "Peltre",
+        "Oro rosa envejecido"
+      ],
+      "colors": [
+        {
+          "name": "Blanco alabastro frío",
+          "hex": "#ECECEB",
+          "role": "neutral"
+        },
+        {
+          "name": "Gris piedra",
+          "hex": "#A9A8A4",
+          "role": "neutral"
+        },
+        {
+          "name": "Topo ahumado",
+          "hex": "#7D7372",
+          "role": "neutral"
+        },
+        {
+          "name": "Azul pizarra oscuro",
+          "hex": "#435368",
+          "role": "neutral"
+        },
+        {
+          "name": "Rosa antiguo",
+          "hex": "#C28C94",
+          "role": "core"
+        },
+        {
+          "name": "Verde salvia frío",
+          "hex": "#7D9B92",
+          "role": "core"
+        },
+        {
+          "name": "Azul bruma",
+          "hex": "#6F89A2",
+          "role": "core"
+        },
+        {
+          "name": "Malva ahumado",
+          "hex": "#8E7488",
+          "role": "core"
+        },
+        {
+          "name": "Verde eucalipto",
+          "hex": "#5D837B",
+          "role": "core"
+        },
+        {
+          "name": "Baya empolvada",
+          "hex": "#9D5B6E",
+          "role": "accent"
+        },
+        {
+          "name": "Azul petróleo suave",
+          "hex": "#4A6E7A",
+          "role": "core"
+        },
+        {
+          "name": "Ciruela suave",
+          "hex": "#6E556B",
+          "role": "accent"
+        },
+        {
+          "name": "Lila gris",
+          "hex": "#9E93AD",
+          "role": "accent"
+        },
+        {
+          "name": "Cacao rosado",
+          "hex": "#6F5856",
+          "role": "neutral"
+        }
+      ]
+    },
+    "soft_autumn": {
+      "id": "soft_autumn",
+      "family": "autumn",
+      "label": "Otoño Suave",
+      "undertone": "warm",
+      "value": "medium",
+      "chroma": "soft",
+      "summary": "Tonos orgánicos, suaves y cálidos-neutros inspirados en madera, lino y salvia.",
+      "bestMetals": [
+        "Oro mate",
+        "Bronce suave",
+        "Latón envejecido"
+      ],
+      "colors": [
+        {
+          "name": "Lino crudo",
+          "hex": "#EDE4D3",
+          "role": "neutral"
+        },
+        {
+          "name": "Arena cálida",
+          "hex": "#C9B99F",
+          "role": "neutral"
+        },
+        {
+          "name": "Topo cálido",
+          "hex": "#8E7E6C",
+          "role": "neutral"
+        },
+        {
+          "name": "Marrón avellana",
+          "hex": "#634E3C",
+          "role": "neutral"
+        },
+        {
+          "name": "Verde salvia cálido",
+          "hex": "#859674",
+          "role": "core"
+        },
+        {
+          "name": "Terracota empolvada",
+          "hex": "#C47D64",
+          "role": "core"
+        },
+        {
+          "name": "Rosa salmón suave",
+          "hex": "#D49482",
+          "role": "core"
+        },
+        {
+          "name": "Verde oliva suave",
+          "hex": "#6F7D52",
+          "role": "core"
+        },
+        {
+          "name": "Mostaza apagada",
+          "hex": "#C9A452",
+          "role": "accent"
+        },
+        {
+          "name": "Azul petróleo cálido",
+          "hex": "#4A7578",
+          "role": "core"
+        },
+        {
+          "name": "Ocre suave",
+          "hex": "#B8894D",
+          "role": "core"
+        },
+        {
+          "name": "Coral envejecido",
+          "hex": "#C76D5E",
+          "role": "accent"
+        },
+        {
+          "name": "Berenjena cálida",
+          "hex": "#6E4C58",
+          "role": "accent"
+        },
+        {
+          "name": "Turquesa musgo",
+          "hex": "#5D8A82",
+          "role": "accent"
+        }
+      ]
+    },
+    "warm_autumn": {
+      "id": "warm_autumn",
+      "family": "autumn",
+      "label": "Otoño Cálido",
+      "undertone": "warm",
+      "value": "medium",
+      "chroma": "medium",
+      "summary": "Paleta rica, especiada y dorada con máxima calidez natural.",
+      "bestMetals": [
+        "Oro amarillo",
+        "Cobre",
+        "Bronce cálido"
+      ],
+      "colors": [
+        {
+          "name": "Crema vainilla",
+          "hex": "#F3E5C8",
+          "role": "neutral"
+        },
+        {
+          "name": "Camel dorado",
+          "hex": "#B98A4E",
+          "role": "neutral"
+        },
+        {
+          "name": "Marrón castaña",
+          "hex": "#7A4A2A",
+          "role": "neutral"
+        },
+        {
+          "name": "Café expreso cálido",
+          "hex": "#4B3221",
+          "role": "neutral"
+        },
+        {
+          "name": "Terracota",
+          "hex": "#C45733",
+          "role": "core"
+        },
+        {
+          "name": "Mostaza especiada",
+          "hex": "#CC9426",
+          "role": "core"
+        },
+        {
+          "name": "Verde oliva",
+          "hex": "#627333",
+          "role": "core"
+        },
+        {
+          "name": "Verde bosque cálido",
+          "hex": "#2F5E43",
+          "role": "core"
+        },
+        {
+          "name": "Calabaza quemada",
+          "hex": "#D16927",
+          "role": "accent"
+        },
+        {
+          "name": "Rojo ladrillo",
+          "hex": "#A8382B",
+          "role": "accent"
+        },
+        {
+          "name": "Teal petróleo",
+          "hex": "#1F5F6B",
+          "role": "core"
+        },
+        {
+          "name": "Salmón cálido",
+          "hex": "#DC7C5E",
+          "role": "core"
+        },
+        {
+          "name": "Ámbar dorado",
+          "hex": "#D69F3A",
+          "role": "accent"
+        },
+        {
+          "name": "Turquesa profundo",
+          "hex": "#247A78",
+          "role": "accent"
+        }
+      ]
+    },
+    "deep_autumn": {
+      "id": "deep_autumn",
+      "family": "autumn",
+      "label": "Otoño Profundo",
+      "undertone": "warm",
+      "value": "deep",
+      "chroma": "medium",
+      "summary": "Colores oscuros, intensos y terrosos con riqueza cálida-neutra.",
+      "bestMetals": [
+        "Oro antiguo",
+        "Bronce oscuro",
+        "Cobre pulido"
+      ],
+      "colors": [
+        {
+          "name": "Marfil cálido",
+          "hex": "#EFE6D5",
+          "role": "neutral"
+        },
+        {
+          "name": "Bronce arena",
+          "hex": "#9E8366",
+          "role": "neutral"
+        },
+        {
+          "name": "Chocolate oscuro",
+          "hex": "#3D271D",
+          "role": "neutral"
+        },
+        {
+          "name": "Carbón cálido",
+          "hex": "#2E2B28",
+          "role": "neutral"
+        },
+        {
+          "name": "Burdeos cálido",
+          "hex": "#7A2029",
+          "role": "core"
+        },
+        {
+          "name": "Verde pino oscuro",
+          "hex": "#1F4B3B",
+          "role": "core"
+        },
+        {
+          "name": "Petróleo profundo",
+          "hex": "#154C59",
+          "role": "core"
+        },
+        {
+          "name": "Óxido intenso",
+          "hex": "#A94424",
+          "role": "core"
+        },
+        {
+          "name": "Oliva profundo",
+          "hex": "#4B5724",
+          "role": "core"
+        },
+        {
+          "name": "Mostaza dorada",
+          "hex": "#B8841E",
+          "role": "accent"
+        },
+        {
+          "name": "Ciruela cálida",
+          "hex": "#5D2940",
+          "role": "accent"
+        },
+        {
+          "name": "Rojo tomate oscuro",
+          "hex": "#B5332A",
+          "role": "accent"
+        },
+        {
+          "name": "Azul marino cálido",
+          "hex": "#1F3147",
+          "role": "neutral"
+        },
+        {
+          "name": "Ámbar tostado",
+          "hex": "#9E6226",
+          "role": "accent"
+        }
+      ]
+    },
+    "deep_winter": {
+      "id": "deep_winter",
+      "family": "winter",
+      "label": "Invierno Profundo",
+      "undertone": "cool",
+      "value": "deep",
+      "chroma": "bright",
+      "summary": "Tonos profundos, fríos-neutros y de alto contraste con acentos joya.",
+      "bestMetals": [
+        "Plata brillante",
+        "Oro blanco",
+        "Peltre oscuro"
+      ],
+      "colors": [
+        {
+          "name": "Blanco puro suave",
+          "hex": "#F7F8FA",
+          "role": "neutral"
+        },
+        {
+          "name": "Gris antracita",
+          "hex": "#454A54",
+          "role": "neutral"
+        },
+        {
+          "name": "Azul noche",
+          "hex": "#172542",
+          "role": "neutral"
+        },
+        {
+          "name": "Negro profundo",
+          "hex": "#18191C",
+          "role": "neutral"
+        },
+        {
+          "name": "Borgoña frío",
+          "hex": "#6E1832",
+          "role": "core"
+        },
+        {
+          "name": "Esmeralda oscuro",
+          "hex": "#0F5C4A",
+          "role": "core"
+        },
+        {
+          "name": "Azul zafiro oscuro",
+          "hex": "#1C3F80",
+          "role": "core"
+        },
+        {
+          "name": "Berenjena intensa",
+          "hex": "#4A1F52",
+          "role": "core"
+        },
+        {
+          "name": "Rojo rubí",
+          "hex": "#A81734",
+          "role": "accent"
+        },
+        {
+          "name": "Fucsia joya",
+          "hex": "#B81F67",
+          "role": "accent"
+        },
+        {
+          "name": "Verde abeto frío",
+          "hex": "#144D46",
+          "role": "core"
+        },
+        {
+          "name": "Azul petróleo frío",
+          "hex": "#14556E",
+          "role": "core"
+        },
+        {
+          "name": "Rosa hielo",
+          "hex": "#E3C8D6",
+          "role": "accent"
+        },
+        {
+          "name": "Púrpura real",
+          "hex": "#5C247A",
+          "role": "accent"
+        }
+      ]
+    },
+    "cool_winter": {
+      "id": "cool_winter",
+      "family": "winter",
+      "label": "Invierno Frío",
+      "undertone": "cool",
+      "value": "deep",
+      "chroma": "bright",
+      "summary": "Colores netamente fríos, nítidos y cristalinos sin ningún matiz dorado.",
+      "bestMetals": [
+        "Plata pulida",
+        "Platino",
+        "Oro blanco"
+      ],
+      "colors": [
+        {
+          "name": "Blanco óptico",
+          "hex": "#FFFFFF",
+          "role": "neutral"
+        },
+        {
+          "name": "Gris hielo",
+          "hex": "#C6CED8",
+          "role": "neutral"
+        },
+        {
+          "name": "Gris pizarra frío",
+          "hex": "#4F5968",
+          "role": "neutral"
+        },
+        {
+          "name": "Negro tinta",
+          "hex": "#14161A",
+          "role": "neutral"
+        },
+        {
+          "name": "Azul real",
+          "hex": "#1D4ED8",
+          "role": "core"
+        },
+        {
+          "name": "Rojo cereza frío",
+          "hex": "#C1123F",
+          "role": "core"
+        },
+        {
+          "name": "Magenta frío",
+          "hex": "#C71F78",
+          "role": "accent"
+        },
+        {
+          "name": "Verde esmeralda frío",
+          "hex": "#0D7A5F",
+          "role": "core"
+        },
+        {
+          "name": "Azul marino puro",
+          "hex": "#192F59",
+          "role": "neutral"
+        },
+        {
+          "name": "Púrpura amatista",
+          "hex": "#6D289E",
+          "role": "core"
+        },
+        {
+          "name": "Azul glaciar",
+          "hex": "#A9D6F5",
+          "role": "accent"
+        },
+        {
+          "name": "Fucsia eléctrico",
+          "hex": "#D92680",
+          "role": "accent"
+        },
+        {
+          "name": "Verde pino frío",
+          "hex": "#145A52",
+          "role": "core"
+        },
+        {
+          "name": "Lavanda hielo",
+          "hex": "#CFC7EC",
+          "role": "accent"
+        }
+      ]
+    },
+    "bright_winter": {
+      "id": "bright_winter",
+      "family": "winter",
+      "label": "Invierno Brillante",
+      "undertone": "cool",
+      "value": "medium",
+      "chroma": "bright",
+      "summary": "Máxima claridad, saturación alta y contraste dramático con base fría-neutra.",
+      "bestMetals": [
+        "Plata espejo",
+        "Oro blanco",
+        "Platino"
+      ],
+      "colors": [
+        {
+          "name": "Blanco puro",
+          "hex": "#FFFFFF",
+          "role": "neutral"
+        },
+        {
+          "name": "Gris acero claro",
+          "hex": "#B8C0CC",
+          "role": "neutral"
+        },
+        {
+          "name": "Azul marino nítido",
+          "hex": "#162955",
+          "role": "neutral"
+        },
+        {
+          "name": "Negro azabache",
+          "hex": "#111216",
+          "role": "neutral"
+        },
+        {
+          "name": "Fucsia vibrante",
+          "hex": "#E11D74",
+          "role": "core"
+        },
+        {
+          "name": "Azul cobalto",
+          "hex": "#1D5BF0",
+          "role": "core"
+        },
+        {
+          "name": "Verde esmeralda vivo",
+          "hex": "#009E6B",
+          "role": "core"
+        },
+        {
+          "name": "Rojo carmesí",
+          "hex": "#D91438",
+          "role": "accent"
+        },
+        {
+          "name": "Cian brillante",
+          "hex": "#00A3C4",
+          "role": "accent"
+        },
+        {
+          "name": "Violeta eléctrico",
+          "hex": "#7C2AE8",
+          "role": "accent"
+        },
+        {
+          "name": "Amarillo limón frío",
+          "hex": "#F2E529",
+          "role": "accent"
+        },
+        {
+          "name": "Rosa chicle frío",
+          "hex": "#F0569C",
+          "role": "core"
+        },
+        {
+          "name": "Turquesa intenso",
+          "hex": "#0F8B9C",
+          "role": "core"
+        },
+        {
+          "name": "Menta hielo",
+          "hex": "#A3ECE0",
+          "role": "accent"
+        }
+      ]
+    }
+  }
+}

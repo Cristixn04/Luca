@@ -85,3 +85,49 @@ export {
 export { evaluateGarmentFit, evaluateZoneFit, type EvaluateZoneInput } from './fit/engine.js';
 
 export { recommendSize } from './fit/recommender.js';
+
+export {
+  COLOR_SEASONS,
+  type ChromaLevel,
+  type ColorProfileDimensions,
+  type ColorProfileResult,
+  type ColorSeasonId,
+  type ColorSwatchesInput,
+  type GarmentColorHarmony,
+  type GuidedSwatchOption,
+  type HarmonyBand,
+  type LabColor,
+  type PaletteColor,
+  type PaletteColorRole,
+  type RgbColor,
+  type SeasonCandidate,
+  type SeasonFamily,
+  type SeasonPalette,
+  type Undertone,
+  type ValueLevel,
+} from './color/types.js';
+
+export {
+  ciede2000,
+  hexToLab,
+  hexToRgb,
+  labChroma,
+  labHueDeg,
+  labToHex,
+  labToSrgb,
+  normalizeHex,
+  rgbToHex,
+  srgbToLab,
+} from './color/cielab.js';
+
+export {
+  EYE_SWATCHES,
+  HAIR_SWATCHES,
+  SEASON_PALETTES,
+  SKIN_SWATCHES,
+  getSeasonPalette,
+} from './color/palettes.js';
+
+export { analyzeColorDimensions, classifyColorProfile } from './color/classifier.js';
+
+export { evaluateGarmentColorHarmony } from './color/harmony.js';
