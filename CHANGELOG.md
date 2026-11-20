@@ -6,6 +6,16 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-20
+
+### Added
+- **M6 · API de servicios e ingesta de fotos (`v0.5`)**:
+  - Configuración formal de `services/api` con CI (`ruff`, `mypy --strict`, `pytest`), `Dockerfile` de producción (`--no-access-log`, `HEALTHCHECK`, usuario no root), contrato OpenAPI v1 y generador `make api-client` (`docs/api.md`).
+  - Puerto hexagonal `BackgroundRemover` con adaptadores en memoria (`RembgBackgroundRemover` y `SimpleBorderBackgroundRemover`) y extracción de color dominante en CIELAB (`k-means` sobre la máscara alfa).
+  - Endpoint `POST /v1/vision/analyze` con límite de tamaño (`413`), verificación real de bytes mágicos JPEG/PNG/WEBP (`415`), protección contra bombas de descompresión, timeout (`504`), token anónimo de instalación (`401`), rate limiting por token/IP (`429`), tope de gasto diario (`503`) y `Cache-Control: no-store`.
+  - Sanitizador de imágenes en cliente (`imageSanitizer.ts`) que reduce a ≤ 1024 px y elimina metadatos EXIF/GPS antes de guardar o enviar, cliente API tipado con `AbortController` y puerta de consentimiento explícito (`PhotoIngestSection`).
+  - Persistencia cifrada de fotos en `garment_image`, alternativa 100 % manual (recorte rectangular local + selector de color editable) y evaluación con 30 fotos en `docs/vision-evaluation.md`.
+
 ## [0.4.0] - 2026-11-20
 
 ### Added

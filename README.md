@@ -2,7 +2,7 @@
 
 **Clóset inteligente, probador de calce en tres vistas y asesor de color. Una web instalable que recuerda tus gustos y guarda tus datos solo en tu dispositivo.**
 
-![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M6)-blue)
+![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M7)-blue)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green)
 ![Plataforma](https://img.shields.io/badge/plataforma-PWA-5A0FC8)
 ![Dominio](https://img.shields.io/badge/dominio-TypeScript-3178C6)
@@ -13,7 +13,7 @@ Luca te dice **cuánta holgura tendrá una prenda en cada zona de tu cuerpo** (v
 
 La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu perfil de color, tus gustos y tu historial nunca salen de tu dispositivo**, y se guardan cifrados con una contraseña que solo tú conoces. Los servicios en la nube son una API **sin estado y sin cuentas** que solo procesa lo mínimo, con tu permiso, y no guarda nada.
 
-> **Estado del documento:** hitos M0 a M5 completados (**`v0.4` — vistas de frente, perfil y espalda coherentes desde un único `BodyModel`**); siguiente hito activo: **M6 (`v0.5`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
+> **Estado del documento:** hitos M0 a M6 completados (**`v0.5` — API sin estado, visión en memoria, recorte/color CIELAB e ingesta privada de fotos**); siguiente hito activo: **M7 (`v0.6`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
 
 ---
 
@@ -21,7 +21,7 @@ La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu 
 
 Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada hito.
 
-**Progreso global: 133 / 280 h** (núcleo M0–M11) · Hito actual: **M6**
+**Progreso global: 162 / 280 h** (núcleo M0–M11) · Hito actual: **M7**
 
 | Hito | Nombre | Release | Horas est. | Estado |
 | :-- | :-- | :-- | --: | :-- |
@@ -31,7 +31,7 @@ Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada
 | M3 | Almacenamiento local seguro y bóveda cifrada | **v0.2** | 26 | Completado |
 | M4 | Clóset local y tallas | **v0.3** | 22 | Completado |
 | M5 | Vistas de perfil y de espalda | v0.4 | 22 | Completado |
-| M6 | API de servicios e ingesta de fotos | v0.5 | 29 | Pendiente |
+| M6 | API de servicios e ingesta de fotos | v0.5 | 29 | Completado |
 | M7 | Etiquetado y búsqueda | v0.6 | 16 | Pendiente |
 | M8 | Colorimetría estacional | v0.7 | 26 | Pendiente |
 | M9 | Outfits, clima, uso y costo por uso | v0.8 | 28 | Pendiente |
@@ -1023,15 +1023,15 @@ Planifica con el colchón: estimar siempre se queda corto. El **camino mínimo (
 
 ### M6 · API de servicios e ingesta de fotos (29 h) → v0.5
 
-- [ ] T6.1 Configuración formal de API (ruff, mypy, pytest en CI, Dockerfile de producción), contrato OpenAPI v1 y cliente TypeScript generado (4 h)
-- [ ] T6.2 Puerto `BackgroundRemover` y adaptador rembg, procesando solo en memoria (4 h)
-- [ ] T6.3 Color dominante en Lab (k-means sobre la máscara) (3 h)
-- [ ] T6.4 Endpoint `/v1/vision/analyze` con límites de tamaño, verificación del tipo real y tiempo máximo (3 h)
-- [ ] T6.5 Seguridad de la API: token anónimo de instalación, límite de uso, tope de gasto, CORS, cabeceras y cero registro de cuerpos (4 h)
-- [ ] T6.6 Cliente: consentimiento explícito, reducción a ≤ 1024 px y eliminación de EXIF antes de enviar (3 h)
-- [ ] T6.7 UX de subida: archivo, arrastrar, cámara del móvil, progreso y cancelación (3 h)
-- [ ] T6.8 Alternativa manual (PNG recortado, recorte rectangular) y selector de color (2 h)
-- [ ] T6.9 Prueba con 30 fotos reales y registro de fallos (3 h)
+- [x] T6.1 Configuración formal de API (ruff, mypy, pytest en CI, Dockerfile de producción), contrato OpenAPI v1 y cliente TypeScript generado (4 h)
+- [x] T6.2 Puerto `BackgroundRemover` y adaptador rembg, procesando solo en memoria (4 h)
+- [x] T6.3 Color dominante en Lab (k-means sobre la máscara) (3 h)
+- [x] T6.4 Endpoint `/v1/vision/analyze` con límites de tamaño, verificación del tipo real y tiempo máximo (3 h)
+- [x] T6.5 Seguridad de la API: token anónimo de instalación, límite de uso, tope de gasto, CORS, cabeceras y cero registro de cuerpos (4 h)
+- [x] T6.6 Cliente: consentimiento explícito, reducción a ≤ 1024 px y eliminación de EXIF antes de enviar (3 h)
+- [x] T6.7 UX de subida: archivo, arrastrar, cámara del móvil, progreso y cancelación (3 h)
+- [x] T6.8 Alternativa manual (PNG recortado, recorte rectangular) y selector de color (2 h)
+- [x] T6.9 Prueba con 30 fotos reales y registro de fallos (3 h)
 
 **Hecho cuando:** subir una foto (con permiso) produce una tarjeta con fondo recortado y color corregible; sin permiso, el flujo manual funciona y la prueba de privacidad confirma que no sale nada más.
 

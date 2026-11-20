@@ -44,6 +44,12 @@ describe('closetService · CRUD cifrado y eventos (T4.1, T4.2, T4.6)', () => {
       formality: 3,
       tags: ['oficina', 'algodón', 'oficina'],
       dominantColorHex: '#1F5F6B',
+      image: {
+        dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8',
+        width: 100,
+        height: 120,
+        source: 'manual',
+      },
       sizes: [
         { label: 'S', flatMeasuresCm: { chestFlat: 47, shoulders: 43 } },
         { label: 'M', flatMeasuresCm: { chestFlat: 50, shoulders: 45 } },
@@ -52,12 +58,14 @@ describe('closetService · CRUD cifrado y eventos (T4.1, T4.2, T4.6)', () => {
 
     expect(created.garment.tags).toEqual(['oficina', 'algodón']);
     expect(created.sizes).toHaveLength(2);
+    expect(created.image?.source).toBe('manual');
 
-    // Garantiza cifrado en reposo: ningún texto claro en IndexedDB
+    // Garantiza cifrado en reposo: ningún texto claro ni dataUrl en IndexedDB
     const rawEnvelopes = await store.listAllEnvelopes();
     const rawDump = JSON.stringify(rawEnvelopes);
     expect(rawDump).not.toContain('Camiseta Oxford Secreta');
     expect(rawDump).not.toContain('Atelier Privado');
+    expect(rawDump).not.toContain('iVBORw0KGgo');
 
     // Editar: quitar S, mantener M y añadir L
     const sizeM = created.sizes.find((s) => s.label === 'M')!;
@@ -80,10 +88,11 @@ describe('closetService · CRUD cifrado y eventos (T4.1, T4.2, T4.6)', () => {
     expect(updated.garment.name).toBe('Camiseta Oxford Editada');
     expect(updated.sizes.map((s) => s.label)).toEqual(['M', 'L']);
 
-    // Verificar cascada al borrar prenda
+    // Verificar cascada al borrar prenda (tallas + foto)
     await deleteGarment(vault, created.garment.id);
     expect(await listGarmentsWithSizes(vault)).toHaveLength(0);
     expect(await store.listEnvelopes('size_option')).toHaveLength(0);
+    expect(await store.listEnvelopes('garment_image')).toHaveLength(0);
 
     // Verificar eventos append-only registrados (T4.6)
     const events = await listInteractionEvents(vault);
