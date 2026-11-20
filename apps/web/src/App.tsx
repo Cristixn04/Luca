@@ -11,22 +11,16 @@ import {
   CardTitle,
 } from '@/design-system/components/Card';
 import { HEATMAP_TOKENS } from '@/design-system/tokens';
+import { ClosetView } from '@/features/closet/ClosetView';
 import { FittingRoom } from '@/features/fitting/FittingRoom';
 import { MemoryVaultPanel } from '@/features/vault/MemoryVaultPanel';
 import { VaultGate } from '@/features/vault/VaultGate';
 import { useVaultStore } from '@/features/vault/vaultStore';
 
 const PLACEHOLDER_SECTIONS: Record<
-  Exclude<NavSection, 'fitting' | 'memory'>,
+  Exclude<NavSection, 'fitting' | 'closet' | 'memory'>,
   { title: string; subtitle: string; milestone: string; summary: string }
 > = {
-  closet: {
-    title: 'Clóset local',
-    subtitle: 'Prendas, tablas de tallas en plano, fotos recortadas y costo por uso.',
-    milestone: 'M4 · v0.3',
-    summary:
-      'Guarda tus prendas y su tabla de tallas de forma local y cifrada, con recomendación automática de talla.',
-  },
   outfits: {
     title: 'Tablero de outfits',
     subtitle: 'Propuestas explicables según ocasión, clima, calce y gustos.',
@@ -106,15 +100,22 @@ export function App() {
       onLockVault={lock}
     >
       {activeSection === 'fitting' && <FittingRoom />}
+      {activeSection === 'closet' && (
+        <ClosetView onOpenInFitting={() => setActiveSection('fitting')} />
+      )}
       {activeSection === 'memory' && <MemoryVaultPanel />}
-      {activeSection !== 'fitting' && activeSection !== 'memory' && (
+      {activeSection !== 'fitting' && activeSection !== 'closet' && activeSection !== 'memory' && (
         <PlaceholderSection section={activeSection} />
       )}
     </AppShell>
   );
 }
 
-function PlaceholderSection({ section }: { section: Exclude<NavSection, 'fitting' | 'memory'> }) {
+function PlaceholderSection({
+  section,
+}: {
+  section: Exclude<NavSection, 'fitting' | 'closet' | 'memory'>;
+}) {
   const current = PLACEHOLDER_SECTIONS[section];
 
   return (

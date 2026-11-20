@@ -1,6 +1,7 @@
 import type { RequiredBodyMeasurements } from '@luca/domain';
 import { create } from 'zustand';
 import { DEFAULT_BODY_MEASUREMENTS, useFittingStore } from '@/features/fitting/store';
+import { useClosetStore } from '@/features/closet/closetStore';
 import { DexieLocalStore } from '@/infrastructure/storage/dexieStore';
 import {
   appendInteractionEvent,
@@ -266,8 +267,9 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
 
   lock: () => {
     activeVault.lock();
-    // Limpia las medidas en memoria al bloquear la bóveda.
+    // Limpia las medidas y el clóset descifrado en memoria al bloquear la bóveda.
     useFittingStore.setState({ bodyMeasurements: { ...DEFAULT_BODY_MEASUREMENTS } });
+    useClosetStore.getState().clearMemory();
     set({
       status: activeVault.getStatus(),
       pendingRecoveryKey: null,
@@ -374,6 +376,7 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
     set({ busy: true, error: null });
     await activeVault.wipeAllData();
     useFittingStore.setState({ bodyMeasurements: { ...DEFAULT_BODY_MEASUREMENTS } });
+    useClosetStore.getState().clearMemory();
     const persistence = await getStoragePersistenceInfo(undefined);
     set({
       status: 'uninitialized',
