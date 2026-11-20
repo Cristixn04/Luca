@@ -2,7 +2,7 @@
 
 **Clóset inteligente, probador de calce en tres vistas y asesor de color. Una web instalable que recuerda tus gustos y guarda tus datos solo en tu dispositivo.**
 
-![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M7)-blue)
+![Estado](https://img.shields.io/badge/estado-en%20desarrollo%20(M8)-blue)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green)
 ![Plataforma](https://img.shields.io/badge/plataforma-PWA-5A0FC8)
 ![Dominio](https://img.shields.io/badge/dominio-TypeScript-3178C6)
@@ -13,7 +13,7 @@ Luca te dice **cuánta holgura tendrá una prenda en cada zona de tu cuerpo** (v
 
 La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu perfil de color, tus gustos y tu historial nunca salen de tu dispositivo**, y se guardan cifrados con una contraseña que solo tú conoces. Los servicios en la nube son una API **sin estado y sin cuentas** que solo procesa lo mínimo, con tu permiso, y no guarda nada.
 
-> **Estado del documento:** hitos M0 a M6 completados (**`v0.5` — API sin estado, visión en memoria, recorte/color CIELAB e ingesta privada de fotos**); siguiente hito activo: **M7 (`v0.6`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
+> **Estado del documento:** hitos M0 a M7 completados (**`v0.6` — Etiquetado asistido con Gemini Vision/ManualTagger, búsqueda local MiniSearch, prendas similares, color real en SVG y foto trasera opcional**); siguiente hito activo: **M8 (`v0.7`)**. Las secciones de instalación y uso describen el resultado objetivo y se activan a medida que avanzan los hitos.
 
 ---
 
@@ -21,7 +21,7 @@ La promesa de privacidad es de diseño, no de buena voluntad: **tus medidas, tu 
 
 Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada hito.
 
-**Progreso global: 162 / 280 h** (núcleo M0–M11) · Hito actual: **M7**
+**Progreso global: 178 / 280 h** (núcleo M0–M11) · Hito actual: **M8**
 
 | Hito | Nombre | Release | Horas est. | Estado |
 | :-- | :-- | :-- | --: | :-- |
@@ -32,7 +32,7 @@ Este panel es la fuente de verdad de "dónde estoy". Se actualiza al cerrar cada
 | M4 | Clóset local y tallas | **v0.3** | 22 | Completado |
 | M5 | Vistas de perfil y de espalda | v0.4 | 22 | Completado |
 | M6 | API de servicios e ingesta de fotos | v0.5 | 29 | Completado |
-| M7 | Etiquetado y búsqueda | v0.6 | 16 | Pendiente |
+| M7 | Etiquetado y búsqueda | v0.6 | 16 | Completado |
 | M8 | Colorimetría estacional | v0.7 | 26 | Pendiente |
 | M9 | Outfits, clima, uso y costo por uso | v0.8 | 28 | Pendiente |
 | M10 | Memoria y gustos | v0.9 | 22 | Pendiente |
@@ -1037,11 +1037,11 @@ Planifica con el colchón: estimar siempre se queda corto. El **camino mínimo (
 
 ### M7 · Etiquetado y búsqueda (16 h) → v0.6
 
-- [ ] T7.1 Puerto `Tagger` y adaptador de LLM con visión y salida JSON estructurada (4 h)
-- [ ] T7.2 Etiquetas con confianza, editables, y `ManualTagger` como alternativa (3 h)
-- [ ] T7.3 Búsqueda en el dispositivo (MiniSearch) por texto libre y filtros (3 h)
-- [ ] T7.4 "Prendas similares" por etiquetas (3 h)
-- [ ] T7.5 Proveedores simulados para CI y evaluación del acierto de etiquetas (3 h)
+- [x] T7.1 Puerto `Tagger` y adaptador de LLM con visión y salida JSON estructurada (4 h)
+- [x] T7.2 Etiquetas con confianza, editables, y `ManualTagger` como alternativa (3 h)
+- [x] T7.3 Búsqueda en el dispositivo (MiniSearch) por texto libre y filtros (3 h)
+- [x] T7.4 "Prendas similares" por etiquetas (3 h)
+- [x] T7.5 Proveedores simulados para CI y evaluación del acierto de etiquetas (3 h)
 
 **Hecho cuando:** "camisa de lino para verano" devuelve resultados razonables y, sin la API, el etiquetado manual y la búsqueda local funcionan.
 

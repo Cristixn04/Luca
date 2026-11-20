@@ -6,6 +6,16 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-20
+
+### Added
+- **M7 · Etiquetado y búsqueda (`v0.6`)**:
+  - Puerto hexagonal `Tagger` (`services/api/app/ports/tagging.py`) y adaptadores `GeminiVisionTagger` (`google-genai >= 3.2.0`, modelo `gemini-4-hydrogen`, `store=False`, salida JSON estructurada `GarmentTagSuggestion`), `MockDeterministicTagger` para CI sin coste de cuota y `DisabledTagger` sin credenciales (`services/api/.env` + `.env.example`).
+  - Extensión de `POST /v1/vision/analyze` y contrato OpenAPI v0.6.0 con soporte opcional de foto trasera (`back_file` → `back_cutout_png_base64`) y etiquetado (`include_tags=true` → `tagging`).
+  - Etiquetas editables con confianza (`pattern`, `style`, `seasons`, `tags`), `ManualTagger` local 100 % offline (`manualTagger.ts`), foto de espalda opcional cifrada en `garment_image` con toggle `[Frente | Espalda]` y color real (`dominantColorHex`) aplicado sobre las 3 vistas SVG del avatar.
+  - Motor de búsqueda local en texto libre sobre `MiniSearch` (`closetSearch.ts`) con normalización sin tildes, *stop-words* en español, tolerancia *fuzzy* y benchmark RNF-01 verificado (`p95 <= 100 ms` con 1.000 prendas).
+  - Tarjeta de **"Prendas similares"** (`findSimilarGarments`) en `GarmentDetailView`, evaluación en `docs/tagging-evaluation.md` y pruebas unitarias + E2E (`e2e/tagging-search.spec.ts`).
+
 ## [0.5.0] - 2026-11-20
 
 ### Added
