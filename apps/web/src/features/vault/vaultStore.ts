@@ -4,6 +4,7 @@ import { DEFAULT_BODY_MEASUREMENTS, useFittingStore } from '@/features/fitting/s
 import { useClosetStore } from '@/features/closet/closetStore';
 import { useColorStore, type PersistedColorProfile } from '@/features/color/colorStore';
 import { useOutfitsStore } from '@/features/outfits/outfitsStore';
+import { useTasteStore } from '@/features/taste/tasteStore';
 import { DexieLocalStore } from '@/infrastructure/storage/dexieStore';
 import {
   appendInteractionEvent,
@@ -294,6 +295,7 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
     useClosetStore.getState().clearMemory();
     useColorStore.getState().clearMemory();
     useOutfitsStore.getState().clearMemory();
+    useTasteStore.getState().clearMemory();
     set({
       status: activeVault.getStatus(),
       pendingRecoveryKey: null,
@@ -412,6 +414,7 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
     useClosetStore.getState().clearMemory();
     useColorStore.getState().clearMemory();
     useOutfitsStore.getState().clearMemory();
+    useTasteStore.getState().clearMemory();
     const persistence = await getStoragePersistenceInfo(undefined);
     set({
       status: 'uninitialized',

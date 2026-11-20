@@ -1,3 +1,4 @@
+import { TASTE_EVENT_VALUES, type TasteSignalType } from '@luca/domain';
 import type { VaultService } from '../vault/vaultService';
 
 export const INTERACTION_EVENT_TYPES = [
@@ -29,6 +30,9 @@ export interface TasteSnapshot {
   readonly eventCount: number;
   readonly typeCounts: Readonly<Record<string, number>>;
   readonly featureCounts: Readonly<Record<string, number>>;
+  readonly featurePosNeg?: Readonly<
+    Record<string, { readonly pos: number; readonly neg: number; readonly count: number }>
+  >;
   readonly compactedAt: string;
 }
 
@@ -117,15 +121,30 @@ export async function compactInteractionEvents(
     const existing = await vault.getRecord<TasteSnapshot>('taste_snapshot', month);
     const typeCounts: Record<string, number> = { ...(existing?.typeCounts ?? {}) };
     const featureCounts: Record<string, number> = { ...(existing?.featureCounts ?? {}) };
+    const featurePosNeg: Record<string, { pos: number; neg: number; count: number }> = {};
+    for (const [k, v] of Object.entries(existing?.featurePosNeg ?? {})) {
+      featurePosNeg[k] = { ...v };
+    }
 
     for (const event of events) {
       typeCounts[event.type] = (typeCounts[event.type] ?? 0) + 1;
+      const signalValue = TASTE_EVENT_VALUES[event.type as TasteSignalType];
 
       const features = event.payload.features;
       if (Array.isArray(features)) {
         for (const feature of features) {
           if (typeof feature === 'string' && feature.length > 0) {
             featureCounts[feature] = (featureCounts[feature] ?? 0) + 1;
+            if (signalValue !== undefined) {
+              const acc = featurePosNeg[feature] ?? { pos: 0, neg: 0, count: 0 };
+              if (signalValue >= 0) {
+                acc.pos += signalValue;
+              } else {
+                acc.neg += Math.abs(signalValue);
+              }
+              acc.count += 1;
+              featurePosNeg[feature] = acc;
+            }
           }
         }
       }
@@ -137,6 +156,7 @@ export async function compactInteractionEvents(
       eventCount: (existing?.eventCount ?? 0) + events.length,
       typeCounts,
       featureCounts,
+      ...(Object.keys(featurePosNeg).length > 0 ? { featurePosNeg } : {}),
       compactedAt: nowIso,
     };
 

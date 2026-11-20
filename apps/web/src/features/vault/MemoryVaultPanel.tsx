@@ -22,6 +22,7 @@ import {
 } from '@/design-system/components/Card';
 import { formatBytes } from '@/infrastructure/storage/persistence';
 import { MIN_PASSWORD_LENGTH } from '@/infrastructure/vault/vaultService';
+import { TasteMemorySection } from '@/features/taste/TasteMemorySection';
 import { useVaultStore } from './vaultStore';
 
 export function MemoryVaultPanel() {
@@ -139,6 +140,8 @@ export function MemoryVaultPanel() {
           Memoria y bóveda local
         </h1>
       </section>
+
+      <TasteMemorySection />
 
       {/* Avisos críticos: modo sin cifrado, iOS Safari y recordatorio de respaldo (T3.6) */}
       {!isEncrypted && (

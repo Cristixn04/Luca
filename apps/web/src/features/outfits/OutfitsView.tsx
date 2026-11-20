@@ -18,7 +18,10 @@ import {
   LocateFixed,
   Shirt,
   Sparkles,
+  ThumbsDown,
+  ThumbsUp,
   Trash2,
+  X,
 } from 'lucide-react';
 import { Badge } from '@/design-system/components/Badge';
 import { Button } from '@/design-system/components/Button';
@@ -29,6 +32,7 @@ import { getActiveSeasonId, useColorStore } from '@/features/color/colorStore';
 import { useFittingStore, type ViewerMode } from '@/features/fitting/store';
 import { AvatarViewer } from '@/features/fitting/svg/AvatarViewer';
 import type { OutfitLayerOverlay } from '@/features/fitting/svg/FrontAvatarSvg';
+import { useTasteStore } from '@/features/taste/tasteStore';
 import { fetchWeatherByCoordinates } from '@/infrastructure/api-client/client';
 import { toOutfitGarmentInputs, useOutfitsStore } from './outfitsStore';
 
@@ -177,6 +181,12 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
   const deleteSavedOutfit = useOutfitsStore((s) => s.deleteSavedOutfit);
   const logOutfitWear = useOutfitsStore((s) => s.logOutfitWear);
 
+  const tasteProfile = useTasteStore((s) => s.profile);
+  const tasteLoaded = useTasteStore((s) => s.loaded);
+  const tastePaused = useTasteStore((s) => s.prefs.learningPaused);
+  const loadTaste = useTasteStore((s) => s.loadTaste);
+  const recordOutfitFeedback = useTasteStore((s) => s.recordOutfitFeedback);
+
   const [occasion, setOccasion] = useState<OutfitOccasion>('casual');
   const [temperatureC, setTemperatureC] = useState<number>(21);
   const [weatherNote, setWeatherNote] = useState<string | null>(null);
@@ -185,6 +195,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
   const [viewMode, setViewMode] = useState<ViewerMode>('front');
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [seedingDemo, setSeedingDemo] = useState(false);
 
@@ -199,6 +210,10 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
   useEffect(() => {
     if (!outfitsLoaded) void loadOutfits();
   }, [loadOutfits, outfitsLoaded]);
+
+  useEffect(() => {
+    if (!tasteLoaded) void loadTaste();
+  }, [loadTaste, tasteLoaded]);
 
   const bodyModel = useMemo(() => {
     const m = {
@@ -223,18 +238,19 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
     return map;
   }, [closetItems]);
 
-  const proposals = useMemo(
-    () =>
-      generateDiverseOutfits(garmentInputs, {
-        occasion,
-        temperatureC,
-        bodyModel,
-        fitPreference,
-        seasonId: activeSeasonId,
-        count: 3,
-      }),
-    [activeSeasonId, bodyModel, fitPreference, garmentInputs, occasion, temperatureC],
-  );
+  const proposals = useMemo(() => {
+    const raw = generateDiverseOutfits(garmentInputs, {
+      occasion,
+      temperatureC,
+      bodyModel,
+      fitPreference,
+      seasonId: activeSeasonId,
+      tasteProfile,
+      count: 6,
+    });
+    const visible = raw.filter((p) => !dismissedIds.includes(p.id));
+    return (visible.length > 0 ? visible : raw).slice(0, 3);
+  }, [activeSeasonId, bodyModel, dismissedIds, fitPreference, garmentInputs, occasion, tasteProfile, temperatureC]);
 
   const activeProposal: OutfitProposal | null =
     proposals[Math.min(selectedIndex, Math.max(0, proposals.length - 1))] ?? null;
@@ -331,13 +347,41 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
   const handleSave = async (favorite = false) => {
     if (!activeProposal) return;
     await saveProposal(activeProposal, occasion, temperatureC, { favorite });
+    await recordOutfitFeedback(
+      'outfit_saved',
+      activeProposal.items,
+      activeProposal.fitStatesByGarmentId,
+    );
     setActionNotice(favorite ? 'Outfit guardado en favoritos.' : 'Outfit guardado.');
   };
 
   const handleWearProposal = async () => {
     if (!activeProposal) return;
     await logOutfitWear(activeProposal.items.map((i) => i.id));
+    await recordOutfitFeedback(
+      'wear_logged',
+      activeProposal.items,
+      activeProposal.fitStatesByGarmentId,
+    );
     setActionNotice('Uso registrado para hoy.');
+  };
+
+  const handleFeedback = async (type: 'outfit_liked' | 'outfit_disliked' | 'outfit_dismissed') => {
+    if (!activeProposal) return;
+    await recordOutfitFeedback(type, activeProposal.items, activeProposal.fitStatesByGarmentId);
+    if (type === 'outfit_dismissed') {
+      setDismissedIds((prev) => [...prev, activeProposal.id]);
+      setSelectedIndex(0);
+      setActionNotice('Propuesta descartada.');
+    } else if (type === 'outfit_liked') {
+      setActionNotice(
+        tastePaused ? 'Aprendizaje pausado.' : 'Me gusta registrado en tu memoria local.',
+      );
+    } else {
+      setActionNotice(
+        tastePaused ? 'Aprendizaje pausado.' : 'Preferencia negativa registrada en tu memoria local.',
+      );
+    }
   };
 
   const displayedSaved = favoritesOnly ? savedOutfits.filter((o) => o.favorite) : savedOutfits;
@@ -549,6 +593,39 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                     <ScoreBar label="Estilo" value={activeProposal.score.style} />
                     <ScoreBar label="Ocasión y clima" value={activeProposal.score.occasion} />
                     <ScoreBar label="Variedad" value={activeProposal.score.variety} />
+                    {activeProposal.score.tasteActive && activeProposal.score.taste !== null && (
+                      <ScoreBar label="Gusto" value={activeProposal.score.taste} />
+                    )}
+
+                    <div className="flex flex-wrap gap-1.5 border-t border-border pt-3">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void handleFeedback('outfit_liked')}
+                      >
+                        <ThumbsUp className="h-3.5 w-3.5" aria-hidden="true" />
+                        Me gusta
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void handleFeedback('outfit_disliked')}
+                      >
+                        <ThumbsDown className="h-3.5 w-3.5" aria-hidden="true" />
+                        No me gusta
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => void handleFeedback('outfit_dismissed')}
+                      >
+                        <X className="h-3.5 w-3.5" aria-hidden="true" />
+                        Descartar
+                      </Button>
+                    </div>
 
                     <div className="flex flex-wrap gap-2 border-t border-border pt-3">
                       <Button type="button" size="sm" onClick={() => void handleSave(false)}>
