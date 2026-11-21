@@ -118,6 +118,7 @@ export interface FittingState {
   setSelectedClosetGarmentId: (id: string | null) => void;
   setGarmentCategory: (category: GarmentCategory) => void;
   setGarmentName: (name: string) => void;
+  setGarmentColorHex: (hex: string) => void;
   setGarmentSizeLabel: (sizeLabel: string) => void;
   setGarmentElasticity: (elasticity: number) => void;
   setGarmentFlatMeasure: (field: keyof GarmentFlatMeasurements, valueCm: number | undefined) => void;
@@ -194,6 +195,7 @@ export const useFittingStore = create<FittingState>((set) => ({
     });
   },
   setGarmentName: (garmentName) => set({ garmentName }),
+  setGarmentColorHex: (garmentColorHex) => set({ garmentColorHex }),
   setGarmentSizeLabel: (garmentSizeLabel) => set({ garmentSizeLabel }),
   setGarmentElasticity: (garmentElasticity) => set({ garmentElasticity }),
   setGarmentFlatMeasure: (field, valueCm) =>

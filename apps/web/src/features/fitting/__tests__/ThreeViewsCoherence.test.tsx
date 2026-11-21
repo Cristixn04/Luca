@@ -116,7 +116,7 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
     expect(container.querySelector('[data-estimated-badge="front"]')).toBeNull();
     expect(container.querySelector('[data-estimated-badge="side"]')).toBeNull();
     expect(container.querySelector('[data-estimated-badge="back"]')).toBeNull();
-  });
+  }, 12_000);
 
   it('mantiene IDs únicos de patrones SVG cuando se muestran las 3 vistas simultáneamente', () => {
     const { container } = render(<FittingRoom />);

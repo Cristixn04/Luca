@@ -11,8 +11,6 @@ import {
 } from '@luca/domain';
 import { Shirt, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { Badge } from '@/design-system/components/Badge';
-import { Button } from '@/design-system/components/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/design-system/components/Card';
 import { useClosetStore } from '@/features/closet/closetStore';
 import { CATEGORY_LABELS, type GarmentWithSizes } from '@/features/closet/types';
 import { useFittingStore } from './store';
@@ -75,7 +73,7 @@ function formatEase(easeCm: number, unit: 'cm' | 'in'): string {
   return `${sign}${abs.toFixed(1)} ${unit}`;
 }
 
-function applyClosetItemToFitting(item: GarmentWithSizes, preferredSizeLabel?: string) {
+export function applyClosetItemToFitting(item: GarmentWithSizes, preferredSizeLabel?: string) {
   const size =
     (preferredSizeLabel ? item.sizes.find((s) => s.label === preferredSizeLabel) : undefined) ??
     item.sizes[0];
@@ -95,9 +93,15 @@ function applyClosetItemToFitting(item: GarmentWithSizes, preferredSizeLabel?: s
 
 export interface GarmentPanelProps {
   fitReport: FitReport | null;
+  onManualCategorySelect?: () => void;
+  onClearAllGarments?: () => void;
 }
 
-export function GarmentPanel({ fitReport }: GarmentPanelProps) {
+export function GarmentPanel({
+  fitReport,
+  onManualCategorySelect,
+  onClearAllGarments,
+}: GarmentPanelProps) {
   const unit = useFittingStore((s) => s.unit);
   const garmentEnabled = useFittingStore((s) => s.garmentEnabled);
   const garmentSource = useFittingStore((s) => s.garmentSource);
@@ -130,7 +134,6 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
     }
   }, [closetLoaded, loadCloset]);
 
-  // Si hay prendas guardadas al abrir el Probador, activa el desplegable de Mi clóset automáticamente.
   useEffect(() => {
     if (autoSelectedRef.current) return;
     if (closetItems.length === 0) return;
@@ -171,113 +174,132 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
     });
   };
 
+  const handleClear = () => {
+    onClearAllGarments?.();
+    clearGarment();
+  };
+
   if (!garmentEnabled) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Prenda</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-start gap-3 text-sm text-muted">
+      <section aria-label="Configuración de prenda" className="vf-glass rounded-[24px] p-5">
+        <div className="mb-3 flex items-center justify-between gap-2 border-b border-[var(--glass-divider)] pb-3">
+          <h2 className="font-display text-base font-semibold tracking-tight text-ink">Prenda</h2>
+        </div>
+        <div className="flex flex-col items-start gap-3 text-xs text-muted">
           <p>Sin prenda activa en el probador.</p>
           <div className="flex flex-wrap gap-2">
             {closetItems.length > 0 && (
-              <Button
+              <button
                 type="button"
-                size="sm"
                 onClick={() => applyClosetItemToFitting(closetItems[0]!)}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-active-bg)] px-3.5 py-1.5 text-xs font-medium text-[var(--vf-chip-active-ink)] transition-opacity hover:opacity-90"
               >
                 <Shirt className="h-3.5 w-3.5" aria-hidden="true" />
                 Elegir de mi clóset
-              </Button>
+              </button>
             )}
-            <Button
+            <button
               type="button"
-              size="sm"
-              variant={closetItems.length > 0 ? 'secondary' : 'primary'}
               onClick={() => {
+                onManualCategorySelect?.();
                 restoreDefaultGarment('tshirt');
                 useFittingStore.setState({ garmentSource: 'quick', selectedClosetGarmentId: null });
               }}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-active-bg)] px-3.5 py-1.5 text-xs font-medium text-[var(--vf-chip-active-ink)] transition-opacity hover:opacity-90"
             >
               <Shirt className="h-3.5 w-3.5" aria-hidden="true" />
               Probar camiseta
-            </Button>
-            <Button
+            </button>
+            <button
               type="button"
-              size="sm"
-              variant="secondary"
               onClick={() => {
+                onManualCategorySelect?.();
                 restoreDefaultGarment('pants');
                 useFittingStore.setState({ garmentSource: 'quick', selectedClosetGarmentId: null });
               }}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-bg)] px-3.5 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-[var(--vf-chip-bg)]/80"
             >
               Probar pantalón
-            </Button>
+            </button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     );
   }
 
   const fields = GARMENT_FIELDS[garmentCategory];
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle>Prenda</CardTitle>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={clearGarment}
-            aria-label="Quitar prenda del probador"
-            title="Quitar prenda del probador"
-          >
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
-          </Button>
+    <section aria-label="Configuración de prenda" className="vf-glass rounded-[24px] p-5">
+      <div className="mb-4 flex items-center justify-between gap-2 border-b border-[var(--glass-divider)] pb-3">
+        <div className="flex flex-col">
+          <h2 className="font-display text-base font-semibold tracking-tight text-ink">Prenda</h2>
+          <span className="text-[11px] text-muted">{garmentName || CATEGORY_LABELS[garmentCategory]}</span>
         </div>
-      </CardHeader>
+        <button
+          type="button"
+          onClick={handleClear}
+          aria-label="Quitar prenda del probador"
+          title="Quitar prenda del probador"
+          className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-[var(--vf-chip-bg)] text-muted transition-colors hover:text-ink"
+        >
+          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
+      </div>
 
-      <CardContent className="flex flex-col gap-4">
-        {/* Conmutador de origen: Mi clóset (desplegable de prendas guardadas) vs Prenda rápida */}
-        <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="Origen de la prenda">
-          <Button
+      <div className="flex flex-col gap-4">
+        {/* Conmutador de origen en cápsula */}
+        <div
+          className="grid grid-cols-2 gap-1 rounded-full bg-[var(--vf-chip-bg)] p-1"
+          role="group"
+          aria-label="Origen de la prenda"
+        >
+          <button
             type="button"
-            size="sm"
-            variant={garmentSource === 'closet' ? 'primary' : 'outline'}
             aria-pressed={garmentSource === 'closet'}
             onClick={handleSwitchToCloset}
+            className={`inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+              garmentSource === 'closet'
+                ? 'bg-[var(--vf-nav-indicator-bg)] text-[var(--vf-nav-active-ink)] shadow-xs'
+                : 'text-muted hover:text-ink'
+            }`}
           >
             <Shirt className="h-3.5 w-3.5" aria-hidden="true" />
             Mi clóset ({closetItems.length})
-          </Button>
-          <Button
+          </button>
+          <button
             type="button"
-            size="sm"
-            variant={garmentSource === 'quick' ? 'primary' : 'outline'}
             aria-pressed={garmentSource === 'quick'}
             onClick={handleSwitchToQuick}
+            className={`inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+              garmentSource === 'quick'
+                ? 'bg-[var(--vf-nav-indicator-bg)] text-[var(--vf-nav-active-ink)] shadow-xs'
+                : 'text-muted hover:text-ink'
+            }`}
           >
             <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
             Prenda rápida
-          </Button>
+          </button>
         </div>
 
         {garmentSource === 'closet' ? (
           closetItems.length === 0 ? (
-            <div className="flex flex-col gap-2 rounded-[var(--radius-sm)] border border-border bg-bg p-3 text-xs text-muted">
+            <div className="flex flex-col gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--vf-chip-bg)] p-3 text-xs text-muted">
               <p>Aún no tienes prendas guardadas en tu clóset.</p>
               <div>
-                <Button type="button" size="sm" variant="secondary" onClick={handleSwitchToQuick}>
+                <button
+                  type="button"
+                  onClick={handleSwitchToQuick}
+                  className="inline-flex cursor-pointer items-center rounded-full bg-[var(--vf-chip-active-bg)] px-3 py-1.5 text-xs font-medium text-[var(--vf-chip-active-ink)]"
+                >
                   Ajustar prenda rápida
-                </Button>
+                </button>
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-[1fr_84px] gap-2">
               <div className="flex flex-col gap-1">
-                <label htmlFor="closet-garment-select" className="text-xs font-medium text-muted">
+                <label htmlFor="closet-garment-select" className="text-[11px] font-medium text-muted">
                   Prenda guardada
                 </label>
                 <select
@@ -285,9 +307,12 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
                   value={selectedClosetItem?.garment.id ?? closetItems[0]!.garment.id}
                   onChange={(event) => {
                     const found = closetItems.find((item) => item.garment.id === event.target.value);
-                    if (found) applyClosetItemToFitting(found);
+                    if (found) {
+                      onManualCategorySelect?.();
+                      applyClosetItemToFitting(found);
+                    }
                   }}
-                  className="w-full truncate rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-sm text-ink"
+                  className="w-full truncate rounded-xl border border-[var(--glass-border)] bg-bg/70 px-2.5 py-1.5 text-xs font-medium text-ink"
                 >
                   {closetItems.map((item) => (
                     <option key={item.garment.id} value={item.garment.id}>
@@ -298,7 +323,7 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label htmlFor="closet-size-select" className="text-xs font-medium text-muted">
+                <label htmlFor="closet-size-select" className="text-[11px] font-medium text-muted">
                   Talla
                 </label>
                 <select
@@ -309,7 +334,7 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
                       applyClosetItemToFitting(selectedClosetItem, event.target.value);
                     }
                   }}
-                  className="w-full rounded-[var(--radius-sm)] border border-border bg-bg px-2 py-1.5 text-center text-sm font-medium text-ink"
+                  className="w-full rounded-xl border border-[var(--glass-border)] bg-bg/70 px-2 py-1.5 text-center text-xs font-semibold text-ink"
                 >
                   {(selectedClosetItem?.sizes ?? []).map((size) => (
                     <option key={size.id} value={size.label}>
@@ -324,24 +349,33 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
           <>
             {/* Selector de categoría (las 7 categorías completas en modo prenda rápida) */}
             <div className="flex flex-wrap gap-1.5" role="group" aria-label="Tipo de prenda">
-              {GARMENT_CATEGORIES.map((cat) => (
-                <Button
-                  key={cat}
-                  type="button"
-                  size="sm"
-                  variant={garmentCategory === cat ? 'primary' : 'outline'}
-                  aria-pressed={garmentCategory === cat}
-                  onClick={() => setGarmentCategory(cat)}
-                >
-                  {CATEGORY_LABELS[cat]}
-                </Button>
-              ))}
+              {GARMENT_CATEGORIES.map((cat) => {
+                const active = garmentCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => {
+                      onManualCategorySelect?.();
+                      setGarmentCategory(cat);
+                    }}
+                    className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-medium transition-all ${
+                      active
+                        ? 'bg-[var(--vf-chip-active-bg)] text-[var(--vf-chip-active-ink)] shadow-xs'
+                        : 'bg-[var(--vf-chip-bg)] text-ink hover:bg-[var(--vf-chip-bg)]/80'
+                    }`}
+                  >
+                    {CATEGORY_LABELS[cat]}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Nombre y talla libres solo en prenda rápida */}
             <div className="grid grid-cols-[1fr_76px] gap-2">
               <div className="flex flex-col gap-1">
-                <label htmlFor="garment-name" className="text-xs font-medium text-muted">
+                <label htmlFor="garment-name" className="text-[11px] font-medium text-muted">
                   Nombre
                 </label>
                 <input
@@ -349,11 +383,11 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
                   type="text"
                   value={garmentName}
                   onChange={(event) => setGarmentName(event.target.value)}
-                  className="rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-sm text-ink"
+                  className="rounded-xl border border-[var(--glass-border)] bg-bg/70 px-2.5 py-1.5 text-xs font-medium text-ink"
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label htmlFor="garment-size" className="text-xs font-medium text-muted">
+                <label htmlFor="garment-size" className="text-[11px] font-medium text-muted">
                   Talla
                 </label>
                 <input
@@ -361,7 +395,7 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
                   type="text"
                   value={garmentSizeLabel}
                   onChange={(event) => setGarmentSizeLabel(event.target.value)}
-                  className="rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-center text-sm font-medium text-ink"
+                  className="rounded-xl border border-[var(--glass-border)] bg-bg/70 px-2.5 py-1.5 text-center text-xs font-semibold text-ink"
                 />
               </div>
             </div>
@@ -369,7 +403,7 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
         )}
 
         {/* Medidas en plano */}
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-2">
           {fields.map((field) => {
             const rawCm = garmentFlatMeasures[field.key];
             const displayVal = rawCm !== undefined ? fromCm(rawCm, unit) : '';
@@ -378,10 +412,10 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
             return (
               <div key={field.key} className="flex items-center justify-between gap-2">
                 <div>
-                  <label htmlFor={inputId} className="block text-sm font-medium text-ink">
+                  <label htmlFor={inputId} className="block text-xs font-medium text-ink">
                     {field.label}
                   </label>
-                  <span className="text-xs text-muted">{field.hint}</span>
+                  <span className="text-[11px] text-muted">{field.hint}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <input
@@ -402,9 +436,9 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
                         setGarmentFlatMeasure(field.key, Number(toCm(parsed, unit).toFixed(2)));
                       }
                     }}
-                    className="tabular-nums w-20 rounded-[var(--radius-sm)] border border-border bg-bg px-2 py-1.5 text-right text-sm text-ink"
+                    className="tabular-nums w-20 rounded-xl border border-[var(--glass-border)] bg-bg/70 px-2.5 py-1 text-right text-xs font-medium text-ink"
                   />
-                  <span className="w-6 text-xs text-muted">{unit}</span>
+                  <span className="w-5 text-[11px] text-muted">{unit}</span>
                 </div>
               </div>
             );
@@ -413,47 +447,59 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
 
         {/* Elasticidad */}
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-muted">Elasticidad de la tela</span>
+          <span className="text-[11px] font-medium text-muted">Elasticidad de la tela</span>
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="Elasticidad de la tela">
-            {ELASTICITY_PRESETS.map((preset) => (
-              <Button
-                key={preset.value}
-                type="button"
-                size="sm"
-                variant={garmentElasticity === preset.value ? 'primary' : 'outline'}
-                aria-pressed={garmentElasticity === preset.value}
-                onClick={() => setGarmentElasticity(preset.value)}
-              >
-                {preset.label}
-              </Button>
-            ))}
+            {ELASTICITY_PRESETS.map((preset) => {
+              const active = garmentElasticity === preset.value;
+              return (
+                <button
+                  key={preset.value}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setGarmentElasticity(preset.value)}
+                  className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-medium transition-all ${
+                    active
+                      ? 'bg-[var(--vf-chip-active-bg)] text-[var(--vf-chip-active-ink)]'
+                      : 'bg-[var(--vf-chip-bg)] text-ink hover:bg-[var(--vf-chip-bg)]/80'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Preferencia de calce (T2.7) */}
+        {/* Preferencia de calce */}
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-muted">Preferencia de calce</span>
+          <span className="text-[11px] font-medium text-muted">Preferencia de calce</span>
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="Preferencia de calce">
-            {PREFERENCE_OPTIONS.map((option) => (
-              <Button
-                key={option.value}
-                type="button"
-                size="sm"
-                variant={fitPreference === option.value ? 'primary' : 'outline'}
-                aria-pressed={fitPreference === option.value}
-                onClick={() => setFitPreference(option.value)}
-              >
-                {option.label}
-              </Button>
-            ))}
+            {PREFERENCE_OPTIONS.map((option) => {
+              const active = fitPreference === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setFitPreference(option.value)}
+                  className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-medium transition-all ${
+                    active
+                      ? 'bg-[var(--vf-chip-active-bg)] text-[var(--vf-chip-active-ink)]'
+                      : 'bg-[var(--vf-chip-bg)] text-ink hover:bg-[var(--vf-chip-bg)]/80'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Desglose numérico por zona */}
+        {/* Veredicto y desglose numérico por zona */}
         {fitReport && fitReport.evaluatedZones.length > 0 && (
-          <div className="flex flex-col gap-2 border-t border-border pt-3">
+          <div className="flex flex-col gap-2 border-t border-[var(--glass-divider)] pt-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
                 Veredicto ({garmentSizeLabel || 'Sin talla'})
               </span>
               <Badge
@@ -472,11 +518,11 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
                 return (
                   <li
                     key={zone.zone}
-                    className="flex items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-2 text-xs"
+                    className="flex items-center justify-between gap-2 rounded-2xl border border-[var(--glass-border)] bg-bg/55 px-3 py-2 text-xs"
                   >
                     <div className="flex flex-col">
                       <span className="font-semibold text-ink">{ZONE_LABELS[zone.zone]}</span>
-                      <span className="text-muted">
+                      <span className="text-[11px] text-muted">
                         La prenda queda {FIT_STATE_LABELS[zone.state].toLowerCase()}
                         {zone.elasticCompensated ? ' (por elasticidad)' : ''}
                         {matchesPreference ? ' · coincide con tu preferencia' : ''}
@@ -494,7 +540,7 @@ export function GarmentPanel({ fitReport }: GarmentPanelProps) {
             </ul>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

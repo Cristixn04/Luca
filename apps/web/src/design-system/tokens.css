@@ -52,6 +52,34 @@
   --glass-highlight: rgb(255 255 255 / 92%);
   --glass-shadow: 0 22px 50px -26px rgb(21 20 19 / 16%), 0 2px 8px -2px rgb(21 20 19 / 6%);
 
+  /* Spatial Try-On Liquid Glass Tokens (VirtualFit Reference) */
+  --vf-glass-bg: linear-gradient(
+    155deg,
+    rgb(250 248 245 / 76%) 0%,
+    rgb(214 209 201 / 46%) 48%,
+    rgb(236 232 226 / 62%) 100%
+  );
+  --vf-glass-card-bg: linear-gradient(
+    155deg,
+    rgb(252 250 247 / 78%) 0%,
+    rgb(220 215 207 / 52%) 50%,
+    rgb(240 236 230 / 68%) 100%
+  );
+  --vf-glass-border: rgb(255 255 255 / 82%);
+  --vf-glass-outer-ring: rgb(21 20 19 / 10%);
+  --vf-glass-inset-top: rgb(255 255 255 / 88%);
+  --vf-glass-inset-bottom: rgb(255 255 255 / 26%);
+  --vf-glass-shadow: 0 20px 46px -22px rgb(40 30 20 / 28%);
+  --vf-nav-indicator-bg: rgb(255 255 255 / 95%);
+  --vf-nav-indicator-shadow: 0 4px 14px -6px rgb(0 0 0 / 28%);
+  --vf-nav-active-ink: #111111;
+  --vf-nav-muted-ink: rgb(30 30 32 / 72%);
+  --vf-ghost-ink: rgb(21 20 19 / 5.5%);
+  --vf-ghost-stroke: rgb(21 20 19 / 8%);
+  --vf-chip-bg: rgb(21 20 19 / 8%);
+  --vf-chip-active-bg: #111111;
+  --vf-chip-active-ink: #ffffff;
+
   /* Maniquí anatómico de taller (referencia editorial lino-piedra) */
   --mannequin-highlight: #f2efe9;
   --mannequin-mid: #e4dfd6;
@@ -97,6 +125,33 @@
     --glass-highlight: rgb(255 255 255 / 13%);
     --glass-shadow: 0 24px 56px -22px rgb(0 0 0 / 66%), 0 2px 10px -2px rgb(0 0 0 / 32%);
 
+    --vf-glass-bg: linear-gradient(
+      155deg,
+      rgb(64 62 59 / 62%) 0%,
+      rgb(34 34 34 / 50%) 48%,
+      rgb(48 47 45 / 58%) 100%
+    );
+    --vf-glass-card-bg: linear-gradient(
+      155deg,
+      rgb(72 70 66 / 62%) 0%,
+      rgb(38 38 38 / 54%) 50%,
+      rgb(54 52 50 / 60%) 100%
+    );
+    --vf-glass-border: rgb(255 255 255 / 16%);
+    --vf-glass-outer-ring: rgb(0 0 0 / 36%);
+    --vf-glass-inset-top: rgb(255 255 255 / 20%);
+    --vf-glass-inset-bottom: rgb(255 255 255 / 6%);
+    --vf-glass-shadow: 0 24px 52px -22px rgb(0 0 0 / 68%);
+    --vf-nav-indicator-bg: rgb(246 245 242 / 94%);
+    --vf-nav-indicator-shadow: 0 4px 16px -6px rgb(0 0 0 / 65%);
+    --vf-nav-active-ink: #111111;
+    --vf-nav-muted-ink: rgb(242 241 238 / 74%);
+    --vf-ghost-ink: rgb(255 255 255 / 4.5%);
+    --vf-ghost-stroke: rgb(255 255 255 / 8%);
+    --vf-chip-bg: rgb(255 255 255 / 12%);
+    --vf-chip-active-bg: #f4f3f0;
+    --vf-chip-active-ink: #111111;
+
     --mannequin-highlight: #dcd7ce;
     --mannequin-mid: #c4beb4;
     --mannequin-shadow: #948d83;
@@ -141,6 +196,19 @@
     --glass-divider: light-dark(rgb(21 20 19 / 8%), rgb(255 255 255 / 9%));
     --glass-highlight: light-dark(rgb(255 255 255 / 92%), rgb(255 255 255 / 13%));
 
+    --vf-glass-border: light-dark(rgb(255 255 255 / 82%), rgb(255 255 255 / 16%));
+    --vf-glass-outer-ring: light-dark(rgb(21 20 19 / 10%), rgb(0 0 0 / 36%));
+    --vf-glass-inset-top: light-dark(rgb(255 255 255 / 88%), rgb(255 255 255 / 20%));
+    --vf-glass-inset-bottom: light-dark(rgb(255 255 255 / 26%), rgb(255 255 255 / 6%));
+    --vf-nav-indicator-bg: light-dark(rgb(255 255 255 / 95%), rgb(246 245 242 / 94%));
+    --vf-nav-active-ink: #111111;
+    --vf-nav-muted-ink: light-dark(rgb(30 30 32 / 72%), rgb(242 241 238 / 74%));
+    --vf-ghost-ink: light-dark(rgb(21 20 19 / 5.5%), rgb(255 255 255 / 4.5%));
+    --vf-ghost-stroke: light-dark(rgb(21 20 19 / 8%), rgb(255 255 255 / 8%));
+    --vf-chip-bg: light-dark(rgb(21 20 19 / 8%), rgb(255 255 255 / 12%));
+    --vf-chip-active-bg: light-dark(#111111, #f4f3f0);
+    --vf-chip-active-ink: light-dark(#ffffff, #111111);
+
     --mannequin-highlight: light-dark(#f2efe9, #dcd7ce);
     --mannequin-mid: light-dark(#e4dfd6, #c4beb4);
     --mannequin-shadow: light-dark(#c7bfb3, #948d83);
@@ -180,11 +248,39 @@
   &:has(> head > meta[name='color-scheme'][content='dark']) {
     color-scheme: dark;
     --glass-shadow: 0 24px 56px -22px rgb(0 0 0 / 66%), 0 2px 10px -2px rgb(0 0 0 / 32%);
+    --vf-glass-bg: linear-gradient(
+      155deg,
+      rgb(64 62 59 / 62%) 0%,
+      rgb(34 34 34 / 50%) 48%,
+      rgb(48 47 45 / 58%) 100%
+    );
+    --vf-glass-card-bg: linear-gradient(
+      155deg,
+      rgb(72 70 66 / 62%) 0%,
+      rgb(38 38 38 / 54%) 50%,
+      rgb(54 52 50 / 60%) 100%
+    );
+    --vf-glass-shadow: 0 24px 52px -22px rgb(0 0 0 / 68%);
+    --vf-nav-indicator-shadow: 0 4px 16px -6px rgb(0 0 0 / 65%);
   }
 
   &:has(> head > meta[name='color-scheme'][content='light']) {
     color-scheme: light;
     --glass-shadow: 0 22px 50px -26px rgb(21 20 19 / 16%), 0 2px 8px -2px rgb(21 20 19 / 6%);
+    --vf-glass-bg: linear-gradient(
+      155deg,
+      rgb(250 248 245 / 76%) 0%,
+      rgb(214 209 201 / 46%) 48%,
+      rgb(236 232 226 / 62%) 100%
+    );
+    --vf-glass-card-bg: linear-gradient(
+      155deg,
+      rgb(252 250 247 / 78%) 0%,
+      rgb(220 215 207 / 52%) 50%,
+      rgb(240 236 230 / 68%) 100%
+    );
+    --vf-glass-shadow: 0 20px 46px -22px rgb(40 30 20 / 28%);
+    --vf-nav-indicator-shadow: 0 4px 14px -6px rgb(0 0 0 / 28%);
   }
 }
 

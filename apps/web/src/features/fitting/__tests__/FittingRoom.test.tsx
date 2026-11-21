@@ -197,4 +197,32 @@ describe('Probador de calce M2 (T2.1 – T2.7)', () => {
     await user.type(nameInput, 'Prueba tienda');
     expect((nameInput as HTMLInputElement).value).toBe('Prueba tienda');
   });
+
+  it('muestra ambos carruseles espaciales (superior e inferior) y permite combinar prendas sobre el maniquí', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<FittingRoom />);
+
+    const upperCarousel = container.querySelector('[data-spatial-carousel="upper"]');
+    const lowerCarousel = container.querySelector('[data-spatial-carousel="lower"]');
+    expect(upperCarousel).not.toBeNull();
+    expect(lowerCarousel).not.toBeNull();
+
+    // Seleccionar un pantalón desde el carrusel inferior mientras la camiseta está activa combina ambas capas
+    const pantsCard = within(lowerCarousel as HTMLElement).getByRole('option', {
+      name: /Seleccionar Pantalón recto \(inferior\)/i,
+    });
+    await user.click(pantsCard);
+
+    expect(container.querySelector('[data-garment="tshirt"]')).not.toBeNull();
+    expect(container.querySelector('[data-garment="pants"]')).not.toBeNull();
+
+    // Seleccionar un vestido desde el carrusel superior reemplaza la capa inferior
+    const dressCard = within(upperCarousel as HTMLElement).getByRole('option', {
+      name: /Seleccionar Vestido midi \(superior\)/i,
+    });
+    await user.click(dressCard);
+
+    expect(container.querySelector('[data-garment="dress"]')).not.toBeNull();
+    expect(container.querySelector('[data-garment="pants"]')).toBeNull();
+  });
 });

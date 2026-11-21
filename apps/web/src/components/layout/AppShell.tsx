@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Brain,
   Compass,
@@ -62,10 +62,45 @@ export function AppShell({
   const unit = useFittingStore((s) => s.unit);
   const setUnit = useFittingStore((s) => s.setUnit);
 
+  const navListRef = useRef<HTMLUListElement | null>(null);
+  const linkRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const [indicator, setIndicator] = useState<{ left: number; width: number; visible: boolean }>({
+    left: 0,
+    width: 0,
+    visible: false,
+  });
+
+  const syncIndicator = useCallback(() => {
+    const activeLink = linkRefs.current[activeSection];
+    const listEl = navListRef.current;
+    if (!activeLink || !listEl) {
+      setIndicator((prev) => (prev.visible ? { ...prev, visible: false } : prev));
+      return;
+    }
+    const left = activeLink.offsetLeft;
+    const width = activeLink.offsetWidth;
+    if (width <= 0) {
+      return;
+    }
+    setIndicator({ left, width, visible: true });
+  }, [activeSection]);
+
+  useLayoutEffect(() => {
+    syncIndicator();
+  }, [syncIndicator, locale]);
+
+  useEffect(() => {
+    const handleResize = () => syncIndicator();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [syncIndicator]);
+
   const handleSelect = (section: NavSection) => {
     onSelectSection(section);
     setMobileMenuOpen(false);
   };
+
+  const isFullBleedSection = activeSection === 'outfits' || activeSection === 'fitting';
 
   return (
     <div className="relative flex min-h-dvh flex-col bg-transparent text-ink">
@@ -75,59 +110,81 @@ export function AppShell({
         {t.header.skipToMain}
       </a>
 
-      <header className="relative z-10 border-b border-[var(--glass-divider)] bg-[var(--glass-pill-bg)] backdrop-blur-md">
-        <div className="flex w-full items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-10">
-          <div className="flex items-center gap-3">
+      {/* Barra de navegación superior flotante en vidrio líquido (diseño de interfaz base) */}
+      <header className="sticky top-0 z-30 w-full bg-transparent px-4 pb-2 pt-3 sm:px-6 lg:px-10">
+        <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3">
+          {/* Marca Luca en píldora minimalista flotante */}
+          <div className="flex items-center">
             <a
               href="#probador"
               onClick={(event) => {
                 event.preventDefault();
                 handleSelect('fitting');
               }}
-              className="font-display text-xl font-bold tracking-tight text-ink no-underline"
+              className="vf-glass inline-flex h-[46px] items-center rounded-full px-5 font-display text-base font-bold tracking-tight text-ink no-underline transition-transform duration-200 hover:scale-[1.02]"
             >
               Luca
             </a>
           </div>
 
-          <nav aria-label={t.header.mainNavAria} className="hidden md:block">
-            <ul className="flex items-center gap-1">
-              {NAV_ITEMS.map((item) => {
-                const Icon = item.icon;
-                const isCurrent = activeSection === item.id;
-                return (
-                  <li key={item.id}>
-                    <a
-                      href={`#${item.id}`}
-                      aria-current={isCurrent ? 'page' : undefined}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        handleSelect(item.id);
-                      }}
-                      className={cn(
-                        'inline-flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2 text-sm no-underline transition-colors duration-[var(--motion-fast)] ease-[var(--ease-out)]',
-                        isCurrent
-                          ? 'border-b-2 border-accent font-semibold text-accent'
-                          : 'font-medium text-muted hover:bg-bg hover:text-ink',
-                      )}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                      <span>{t.nav[item.id]}</span>
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
+          {/* Navegación central flotante estilo cápsula con indicador deslizante */}
+          <div className="flex justify-center">
+            <nav
+              aria-label={t.header.mainNavAria}
+              className="vf-glass relative hidden rounded-full p-[5px] md:inline-flex md:items-center"
+            >
+              <span
+                aria-hidden="true"
+                className="vf-nav-indicator"
+                style={{
+                  transform: `translate3d(${indicator.left}px, 0, 0)`,
+                  width: `${indicator.width}px`,
+                  opacity: indicator.visible ? 1 : 0,
+                }}
+              />
+              <ul ref={navListRef} className="z-10 flex items-center gap-0.5">
+                {NAV_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  const isCurrent = activeSection === item.id;
+                  return (
+                    <li key={item.id}>
+                      <a
+                        ref={(node) => {
+                          linkRefs.current[item.id] = node;
+                        }}
+                        href={`#${item.id}`}
+                        aria-current={isCurrent ? 'page' : undefined}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          handleSelect(item.id);
+                        }}
+                        className={cn(
+                          'inline-flex h-[38px] items-center gap-2 whitespace-nowrap rounded-full px-4 text-[13.5px] font-medium no-underline transition-colors duration-300 lg:px-5',
+                          isCurrent
+                            ? 'text-[var(--vf-nav-active-ink)]'
+                            : 'text-[var(--vf-nav-muted-ink)] hover:text-ink',
+                        )}
+                      >
+                        <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                        <span>{t.nav[item.id]}</span>
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+          </div>
 
-          <div className="flex items-center gap-1.5">
+          {/* Controles utilitarios en cápsula flotante a la derecha */}
+          <div className="vf-glass inline-flex h-[46px] items-center gap-1 rounded-full px-1.5">
             {vaultStatus === 'unlocked' && onLockVault && (
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={onLockVault}
                 aria-label={t.header.lockAria}
+                className="h-8 rounded-full px-2.5 text-xs"
               >
                 <Lock className="h-3.5 w-3.5" aria-hidden="true" />
                 <span className="hidden sm:inline">{t.header.lock}</span>
@@ -139,17 +196,17 @@ export function AppShell({
               size="sm"
               aria-label={`Cambiar unidades (actual: ${unit})`}
               onClick={() => setUnit(unit === 'cm' ? 'in' : 'cm')}
-              className="hidden sm:inline-flex tabular-nums text-xs"
+              className="hidden h-8 rounded-full px-2.5 tabular-nums text-xs sm:inline-flex"
             >
               {unit}
             </Button>
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               size="sm"
               aria-label={t.header.switchLanguageAria}
               onClick={toggleLocale}
-              className="text-xs font-semibold"
+              className="h-8 rounded-full px-2.5 text-xs font-semibold"
             >
               {locale.toUpperCase()}
             </Button>
@@ -158,26 +215,27 @@ export function AppShell({
               type="button"
               variant="ghost"
               size="icon"
-              className="md:hidden"
+              className="h-8 w-8 rounded-full md:hidden"
               aria-expanded={mobileMenuOpen}
               aria-controls={mobileNavId}
               aria-label={mobileMenuOpen ? t.header.closeMenu : t.header.openMenu}
               onClick={() => setMobileMenuOpen((open) => !open)}
             >
               {mobileMenuOpen ? (
-                <X className="h-5 w-5" aria-hidden="true" />
+                <X className="h-4 w-4" aria-hidden="true" />
               ) : (
-                <Menu className="h-5 w-5" aria-hidden="true" />
+                <Menu className="h-4 w-4" aria-hidden="true" />
               )}
             </Button>
           </div>
         </div>
 
+        {/* Navegación móvil desplegable en cápsula de vidrio */}
         {mobileMenuOpen && (
           <nav
             id={mobileNavId}
             aria-label={t.header.mobileNavAria}
-            className="border-t border-border bg-surface px-4 py-2 md:hidden"
+            className="vf-glass mt-2.5 rounded-3xl p-2 md:hidden"
           >
             <ul className="flex flex-col gap-1">
               {NAV_ITEMS.map((item) => {
@@ -193,10 +251,10 @@ export function AppShell({
                         handleSelect(item.id);
                       }}
                       className={cn(
-                        'flex items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm no-underline transition-colors duration-[var(--motion-fast)]',
+                        'flex items-center gap-2.5 rounded-full px-4 py-2.5 text-sm no-underline transition-colors duration-[var(--motion-fast)]',
                         isCurrent
-                          ? 'border-l-2 border-accent bg-bg font-semibold text-accent'
-                          : 'font-medium text-muted hover:bg-bg hover:text-ink',
+                          ? 'bg-[var(--vf-nav-indicator-bg)] font-semibold text-[var(--vf-nav-active-ink)] shadow-xs'
+                          : 'font-medium text-[var(--vf-nav-muted-ink)] hover:text-ink',
                       )}
                     >
                       <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -226,8 +284,8 @@ export function AppShell({
         id="contenido-principal"
         className={cn(
           'relative z-10 w-full flex-1',
-          activeSection === 'outfits'
-            ? 'px-4 py-4 sm:px-6 sm:py-5 lg:px-10'
+          isFullBleedSection
+            ? 'px-4 py-3 sm:px-6 sm:py-4 lg:px-10'
             : 'mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8',
         )}
       >

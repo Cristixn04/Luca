@@ -273,3 +273,134 @@ dialog::backdrop {
   backdrop-filter: blur(18px) saturate(155%);
   -webkit-backdrop-filter: blur(18px) saturate(155%);
 }
+
+/* Spatial Try-On Liquid Glass System (VirtualFit Reference) */
+.vf-glass {
+  background: var(--vf-glass-bg);
+  border: 1px solid var(--vf-glass-border);
+  box-shadow:
+    0 0 0 1px var(--vf-glass-outer-ring),
+    inset 0 1px 0 var(--vf-glass-inset-top),
+    inset 0 -1px 0 var(--vf-glass-inset-bottom),
+    var(--vf-glass-shadow);
+  backdrop-filter: blur(22px) saturate(1.5);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+}
+
+.vf-glass-card {
+  overflow: hidden;
+  background: var(--vf-glass-card-bg);
+  border: 1px solid var(--vf-glass-border);
+  box-shadow:
+    0 0 0 1px var(--vf-glass-outer-ring),
+    inset 0 1px 0 var(--vf-glass-inset-top),
+    inset 0 -1px 0 var(--vf-glass-inset-bottom),
+    var(--vf-glass-shadow);
+  backdrop-filter: blur(22px) saturate(1.5);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+}
+
+.vf-nav-indicator {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 0;
+  border-radius: 9999px;
+  background: var(--vf-nav-indicator-bg);
+  box-shadow: var(--vf-nav-indicator-shadow);
+  pointer-events: none;
+  transition:
+    transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 220ms ease;
+}
+
+.vf-arc-card {
+  transition:
+    transform 560ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 360ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform, opacity;
+}
+
+.vf-ghost-watermark {
+  font-family: var(--font-display);
+  font-weight: 900;
+  line-height: 0.82;
+  letter-spacing: -0.045em;
+  color: var(--vf-ghost-ink);
+  -webkit-text-stroke: 1px var(--vf-ghost-stroke);
+  user-select: none;
+  pointer-events: none;
+}
+
+@keyframes vf-card-sheen-sweep {
+  from {
+    transform: translateX(-140%) skewX(-22deg);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.55;
+  }
+  to {
+    transform: translateX(220%) skewX(-22deg);
+    opacity: 0;
+  }
+}
+
+.vf-card-sheen::after {
+  content: '';
+  position: absolute;
+  inset: -10% -30%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(255 255 255 / 42%) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  animation: vf-card-sheen-sweep 880ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes vf-scan-wipe {
+  0% {
+    transform: translateY(-6%);
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(108%);
+    opacity: 0;
+  }
+}
+
+.vf-scan-bar {
+  position: absolute;
+  inset-inline: 8%;
+  top: 0;
+  height: 2px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 86%);
+  box-shadow:
+    0 0 14px 3px rgb(190 225 255 / 55%),
+    0 -24px 32px 10px rgb(210 232 255 / 24%);
+  pointer-events: none;
+  animation: vf-scan-wipe 520ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vf-nav-indicator,
+  .vf-arc-card {
+    transition: none;
+  }
+  .vf-card-sheen::after,
+  .vf-scan-bar {
+    animation: none;
+    display: none;
+  }
+}

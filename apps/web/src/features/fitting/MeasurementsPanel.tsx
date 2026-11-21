@@ -16,14 +16,6 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { Badge } from '@/design-system/components/Badge';
-import { Button } from '@/design-system/components/Button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/design-system/components/Card';
 import { MeasuringGuideDialog } from './MeasuringGuideDialog';
 import { useFittingStore } from './store';
 
@@ -82,38 +74,46 @@ export function MeasurementsPanel({ validation }: MeasurementsPanelProps) {
   ).length;
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <CardTitle>Medidas</CardTitle>
-            <CardDescription>Cálculo local en tu dispositivo</CardDescription>
-          </div>
-          <div className="flex items-center gap-1" role="group" aria-label="Unidad de medida">
-            <Button
-              type="button"
-              size="sm"
-              variant={unit === 'cm' ? 'primary' : 'outline'}
-              aria-pressed={unit === 'cm'}
-              onClick={() => setUnit('cm')}
-            >
-              cm
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={unit === 'in' ? 'primary' : 'outline'}
-              aria-pressed={unit === 'in'}
-              onClick={() => setUnit('in')}
-            >
-              in
-            </Button>
-          </div>
+    <section aria-label="Medidas corporales" className="vf-glass rounded-[24px] p-5">
+      <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2 border-b border-[var(--glass-divider)] pb-3">
+        <div>
+          <h2 className="font-display text-base font-semibold tracking-tight text-ink">Medidas</h2>
+          <p className="text-[11px] text-muted">Cálculo local en tu dispositivo</p>
         </div>
-      </CardHeader>
+        <div
+          className="inline-flex rounded-full bg-[var(--vf-chip-bg)] p-0.5"
+          role="group"
+          aria-label="Unidad de medida"
+        >
+          <button
+            type="button"
+            aria-pressed={unit === 'cm'}
+            onClick={() => setUnit('cm')}
+            className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-semibold transition-all ${
+              unit === 'cm'
+                ? 'bg-[var(--vf-nav-indicator-bg)] text-[var(--vf-nav-active-ink)] shadow-xs'
+                : 'text-muted hover:text-ink'
+            }`}
+          >
+            cm
+          </button>
+          <button
+            type="button"
+            aria-pressed={unit === 'in'}
+            onClick={() => setUnit('in')}
+            className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-semibold transition-all ${
+              unit === 'in'
+                ? 'bg-[var(--vf-nav-indicator-bg)] text-[var(--vf-nav-active-ink)] shadow-xs'
+                : 'text-muted hover:text-ink'
+            }`}
+          >
+            in
+          </button>
+        </div>
+      </div>
 
-      <CardContent className="flex flex-col gap-3">
-        <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
           {BODY_FIELDS.map((field) => {
             const rawCm = bodyMeasurements[field.key];
             const displayValue = Number.isFinite(rawCm) && rawCm >= 0 ? fromCm(rawCm, unit) : '';
@@ -123,38 +123,36 @@ export function MeasurementsPanel({ validation }: MeasurementsPanelProps) {
 
             return (
               <div key={field.key} className="flex flex-col gap-1">
-                <div className="flex items-center justify-between gap-2">
-                  <label htmlFor={inputId} className="text-sm font-medium text-ink">
-                    {field.label}
-                  </label>
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      id={inputId}
-                      type={hideNumbers ? 'password' : 'number'}
-                      inputMode="decimal"
-                      step={unit === 'cm' ? field.stepCm : 0.25}
-                      value={displayValue}
-                      aria-invalid={fieldError ? 'true' : undefined}
-                      aria-describedby={fieldError ? errorId : undefined}
-                      onChange={(event) => {
-                        const parsed = Number.parseFloat(event.target.value);
-                        if (Number.isNaN(parsed)) {
-                          setBodyMeasure(field.key, Number.NaN);
-                          return;
-                        }
-                        if (parsed < 0) {
-                          setBodyMeasure(field.key, parsed);
-                          return;
-                        }
-                        setBodyMeasure(field.key, Number(toCm(parsed, unit).toFixed(2)));
-                      }}
-                      className="tabular-nums w-24 rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-right text-sm text-ink"
-                    />
-                    <span className="w-6 text-xs text-muted">{unit}</span>
-                  </div>
+                <label htmlFor={inputId} className="text-[11px] font-medium text-muted">
+                  {field.label}
+                </label>
+                <div className="flex items-center gap-1">
+                  <input
+                    id={inputId}
+                    type={hideNumbers ? 'password' : 'number'}
+                    inputMode="decimal"
+                    step={unit === 'cm' ? field.stepCm : 0.25}
+                    value={displayValue}
+                    aria-invalid={fieldError ? 'true' : undefined}
+                    aria-describedby={fieldError ? errorId : undefined}
+                    onChange={(event) => {
+                      const parsed = Number.parseFloat(event.target.value);
+                      if (Number.isNaN(parsed)) {
+                        setBodyMeasure(field.key, Number.NaN);
+                        return;
+                      }
+                      if (parsed < 0) {
+                        setBodyMeasure(field.key, parsed);
+                        return;
+                      }
+                      setBodyMeasure(field.key, Number(toCm(parsed, unit).toFixed(2)));
+                    }}
+                    className="tabular-nums w-full rounded-xl border border-[var(--glass-border)] bg-bg/70 px-2.5 py-1.5 text-right text-xs font-medium text-ink"
+                  />
+                  <span className="w-5 shrink-0 text-[11px] text-muted">{unit}</span>
                 </div>
                 {fieldError && (
-                  <p id={errorId} role="alert" className="text-xs text-[#C2410C]">
+                  <p id={errorId} role="alert" className="text-[11px] text-[#C2410C]">
                     {fieldError}
                   </p>
                 )}
@@ -163,13 +161,13 @@ export function MeasurementsPanel({ validation }: MeasurementsPanelProps) {
           })}
         </div>
 
-        {/* Sección colapsable de medidas opcionales para perfil y espalda (T5.1) */}
-        <div className="border-t border-border pt-2">
+        {/* Sección colapsable de medidas opcionales para perfil y espalda */}
+        <div className="border-t border-[var(--glass-divider)] pt-2.5">
           <button
             type="button"
             aria-expanded={showOptionals}
             onClick={() => setShowOptionals((open) => !open)}
-            className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-[var(--radius-sm)] py-1.5 text-left text-xs font-semibold text-ink hover:text-accent"
+            className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl py-1 text-left text-xs font-semibold text-ink transition-colors hover:opacity-80"
           >
             <span className="flex items-center gap-2">
               <span>Medidas opcionales (perfil y espalda)</span>
@@ -185,7 +183,7 @@ export function MeasurementsPanel({ validation }: MeasurementsPanelProps) {
           </button>
 
           {showOptionals && (
-            <div className="mt-2.5 flex flex-col gap-2.5">
+            <div className="mt-2.5 flex flex-col gap-2">
               {OPTIONAL_FIELDS.map((field) => {
                 const rawCm = optionalMeasurements[field.key];
                 const displayValue =
@@ -203,7 +201,7 @@ export function MeasurementsPanel({ validation }: MeasurementsPanelProps) {
                         <label htmlFor={inputId} className="block text-xs font-medium text-ink">
                           {field.label}
                         </label>
-                        <span className="text-[11px] text-muted">{field.hint}</span>
+                        <span className="text-[10px] text-muted">{field.hint}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <input
@@ -232,13 +230,13 @@ export function MeasurementsPanel({ validation }: MeasurementsPanelProps) {
                             }
                             setOptionalMeasure(field.key, Number(toCm(parsed, unit).toFixed(2)));
                           }}
-                          className="tabular-nums w-20 rounded-[var(--radius-sm)] border border-border bg-bg px-2 py-1 text-right text-xs text-ink"
+                          className="tabular-nums w-20 rounded-xl border border-[var(--glass-border)] bg-bg/70 px-2 py-1 text-right text-xs text-ink"
                         />
-                        <span className="w-6 text-xs text-muted">{unit}</span>
+                        <span className="w-5 text-[11px] text-muted">{unit}</span>
                       </div>
                     </div>
                     {fieldError && (
-                      <p id={errorId} role="alert" className="text-xs text-[#C2410C]">
+                      <p id={errorId} role="alert" className="text-[11px] text-[#C2410C]">
                         {fieldError}
                       </p>
                     )}
@@ -252,7 +250,7 @@ export function MeasurementsPanel({ validation }: MeasurementsPanelProps) {
         {validation.warnings.length > 0 && (
           <div
             role="status"
-            className="flex flex-col gap-1 rounded-[var(--radius-sm)] border border-border bg-bg p-2.5 text-xs text-muted"
+            className="flex flex-col gap-1 rounded-2xl border border-[var(--glass-border)] bg-bg/55 p-2.5 text-xs text-muted"
           >
             {validation.warnings.map((warning) => (
               <div key={warning.code} className="flex items-start gap-2">
@@ -266,17 +264,20 @@ export function MeasurementsPanel({ validation }: MeasurementsPanelProps) {
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <Button type="button" variant="secondary" size="sm" onClick={() => setGuideOpen(true)}>
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          <button
+            type="button"
+            onClick={() => setGuideOpen(true)}
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-bg)] px-3 py-1.5 text-[11px] font-medium text-ink transition-colors hover:bg-[var(--vf-chip-bg)]/80"
+          >
             <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
             Guía de medición
-          </Button>
-          <Button
+          </button>
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
             onClick={toggleHideNumbers}
             aria-pressed={hideNumbers}
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-medium text-muted transition-colors hover:text-ink"
           >
             {hideNumbers ? (
               <Eye className="h-3.5 w-3.5" aria-hidden="true" />
@@ -284,21 +285,20 @@ export function MeasurementsPanel({ validation }: MeasurementsPanelProps) {
               <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
             )}
             {hideNumbers ? 'Mostrar cifras' : 'Ocultar cifras'}
-          </Button>
-          <Button
+          </button>
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
             onClick={resetBodyMeasures}
             aria-label="Restablecer medidas de ejemplo"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-medium text-muted transition-colors hover:text-ink"
           >
             <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
             Restablecer
-          </Button>
+          </button>
         </div>
 
         <MeasuringGuideDialog open={guideOpen} onClose={() => setGuideOpen(false)} />
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

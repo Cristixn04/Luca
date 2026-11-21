@@ -1,20 +1,105 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
 import {
   createBodyModel,
   evaluateGarmentFit,
   validateBodyMeasurements,
+  type AvatarView,
   type BodyMeasurements,
+  type GarmentCategory,
+  type GarmentFlatMeasurements,
 } from '@luca/domain';
 import { AlertCircle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/design-system/components/Card';
+import { Badge } from '@/design-system/components/Badge';
+import { HEATMAP_TOKENS } from '@/design-system/tokens';
 import { useClosetStore } from '@/features/closet/closetStore';
+import { CATEGORY_LABELS } from '@/features/closet/types';
 import { useVaultStore } from '@/features/vault/vaultStore';
 import { useT } from '@/i18n/i18nStore';
-import { GarmentPanel } from './GarmentPanel';
+import { GarmentCardPreviewSvg } from './GarmentCardPreviewSvg';
+import { applyClosetItemToFitting, GarmentPanel } from './GarmentPanel';
 import { MeasurementsPanel } from './MeasurementsPanel';
-import { useFittingStore } from './store';
-import { AvatarViewer } from './svg/AvatarViewer';
-import type { GarmentVisualMeta } from './svg/garmentVisuals';
+import { SpatialGarmentCarousel, type SpatialCarouselItem } from './SpatialGarmentCarousel';
+import { DEFAULT_GARMENT_PRESETS, useFittingStore, type ViewerMode } from './store';
+import { BackAvatarSvg } from './svg/BackAvatarSvg';
+import {
+  FrontAvatarSvg,
+  isLowerCategory,
+  type OutfitLayerOverlay,
+} from './svg/FrontAvatarSvg';
+import { isSafeDataImageUrl, type GarmentVisualMeta } from './svg/garmentVisuals';
+import { getHeatmapPatternId } from './svg/heatmapMeta';
+import { HeatmapPatternDefs } from './svg/heatmapPatterns';
+import { SideAvatarSvg } from './svg/SideAvatarSvg';
+
+const SINGLE_VIEWS: readonly AvatarView[] = ['front', 'side', 'back'];
+
+const VIEW_TABS: readonly { id: ViewerMode; label: string }[] = [
+  { id: 'front', label: 'Frente' },
+  { id: 'side', label: 'Perfil' },
+  { id: 'back', label: 'Espalda' },
+  { id: 'all', label: '3 vistas' },
+];
+
+const QUICK_UPPER_PRESETS: readonly {
+  id: string;
+  category: GarmentCategory;
+  name: string;
+  colorHex: string;
+  tags?: readonly string[];
+}[] = [
+  { id: 'quick-tshirt', category: 'tshirt', name: 'Camiseta de lino', colorHex: '#1F5F6B' },
+  { id: 'quick-long_sleeve', category: 'long_sleeve', name: 'Camisa manga larga', colorHex: '#5C82A6' },
+  {
+    id: 'quick-hoodie',
+    category: 'long_sleeve',
+    name: 'Buzo con capucha',
+    colorHex: '#9A968F',
+    tags: ['hoodie', 'capucha'],
+  },
+  { id: 'quick-jacket', category: 'jacket', name: 'Chaqueta estructurada', colorHex: '#4B5724' },
+  { id: 'quick-dress', category: 'dress', name: 'Vestido midi', colorHex: '#8B3A4E' },
+];
+
+const QUICK_LOWER_PRESETS: readonly {
+  id: string;
+  category: GarmentCategory;
+  name: string;
+  colorHex: string;
+  tags?: readonly string[];
+}[] = [
+  { id: 'quick-pants', category: 'pants', name: 'Pantalón recto', colorHex: '#1F3A68', tags: ['denim'] },
+  { id: 'quick-chino', category: 'pants', name: 'Pantalón chino arena', colorHex: '#C9B99F', tags: ['chino'] },
+  { id: 'quick-shorts', category: 'shorts', name: 'Short de algodón', colorHex: '#B8A992' },
+  { id: 'quick-skirt', category: 'skirt', name: 'Falda midi recta', colorHex: '#3B3C3F' },
+  { id: 'quick-skirt-mini', category: 'skirt', name: 'Falda corta', colorHex: '#6F4E37', tags: ['mini'] },
+];
+
+const DOCK_COLOR_SWATCHES: readonly { name: string; hex: string }[] = [
+  { name: 'Marfil', hex: '#F3EFE6' },
+  { name: 'Piedra', hex: '#C9C4BA' },
+  { name: 'Petróleo', hex: '#1F5F6B' },
+  { name: 'Azul marino', hex: '#27324D' },
+  { name: 'Oliva', hex: '#4B5724' },
+  { name: 'Carbón', hex: '#3B3C3F' },
+];
+
+const QUICK_SIZE_SCALE: readonly { label: string; factor: number }[] = [
+  { label: 'XS', factor: 0.92 },
+  { label: 'S', factor: 0.96 },
+  { label: 'M', factor: 1.0 },
+  { label: 'L', factor: 1.06 },
+  { label: 'XL', factor: 1.12 },
+];
+
+interface PairedGarmentLayer {
+  readonly category: GarmentCategory;
+  readonly name: string;
+  readonly colorHex: string;
+  readonly sizeLabel: string;
+  readonly elasticity: number;
+  readonly flatMeasuresCm: GarmentFlatMeasurements;
+  readonly meta?: GarmentVisualMeta;
+}
 
 export function FittingRoom() {
   const t = useT();
@@ -30,6 +115,7 @@ export function FittingRoom() {
   const garmentCategory = useFittingStore((s) => s.garmentCategory);
   const garmentName = useFittingStore((s) => s.garmentName);
   const garmentColorHex = useFittingStore((s) => s.garmentColorHex);
+  const setGarmentColorHex = useFittingStore((s) => s.setGarmentColorHex);
   const garmentSizeLabel = useFittingStore((s) => s.garmentSizeLabel);
   const garmentElasticity = useFittingStore((s) => s.garmentElasticity);
   const garmentFlatMeasures = useFittingStore((s) => s.garmentFlatMeasures);
@@ -37,23 +123,242 @@ export function FittingRoom() {
   const toggleHeatmap = useFittingStore((s) => s.toggleHeatmap);
   const closetItems = useClosetStore((s) => s.items);
 
+  // Capa compañera opcional cuando el usuario combina desde el carrusel superior e inferior
+  const [pairedLayer, setPairedLayer] = useState<PairedGarmentLayer | null>(null);
+  const [scanTick, setScanTick] = useState(0);
+  const [upperSheenTick, setUpperSheenTick] = useState(0);
+  const [lowerSheenTick, setLowerSheenTick] = useState(0);
+  const [isDesktopArc, setIsDesktopArc] = useState(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return true;
+    const mq = window.matchMedia('(min-width: 768px)');
+    return mq ? mq.matches : true;
+  });
+  const touchStartX = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia('(min-width: 768px)');
+    if (!mq) return;
+    setIsDesktopArc(mq.matches);
+    const onChange = (event: MediaQueryListEvent) => setIsDesktopArc(event.matches);
+    mq.addEventListener?.('change', onChange);
+    return () => mq.removeEventListener?.('change', onChange);
+  }, []);
+
+  const selectedClosetItem = useMemo(
+    () =>
+      garmentSource === 'closet' && selectedClosetGarmentId
+        ? (closetItems.find((item) => item.garment.id === selectedClosetGarmentId) ?? null)
+        : null,
+    [closetItems, garmentSource, selectedClosetGarmentId],
+  );
+
   const garmentVisualMeta: GarmentVisualMeta = useMemo(() => {
+    if (selectedClosetItem) {
+      return {
+        name: selectedClosetItem.garment.name,
+        pattern: selectedClosetItem.garment.pattern,
+        style: selectedClosetItem.garment.style,
+        tags: selectedClosetItem.garment.tags,
+        visualSpec: selectedClosetItem.garment.visualSpec,
+        imageUrl: selectedClosetItem.image?.dataUrl,
+        backImageUrl: selectedClosetItem.image?.backDataUrl,
+      };
+    }
+    const quickMatch = [...QUICK_UPPER_PRESETS, ...QUICK_LOWER_PRESETS].find(
+      (q) => q.name === garmentName,
+    );
+    return {
+      name: garmentName,
+      ...(quickMatch?.tags ? { tags: quickMatch.tags } : {}),
+    };
+  }, [garmentName, selectedClosetItem]);
+
+  // Elementos del carrusel superior (camisas, manga larga, chaquetas y vestidos)
+  const upperCarouselItems = useMemo<SpatialCarouselItem[]>(() => {
+    const closetUppers: SpatialCarouselItem[] = closetItems
+      .filter((item) => !isLowerCategory(item.garment.category))
+      .map((item) => ({
+        id: `closet-${item.garment.id}`,
+        source: 'closet',
+        closetGarmentId: item.garment.id,
+        category: item.garment.category,
+        name: item.garment.name,
+        brand: item.garment.brand,
+        sizeLabel: item.sizes[0]?.label ?? 'M',
+        colorHex: item.garment.dominantColorHex ?? '#1F5F6B',
+        imageUrl: item.image?.dataUrl,
+        meta: {
+          name: item.garment.name,
+          pattern: item.garment.pattern,
+          style: item.garment.style,
+          tags: item.garment.tags,
+          visualSpec: item.garment.visualSpec,
+          imageUrl: item.image?.dataUrl,
+          backImageUrl: item.image?.backDataUrl,
+        },
+      }));
+
+    if (closetUppers.length >= 5) {
+      return closetUppers;
+    }
+
+    const existingNames = new Set(closetUppers.map((i) => i.name.toLowerCase()));
+    const quickFill: SpatialCarouselItem[] = QUICK_UPPER_PRESETS.filter(
+      (q) => !existingNames.has(q.name.toLowerCase()),
+    ).map((q) => {
+      const preset = DEFAULT_GARMENT_PRESETS[q.category];
+      return {
+        id: q.id,
+        source: 'quick',
+        category: q.category,
+        name: q.name,
+        sizeLabel: preset.sizeLabel,
+        colorHex: q.colorHex,
+        meta: { name: q.name, ...(q.tags ? { tags: q.tags } : {}) },
+      };
+    });
+
+    return [...closetUppers, ...quickFill];
+  }, [closetItems]);
+
+  // Elementos del carrusel inferior (pantalones, shorts y faldas)
+  const lowerCarouselItems = useMemo<SpatialCarouselItem[]>(() => {
+    const closetLowers: SpatialCarouselItem[] = closetItems
+      .filter((item) => isLowerCategory(item.garment.category))
+      .map((item) => ({
+        id: `closet-${item.garment.id}`,
+        source: 'closet',
+        closetGarmentId: item.garment.id,
+        category: item.garment.category,
+        name: item.garment.name,
+        brand: item.garment.brand,
+        sizeLabel: item.sizes[0]?.label ?? '32',
+        colorHex: item.garment.dominantColorHex ?? '#1F3A68',
+        imageUrl: item.image?.dataUrl,
+        meta: {
+          name: item.garment.name,
+          pattern: item.garment.pattern,
+          style: item.garment.style,
+          tags: item.garment.tags,
+          visualSpec: item.garment.visualSpec,
+          imageUrl: item.image?.dataUrl,
+          backImageUrl: item.image?.backDataUrl,
+        },
+      }));
+
+    if (closetLowers.length >= 5) {
+      return closetLowers;
+    }
+
+    const existingNames = new Set(closetLowers.map((i) => i.name.toLowerCase()));
+    const quickFill: SpatialCarouselItem[] = QUICK_LOWER_PRESETS.filter(
+      (q) => !existingNames.has(q.name.toLowerCase()),
+    ).map((q) => {
+      const preset = DEFAULT_GARMENT_PRESETS[q.category];
+      return {
+        id: q.id,
+        source: 'quick',
+        category: q.category,
+        name: q.name,
+        sizeLabel: preset.sizeLabel,
+        colorHex: q.colorHex,
+        meta: { name: q.name, ...(q.tags ? { tags: q.tags } : {}) },
+      };
+    });
+
+    return [...closetLowers, ...quickFill];
+  }, [closetItems]);
+
+  const activeCarouselItemId = useMemo(() => {
+    if (!garmentEnabled) return null;
     if (garmentSource === 'closet' && selectedClosetGarmentId) {
-      const selected = closetItems.find((item) => item.garment.id === selectedClosetGarmentId);
-      if (selected) {
-        return {
-          name: selected.garment.name,
-          pattern: selected.garment.pattern,
-          style: selected.garment.style,
-          tags: selected.garment.tags,
-          visualSpec: selected.garment.visualSpec,
-          imageUrl: selected.image?.dataUrl,
-          backImageUrl: selected.image?.backDataUrl,
-        };
+      return `closet-${selectedClosetGarmentId}`;
+    }
+    const allQuick = [...QUICK_UPPER_PRESETS, ...QUICK_LOWER_PRESETS];
+    const matchedByName = allQuick.find((q) => q.name === garmentName);
+    return matchedByName?.id ?? `quick-${garmentCategory}`;
+  }, [garmentCategory, garmentEnabled, garmentName, garmentSource, selectedClosetGarmentId]);
+
+  const activeUpperId = useMemo(() => {
+    if (!garmentEnabled) return null;
+    if (!isLowerCategory(garmentCategory)) return activeCarouselItemId;
+    if (pairedLayer && !isLowerCategory(pairedLayer.category)) {
+      const match = upperCarouselItems.find((i) => i.name === pairedLayer.name);
+      return match?.id ?? `quick-${pairedLayer.category}`;
+    }
+    return null;
+  }, [activeCarouselItemId, garmentCategory, garmentEnabled, pairedLayer, upperCarouselItems]);
+
+  const activeLowerId = useMemo(() => {
+    if (!garmentEnabled) return null;
+    if (isLowerCategory(garmentCategory)) return activeCarouselItemId;
+    if (pairedLayer && isLowerCategory(pairedLayer.category)) {
+      const match = lowerCarouselItems.find((i) => i.name === pairedLayer.name);
+      return match?.id ?? `quick-${pairedLayer.category}`;
+    }
+    return null;
+  }, [activeCarouselItemId, garmentCategory, garmentEnabled, lowerCarouselItems, pairedLayer]);
+
+  const handleSelectCarouselItem = (item: SpatialCarouselItem, slot: 'upper' | 'lower') => {
+    // Si cambia de zona (superior <-> inferior) y no es vestido, conserva la prenda anterior como capa combinada
+    if (garmentEnabled) {
+      const currentIsLower = isLowerCategory(garmentCategory);
+      const nextIsLower = slot === 'lower';
+      if (item.category === 'dress') {
+        setPairedLayer(null);
+      } else if (currentIsLower !== nextIsLower) {
+        if (garmentCategory === 'dress') {
+          setPairedLayer(null);
+        } else {
+          setPairedLayer({
+            category: garmentCategory,
+            name: garmentName,
+            colorHex: garmentColorHex,
+            sizeLabel: garmentSizeLabel,
+            elasticity: garmentElasticity,
+            flatMeasuresCm: { ...garmentFlatMeasures },
+            meta: garmentVisualMeta,
+          });
+        }
       }
     }
-    return { name: garmentName };
-  }, [closetItems, garmentName, garmentSource, selectedClosetGarmentId]);
+
+    if (item.source === 'closet' && item.closetGarmentId) {
+      const full = closetItems.find((c) => c.garment.id === item.closetGarmentId);
+      if (full) {
+        applyClosetItemToFitting(full);
+      }
+    } else {
+      const preset = DEFAULT_GARMENT_PRESETS[item.category];
+      useFittingStore.setState({
+        garmentEnabled: true,
+        garmentSource: 'quick',
+        selectedClosetGarmentId: null,
+        garmentCategory: item.category,
+        garmentName: item.name,
+        garmentColorHex: item.colorHex,
+        garmentSizeLabel: preset.sizeLabel,
+        garmentElasticity: preset.elasticity,
+        garmentFlatMeasures: { ...preset.flatMeasuresCm },
+      });
+    }
+
+    setScanTick((n) => n + 1);
+    if (slot === 'upper') setUpperSheenTick((n) => n + 1);
+    else setLowerSheenTick((n) => n + 1);
+  };
+
+  const selectHandlerRef = useRef(handleSelectCarouselItem);
+  selectHandlerRef.current = handleSelectCarouselItem;
+
+  const handleSelectUpper = useCallback((item: SpatialCarouselItem) => {
+    selectHandlerRef.current(item, 'upper');
+  }, []);
+
+  const handleSelectLower = useCallback((item: SpatialCarouselItem) => {
+    selectHandlerRef.current(item, 'lower');
+  }, []);
 
   const measurements: BodyMeasurements = useMemo(
     () => ({
@@ -121,101 +426,566 @@ export function FittingRoom() {
     garmentSizeLabel,
   ]);
 
-  const isThreeViews = viewMode === 'all';
+  // Si hay prenda combinada (superior + inferior desde ambos carruseles), compone capas coherentes
+  const outfitLayers = useMemo<OutfitLayerOverlay | undefined>(() => {
+    if (!bodyModel || !garmentEnabled || !fitReport || !pairedLayer) return undefined;
+    if (garmentCategory === 'dress') return undefined;
+
+    const pairedFit = evaluateGarmentFit(bodyModel, {
+      category: pairedLayer.category,
+      sizeLabel: pairedLayer.sizeLabel,
+      elasticity: pairedLayer.elasticity,
+      flatMeasuresCm: pairedLayer.flatMeasuresCm,
+    });
+
+    const activeIsLower = isLowerCategory(garmentCategory);
+    if (activeIsLower && !isLowerCategory(pairedLayer.category)) {
+      return {
+        topFitReport: pairedFit,
+        topColorHex: pairedLayer.colorHex,
+        topVariant: pairedLayer.category,
+        topMeta: pairedLayer.meta,
+        bottomFitReport: fitReport,
+        bottomColorHex: garmentColorHex,
+        bottomVariant: garmentCategory,
+        bottomMeta: garmentVisualMeta,
+      };
+    }
+
+    if (!activeIsLower && isLowerCategory(pairedLayer.category)) {
+      return {
+        topFitReport: fitReport,
+        topColorHex: garmentColorHex,
+        topVariant: garmentCategory,
+        topMeta: garmentVisualMeta,
+        bottomFitReport: pairedFit,
+        bottomColorHex: pairedLayer.colorHex,
+        bottomVariant: pairedLayer.category,
+        bottomMeta: pairedLayer.meta,
+      };
+    }
+
+    return undefined;
+  }, [
+    bodyModel,
+    fitReport,
+    garmentCategory,
+    garmentColorHex,
+    garmentEnabled,
+    garmentVisualMeta,
+    pairedLayer,
+  ]);
+
+  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = event.touches[0]?.clientX ?? null;
+  };
+
+  const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    if (touchStartX.current === null || viewMode === 'all') return;
+    const endX = event.changedTouches[0]?.clientX ?? touchStartX.current;
+    const deltaX = endX - touchStartX.current;
+    touchStartX.current = null;
+
+    if (Math.abs(deltaX) < 40) return;
+
+    const currentIdx = SINGLE_VIEWS.indexOf(viewMode);
+    if (currentIdx === -1) return;
+
+    const nextIdx =
+      deltaX < 0
+        ? (currentIdx + 1) % SINGLE_VIEWS.length
+        : (currentIdx - 1 + SINGLE_VIEWS.length) % SINGLE_VIEWS.length;
+
+    setViewMode(SINGLE_VIEWS[nextIdx]!);
+  };
+
+  // Tallas rápidas en el dock inferior (reales si la prenda es del clóset, o XS..XL escaladas)
+  const dockSizes = useMemo(() => {
+    if (selectedClosetItem && selectedClosetItem.sizes.length > 0) {
+      return selectedClosetItem.sizes.map((s) => ({
+        label: s.label,
+        onSelect: () => applyClosetItemToFitting(selectedClosetItem, s.label),
+      }));
+    }
+    const basePreset = DEFAULT_GARMENT_PRESETS[garmentCategory];
+    return QUICK_SIZE_SCALE.map((entry) => ({
+      label: entry.label,
+      onSelect: () => {
+        const scaled: Record<string, number> = {};
+        for (const [k, v] of Object.entries(basePreset.flatMeasuresCm)) {
+          if (typeof v === 'number') {
+            scaled[k] = Number((v * entry.factor).toFixed(1));
+          }
+        }
+        useFittingStore.setState({
+          garmentEnabled: true,
+          garmentSizeLabel: entry.label,
+          garmentFlatMeasures: scaled as GarmentFlatMeasurements,
+        });
+      },
+    }));
+  }, [garmentCategory, selectedClosetItem]);
+
+  const activeColorName =
+    DOCK_COLOR_SWATCHES.find((c) => c.hex.toLowerCase() === garmentColorHex.toLowerCase())?.name ??
+    garmentColorHex.toUpperCase();
+
+  const isTorsoEstimated = bodyModel?.landmarks.torsoEstimated ?? false;
+  const anyDepthEstimated = bodyModel
+    ? bodyModel.sections.chest.depthEstimated ||
+      bodyModel.sections.waist.depthEstimated ||
+      bodyModel.sections.hip.depthEstimated
+    : false;
+  const isBackEstimated = bodyModel
+    ? bodyModel.backWidthEstimated || bodyModel.backLengthEstimated
+    : false;
 
   return (
-    <div className="flex flex-col gap-6">
-      <section aria-labelledby="fitting-heading" className="flex flex-col gap-1">
-        <h1 id="fitting-heading" className="text-2xl font-bold tracking-tight sm:text-3xl">
-          {t.headings.fitting}
-        </h1>
-      </section>
-
-      <div
-        className={
-          isThreeViews
-            ? 'grid items-start gap-5 xl:grid-cols-[minmax(250px,290px)_1fr_minmax(260px,300px)]'
-            : 'grid items-start gap-5 lg:grid-cols-[minmax(260px,310px)_1fr_minmax(280px,330px)]'
-        }
-      >
-        <MeasurementsPanel validation={validation} />
-
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <CardTitle>Avatar</CardTitle>
-                <div
-                  role="group"
-                  aria-label="Tipo de maniquí"
-                  className="inline-flex rounded-[var(--radius-sm)] border border-border bg-bg p-0.5"
+    <div className="flex w-full flex-col gap-4">
+      <div className="grid w-full items-start gap-6 lg:grid-cols-[minmax(0,1fr)_390px] xl:grid-cols-[minmax(0,1fr)_420px] xl:gap-8">
+        {/* COLUMNA PRINCIPAL: Escenario Espacial con Maniquí Central + Doble Carrusel 3D + Dock Inferior */}
+        <section
+          aria-labelledby="fitting-heading"
+          className="flex min-w-0 flex-col gap-4 bg-transparent"
+        >
+          {/* Barra superior del Probador con título y controles en cápsulas de vidrio */}
+          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+            <div className="flex items-baseline gap-3">
+              <h1
+                id="fitting-heading"
+                className="font-display text-2xl font-normal tracking-[-0.025em] text-[var(--rw-ink)] sm:text-3xl"
+              >
+                {t.headings.fitting}
+              </h1>
+              {pairedLayer && garmentEnabled && (
+                <button
+                  type="button"
+                  onClick={() => setPairedLayer(null)}
+                  className="vf-glass cursor-pointer rounded-full px-2.5 py-0.5 text-[11px] font-medium text-muted transition-colors hover:text-ink"
                 >
-                  {(
-                    [
-                      { id: 'female', label: 'Mujer' },
-                      { id: 'male', label: 'Hombre' },
-                    ] as const
-                  ).map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      aria-pressed={mannequinSilhouette === opt.id}
-                      onClick={() => setMannequinSilhouette(opt.id)}
-                      className={`cursor-pointer rounded-[6px] px-2.5 py-0.5 text-xs font-medium transition-colors ${
-                        mannequinSilhouette === opt.id
-                          ? 'bg-accent text-accent-ink'
-                          : 'text-muted hover:text-ink'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
+                  Limpiar combinación
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Selector Mujer / Hombre */}
+              <div
+                role="group"
+                aria-label="Tipo de maniquí"
+                className="vf-glass inline-flex items-center gap-0.5 rounded-full p-1"
+              >
+                {(
+                  [
+                    { id: 'female', label: 'Mujer' },
+                    { id: 'male', label: 'Hombre' },
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    aria-pressed={mannequinSilhouette === opt.id}
+                    onClick={() => setMannequinSilhouette(opt.id)}
+                    className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-medium transition-all ${
+                      mannequinSilhouette === opt.id
+                        ? 'bg-[var(--vf-nav-indicator-bg)] text-[var(--vf-nav-active-ink)] shadow-xs'
+                        : 'text-[var(--vf-nav-muted-ink)] hover:text-ink'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
-              <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-ink">
+
+              {/* Selector de vistas: Frente | Perfil | Espalda | 3 vistas */}
+              <div
+                role="group"
+                aria-label="Selector de vistas del avatar"
+                className="vf-glass inline-flex items-center gap-0.5 rounded-full p-1"
+              >
+                {VIEW_TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    aria-pressed={viewMode === tab.id}
+                    onClick={() => setViewMode(tab.id)}
+                    className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-medium transition-all ${
+                      viewMode === tab.id
+                        ? 'bg-[var(--vf-nav-indicator-bg)] text-[var(--vf-nav-active-ink)] shadow-xs'
+                        : 'text-[var(--vf-nav-muted-ink)] hover:text-ink'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Mapa de calor */}
+              <label className="vf-glass inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium text-ink">
                 <input
                   type="checkbox"
                   checked={showHeatmap}
                   onChange={toggleHeatmap}
-                  className="h-4 w-4 accent-[var(--accent)]"
+                  className="h-3.5 w-3.5 accent-[var(--accent)]"
                 />
                 Mapa de calor
               </label>
             </div>
-          </CardHeader>
+          </div>
 
-          <CardContent>
-            {bodyModel ? (
-              <AvatarViewer
-                model={bodyModel}
-                silhouette={mannequinSilhouette}
-                garmentCategory={garmentCategory}
-                fitReport={fitReport}
-                showHeatmap={showHeatmap}
-                garmentColorHex={garmentColorHex}
-                garmentMeta={garmentVisualMeta}
-                viewMode={viewMode}
-                onChangeViewMode={setViewMode}
-              />
-            ) : (
+          {/* Escenario Espacial Central */}
+          {!bodyModel ? (
+            <div
+              role="alert"
+              className="vf-glass flex flex-col items-center justify-center gap-2 rounded-[24px] px-6 py-20 text-center"
+            >
+              <AlertCircle className="h-6 w-6 text-[#C2410C]" aria-hidden="true" />
+              <p className="text-sm font-semibold text-ink">
+                Corrige las medidas fuera de rango para dibujar el avatar
+              </p>
+              <p className="max-w-xs text-xs text-muted">
+                Revisa los campos marcados en el panel de medidas para volver a calcular el modelo
+                corporal.
+              </p>
+            </div>
+          ) : viewMode === 'all' ? (
+            <div className="flex flex-col gap-5">
+              {/* Modo 3 vistas coherentes + ambos carruseles debajo en franjas de vidrio */}
               <div
-                role="alert"
-                className="flex flex-col items-center justify-center gap-2 rounded-[var(--radius-md)] border border-border bg-bg px-6 py-16 text-center"
+                data-testid="avatar-swipe-stage"
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3"
               >
-                <AlertCircle className="h-6 w-6 text-[#C2410C]" aria-hidden="true" />
-                <p className="text-sm font-semibold text-ink">
-                  Corrige las medidas fuera de rango para dibujar el avatar
-                </p>
-                <p className="max-w-xs text-xs text-muted">
-                  Revisa los campos marcados en el panel de medidas para volver a calcular el
-                  modelo corporal.
-                </p>
+                <FrontAvatarSvg
+                  model={bodyModel}
+                  silhouette={mannequinSilhouette}
+                  garmentCategory={garmentCategory}
+                  fitReport={fitReport}
+                  showHeatmap={showHeatmap}
+                  garmentColorHex={garmentColorHex}
+                  garmentMeta={garmentVisualMeta}
+                  outfitLayers={outfitLayers}
+                  compact
+                />
+                <SideAvatarSvg
+                  model={bodyModel}
+                  silhouette={mannequinSilhouette}
+                  garmentCategory={garmentCategory}
+                  fitReport={fitReport}
+                  showHeatmap={showHeatmap}
+                  garmentColorHex={garmentColorHex}
+                  garmentMeta={garmentVisualMeta}
+                  outfitLayers={outfitLayers}
+                  compact
+                />
+                <BackAvatarSvg
+                  model={bodyModel}
+                  silhouette={mannequinSilhouette}
+                  garmentCategory={garmentCategory}
+                  fitReport={fitReport}
+                  showHeatmap={showHeatmap}
+                  garmentColorHex={garmentColorHex}
+                  garmentMeta={garmentVisualMeta}
+                  outfitLayers={outfitLayers}
+                  compact
+                />
               </div>
-            )}
-          </CardContent>
-        </Card>
 
-        <GarmentPanel fitReport={fitReport} />
+              <div className="flex flex-col gap-3">
+                <SpatialGarmentCarousel
+                  slot="upper"
+                  label="Prendas superiores · Camisas y vestidos"
+                  items={upperCarouselItems}
+                  activeItemId={activeUpperId}
+                  onSelectItem={handleSelectUpper}
+                  layout="strip"
+                />
+                <SpatialGarmentCarousel
+                  slot="lower"
+                  label="Prendas inferiores · Pantalones, shorts y faldas"
+                  items={lowerCarouselItems}
+                  activeItemId={activeLowerId}
+                  onSelectItem={handleSelectLower}
+                  layout="strip"
+                />
+              </div>
+            </div>
+          ) : (
+            <div
+              data-testid="avatar-swipe-stage"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              className="relative flex w-full flex-col items-center justify-center overflow-hidden pt-2"
+            >
+              {/* Marca de agua editorial gigante detrás del maniquí (estilo .ghost) */}
+              <span
+                aria-hidden="true"
+                className="vf-ghost-watermark pointer-events-none absolute left-1/2 top-[34%] z-0 -translate-x-1/2 -translate-y-1/2 text-[140px] sm:text-[210px] xl:text-[250px]"
+              >
+                LUCA
+              </span>
+
+              {/* Escenario desktop/tablet: Doble arco 3D (Superior arriba, Inferior abajo) rodeando al maniquí central */}
+              <div className="relative flex w-full flex-col items-center">
+                {/* Maniquí central a altura completa (z-30 sobre el centro despejado de ambos arcos) */}
+                <div
+                  data-avatar-view={viewMode}
+                  data-mannequin-silhouette={mannequinSilhouette}
+                  className="pointer-events-none relative z-30 flex h-[430px] w-[235px] flex-col items-center justify-end sm:h-[510px] sm:w-[270px] xl:h-[540px] xl:w-[288px]"
+                >
+                  {/* Etiqueta de estimado coherente si faltan medidas opcionales */}
+                  {viewMode === 'front' && isTorsoEstimated && (
+                    <Badge
+                      data-estimated-badge="front"
+                      className="vf-glass pointer-events-auto absolute right-0 top-1 z-40 text-[10px]"
+                    >
+                      Torso: estimado
+                    </Badge>
+                  )}
+                  {viewMode === 'side' && anyDepthEstimated && (
+                    <Badge
+                      data-estimated-badge="side"
+                      className="vf-glass pointer-events-auto absolute right-0 top-1 z-40 text-[10px]"
+                    >
+                      Fondo: estimado
+                    </Badge>
+                  )}
+                  {viewMode === 'back' && isBackEstimated && (
+                    <Badge
+                      data-estimated-badge="back"
+                      className="vf-glass pointer-events-auto absolute right-0 top-1 z-40 text-[10px]"
+                    >
+                      Espalda: estimado
+                    </Badge>
+                  )}
+
+                  <div className="relative flex h-full w-full items-end justify-center">
+                    {viewMode === 'front' && (
+                      <FrontAvatarSvg
+                        model={bodyModel}
+                        silhouette={mannequinSilhouette}
+                        garmentCategory={garmentCategory}
+                        fitReport={fitReport}
+                        showHeatmap={showHeatmap}
+                        garmentColorHex={garmentColorHex}
+                        garmentMeta={garmentVisualMeta}
+                        outfitLayers={outfitLayers}
+                        frameless
+                      />
+                    )}
+                    {viewMode === 'side' && (
+                      <SideAvatarSvg
+                        model={bodyModel}
+                        silhouette={mannequinSilhouette}
+                        garmentCategory={garmentCategory}
+                        fitReport={fitReport}
+                        showHeatmap={showHeatmap}
+                        garmentColorHex={garmentColorHex}
+                        garmentMeta={garmentVisualMeta}
+                        outfitLayers={outfitLayers}
+                        frameless
+                      />
+                    )}
+                    {viewMode === 'back' && (
+                      <BackAvatarSvg
+                        model={bodyModel}
+                        silhouette={mannequinSilhouette}
+                        garmentCategory={garmentCategory}
+                        fitReport={fitReport}
+                        showHeatmap={showHeatmap}
+                        garmentColorHex={garmentColorHex}
+                        garmentMeta={garmentVisualMeta}
+                        outfitLayers={outfitLayers}
+                        frameless
+                      />
+                    )}
+
+                    {/* Efecto barrido scan-line al cambiar de prenda en los carruseles */}
+                    {scanTick > 0 && (
+                      <div
+                        key={scanTick}
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-0 overflow-hidden"
+                      >
+                        <span className="vf-scan-bar" />
+                      </div>
+                    )}
+                  </div>
+                  <span className="rw-floor-shadow" aria-hidden="true" />
+                </div>
+
+                {/* Doble carrusel espacial 3D en escritorio (Superior arriba, Inferior directamente abajo) o franjas táctiles en móvil */}
+                {isDesktopArc ? (
+                  <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex flex-col gap-3">
+                    <div className="pointer-events-auto">
+                      <SpatialGarmentCarousel
+                        slot="upper"
+                        label="Prendas superiores"
+                        items={upperCarouselItems}
+                        activeItemId={activeUpperId}
+                        onSelectItem={handleSelectUpper}
+                        layout="arc"
+                        sheenTick={upperSheenTick}
+                      />
+                    </div>
+                    <div className="pointer-events-auto">
+                      <SpatialGarmentCarousel
+                        slot="lower"
+                        label="Prendas inferiores"
+                        items={lowerCarouselItems}
+                        activeItemId={activeLowerId}
+                        onSelectItem={handleSelectLower}
+                        layout="arc"
+                        sheenTick={lowerSheenTick}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 flex w-full flex-col gap-3">
+                    <SpatialGarmentCarousel
+                      slot="upper"
+                      label="Prendas superiores · Camisas y vestidos"
+                      items={upperCarouselItems}
+                      activeItemId={activeUpperId}
+                      onSelectItem={handleSelectUpper}
+                      layout="strip"
+                    />
+                    <SpatialGarmentCarousel
+                      slot="lower"
+                      label="Prendas inferiores · Pantalones, shorts y faldas"
+                      items={lowerCarouselItems}
+                      activeItemId={activeLowerId}
+                      onSelectItem={handleSelectLower}
+                      layout="strip"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Dock inferior flotante de vidrio (basado en section.buy.glass de la interfaz base) */}
+          {garmentEnabled && (
+            <div className="mx-auto mt-1 flex w-full max-w-[680px] flex-wrap items-center justify-between gap-4 rounded-[24px] px-4 py-3 vf-glass">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[14px] border border-[var(--vf-glass-border)] bg-bg/45 p-1.5">
+                  {isSafeDataImageUrl(garmentVisualMeta.imageUrl) ? (
+                    <img
+                      src={garmentVisualMeta.imageUrl}
+                      alt=""
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  ) : (
+                    <GarmentCardPreviewSvg
+                      category={garmentCategory}
+                      colorHex={garmentColorHex}
+                      meta={garmentVisualMeta}
+                      className="h-full w-full"
+                    />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-ink">{garmentName}</p>
+                  <p className="truncate text-xs text-muted">
+                    {CATEGORY_LABELS[garmentCategory]}
+                    {pairedLayer ? ` + ${pairedLayer.name}` : ''}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-5">
+                {/* Selector circular de talla */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[11px] font-medium leading-none text-muted">Talla</span>
+                  <div className="flex items-center gap-1.5" role="group" aria-label="Talla rápida">
+                    {dockSizes.slice(0, 5).map((sz) => {
+                      const active = garmentSizeLabel === sz.label;
+                      return (
+                        <button
+                          key={sz.label}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={sz.onSelect}
+                          className={`flex h-[30px] min-w-[30px] cursor-pointer items-center justify-center rounded-full px-1.5 text-[11px] font-semibold transition-transform active:scale-90 ${
+                            active
+                              ? 'bg-[var(--vf-chip-active-bg)] text-[var(--vf-chip-active-ink)] shadow-xs'
+                              : 'bg-[var(--vf-chip-bg)] text-ink hover:opacity-85'
+                          }`}
+                        >
+                          {sz.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Selector circular de color */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[11px] font-medium leading-none text-muted">
+                    Color · {activeColorName}
+                  </span>
+                  <div className="flex items-center gap-2" role="group" aria-label="Color de prenda">
+                    {DOCK_COLOR_SWATCHES.map((swatch) => {
+                      const active = garmentColorHex.toLowerCase() === swatch.hex.toLowerCase();
+                      return (
+                        <button
+                          key={swatch.hex}
+                          type="button"
+                          aria-label={`Color ${swatch.name}`}
+                          aria-pressed={active}
+                          onClick={() => setGarmentColorHex(swatch.hex)}
+                          style={{ backgroundColor: swatch.hex }}
+                          className={`h-[18px] w-[18px] cursor-pointer rounded-full border border-white/70 shadow-xs transition-transform hover:scale-115 ${
+                            active ? 'ring-2 ring-[var(--vf-chip-active-bg)] ring-offset-2 ring-offset-transparent' : ''
+                          }`}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Leyenda accesible del mapa de calor en píldora de vidrio */}
+          <div
+            aria-label="Leyenda del mapa de calor"
+            className="vf-glass mx-auto flex flex-wrap items-center justify-center gap-3 rounded-full px-4 py-2"
+          >
+            {HEATMAP_TOKENS.map((token) => (
+              <div key={token.state} className="flex items-center gap-1.5 text-xs text-ink">
+                <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
+                  <HeatmapPatternDefs prefix={`legend-${token.state}`} />
+                  <rect
+                    x="1"
+                    y="1"
+                    width="14"
+                    height="14"
+                    rx="3"
+                    fill={`url(#${getHeatmapPatternId(token.state, `legend-${token.state}`)})`}
+                    stroke={token.hex}
+                    strokeWidth="1.5"
+                  />
+                </svg>
+                <span>{token.label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* COLUMNA DERECHA: Información del Probador organizada en paneles de vidrio (Prenda + Medidas) */}
+        <aside
+          aria-label="Paneles de información del probador"
+          className="flex flex-col gap-4 lg:sticky lg:top-[76px]"
+        >
+          <GarmentPanel
+            fitReport={fitReport}
+            onManualCategorySelect={() => setPairedLayer(null)}
+            onClearAllGarments={() => setPairedLayer(null)}
+          />
+          <MeasurementsPanel validation={validation} />
+        </aside>
       </div>
     </div>
   );
