@@ -19,7 +19,8 @@ test.describe('Flujo e2e M5: 3 vistas coherentes y medidas opcionales (T5.1 – 
     // Verificar marca "Fondo: estimado" inicial en perfil
     await expect(page.locator('[data-estimated-badge="side"]')).toContainText('Fondo: estimado');
 
-    // Ingresar fondos opcionales -> la marca de estimado en perfil desaparece
+    // Ingresar fondos opcionales desde el panel desplegable de medidas -> la marca de estimado en perfil desaparece
+    await page.getByRole('button', { name: 'Panel de medidas' }).click();
     await page.getByRole('button', { name: /Medidas opcionales/i }).click();
     await page.getByLabel('Fondo de pecho').fill('23');
     await page.getByLabel('Fondo de cintura').fill('20');
@@ -27,7 +28,8 @@ test.describe('Flujo e2e M5: 3 vistas coherentes y medidas opcionales (T5.1 – 
 
     await expect(page.locator('[data-estimated-badge="side"]')).toHaveCount(0);
 
-    // Cambiar a pantalón y verificar coherencia de estado entre frente, perfil y espalda
+    // Cambiar a pantalón desde el panel desplegable de prenda y verificar coherencia entre las 3 vistas
+    await page.getByRole('button', { name: 'Panel de prenda' }).click();
     await page.getByRole('button', { name: 'Pantalón' }).click();
     await page.getByLabel('Cintura en plano').fill('43'); // 86 - 78 = +8.0 cm -> Holgado (loose)
 

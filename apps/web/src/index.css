@@ -287,6 +287,18 @@ dialog::backdrop {
   -webkit-backdrop-filter: blur(22px) saturate(1.5);
 }
 
+.vf-glass-drawer {
+  background: var(--vf-drawer-bg);
+  border: 1px solid var(--vf-glass-border);
+  box-shadow:
+    0 0 0 1px var(--vf-glass-outer-ring),
+    inset 0 1px 0 var(--vf-glass-inset-top),
+    inset 0 -1px 0 var(--vf-glass-inset-bottom),
+    0 28px 64px -22px rgb(0 0 0 / 34%);
+  backdrop-filter: blur(28px) saturate(1.65);
+  -webkit-backdrop-filter: blur(28px) saturate(1.65);
+}
+
 .vf-glass-card {
   overflow: hidden;
   background: var(--vf-glass-card-bg);
@@ -393,6 +405,21 @@ dialog::backdrop {
   animation: vf-scan-wipe 520ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
+@keyframes vf-drawer-in {
+  from {
+    opacity: 0;
+    transform: translate3d(14px, 0, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.vf-drawer-enter {
+  animation: vf-drawer-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .vf-nav-indicator,
   .vf-arc-card {
@@ -402,5 +429,8 @@ dialog::backdrop {
   .vf-scan-bar {
     animation: none;
     display: none;
+  }
+  .vf-drawer-enter {
+    animation: none;
   }
 }

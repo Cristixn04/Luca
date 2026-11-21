@@ -9,7 +9,7 @@ import {
   type GarmentCategory,
   type GarmentFlatMeasurements,
 } from '@luca/domain';
-import { Shirt, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { Shirt, SlidersHorizontal, Trash2, X } from 'lucide-react';
 import { Badge } from '@/design-system/components/Badge';
 import { useClosetStore } from '@/features/closet/closetStore';
 import { CATEGORY_LABELS, type GarmentWithSizes } from '@/features/closet/types';
@@ -95,12 +95,14 @@ export interface GarmentPanelProps {
   fitReport: FitReport | null;
   onManualCategorySelect?: () => void;
   onClearAllGarments?: () => void;
+  onClose?: () => void;
 }
 
 export function GarmentPanel({
   fitReport,
   onManualCategorySelect,
   onClearAllGarments,
+  onClose,
 }: GarmentPanelProps) {
   const unit = useFittingStore((s) => s.unit);
   const garmentEnabled = useFittingStore((s) => s.garmentEnabled);
@@ -181,9 +183,19 @@ export function GarmentPanel({
 
   if (!garmentEnabled) {
     return (
-      <section aria-label="Configuración de prenda" className="vf-glass rounded-[24px] p-5">
+      <section aria-label="Configuración de prenda" className="vf-glass-drawer rounded-[24px] p-5">
         <div className="mb-3 flex items-center justify-between gap-2 border-b border-[var(--glass-divider)] pb-3">
           <h2 className="font-display text-base font-semibold tracking-tight text-ink">Prenda</h2>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Cerrar panel de prenda"
+              className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-[var(--vf-chip-bg)] text-muted transition-colors hover:text-ink"
+            >
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          )}
         </div>
         <div className="flex flex-col items-start gap-3 text-xs text-muted">
           <p>Sin prenda activa en el probador.</p>
@@ -230,21 +242,33 @@ export function GarmentPanel({
   const fields = GARMENT_FIELDS[garmentCategory];
 
   return (
-    <section aria-label="Configuración de prenda" className="vf-glass rounded-[24px] p-5">
+    <section aria-label="Configuración de prenda" className="vf-glass-drawer rounded-[24px] p-5">
       <div className="mb-4 flex items-center justify-between gap-2 border-b border-[var(--glass-divider)] pb-3">
         <div className="flex flex-col">
           <h2 className="font-display text-base font-semibold tracking-tight text-ink">Prenda</h2>
           <span className="text-[11px] text-muted">{garmentName || CATEGORY_LABELS[garmentCategory]}</span>
         </div>
-        <button
-          type="button"
-          onClick={handleClear}
-          aria-label="Quitar prenda del probador"
-          title="Quitar prenda del probador"
-          className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-[var(--vf-chip-bg)] text-muted transition-colors hover:text-ink"
-        >
-          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={handleClear}
+            aria-label="Quitar prenda del probador"
+            title="Quitar prenda del probador"
+            className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-[var(--vf-chip-bg)] text-muted transition-colors hover:text-ink"
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Cerrar panel de prenda"
+              className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-[var(--vf-chip-bg)] text-muted transition-colors hover:text-ink"
+            >
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col gap-4">

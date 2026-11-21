@@ -9,6 +9,7 @@ test.describe('Flujo e2e M11 (v1.0): onboarding, 7 plantillas 3 vistas, i18n ES/
 
     // 1. Verificar nuevas plantillas en modo 3 vistas (Chaqueta, Falda, Vestido)
     await page.getByRole('button', { name: '3 vistas' }).click();
+    await page.getByRole('button', { name: 'Panel de prenda' }).click();
     await page.getByRole('button', { name: 'Chaqueta' }).click();
     await expect(page.locator('[data-garment="jacket"]')).toBeVisible();
     await expect(page.locator('[data-garment="jacket-side"]')).toBeVisible();

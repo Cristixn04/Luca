@@ -49,6 +49,7 @@ describe('Probador de calce M2 (T2.1 – T2.7)', () => {
     const user = userEvent.setup();
     const { container } = render(<FittingRoom />);
 
+    await user.click(screen.getByRole('button', { name: 'Panel de prenda' }));
     const chestFlatInput = screen.getByLabelText('Pecho en plano');
     await user.clear(chestFlatInput);
     await user.type(chestFlatInput, '52');
@@ -63,6 +64,7 @@ describe('Probador de calce M2 (T2.1 – T2.7)', () => {
     const user = userEvent.setup();
     const { container } = render(<FittingRoom />);
 
+    await user.click(screen.getByRole('button', { name: 'Panel de prenda' }));
     await user.click(screen.getByRole('button', { name: 'Pantalón' }));
 
     expect(container.querySelector('[data-garment="pants"]')).not.toBeNull();
@@ -74,6 +76,7 @@ describe('Probador de calce M2 (T2.1 – T2.7)', () => {
     const user = userEvent.setup();
     render(<FittingRoom />);
 
+    await user.click(screen.getByRole('button', { name: 'Panel de medidas' }));
     await user.click(screen.getByRole('button', { name: 'in' }));
     const chestInput = screen.getByLabelText('Pecho') as HTMLInputElement;
     expect(Number.parseFloat(chestInput.value)).toBeCloseTo(36.22, 1);
@@ -97,8 +100,14 @@ describe('Probador de calce M2 (T2.1 – T2.7)', () => {
     const user = userEvent.setup();
     const { container } = render(<FittingRoom />);
 
+    await user.click(screen.getByRole('button', { name: 'Panel de medidas' }));
     await user.click(screen.getByRole('button', { name: /Guía de medición/i }));
     expect(screen.getByText('Guía de medición corporal')).toBeInTheDocument();
+
+    // Al cambiar al panel de prenda, se cierra el de medidas (nunca se apilan ambos)
+    await user.click(screen.getByRole('button', { name: 'Panel de prenda' }));
+    expect(screen.queryByTestId('fitting-drawer-measurements')).not.toBeInTheDocument();
+    expect(screen.getByTestId('fitting-drawer-garment')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Holgado' }));
     expect(screen.getByRole('button', { name: 'Holgado' })).toHaveAttribute('aria-pressed', 'true');
@@ -179,6 +188,9 @@ describe('Probador de calce M2 (T2.1 – T2.7)', () => {
     });
 
     const { container } = render(<FittingRoom />);
+
+    // Abrir panel de prenda desde la barra vertical derecha
+    await user.click(screen.getByRole('button', { name: 'Panel de prenda' }));
 
     // Modo Mi clóset activo automáticamente: selector desplegable, sin input de texto libre "Nombre"
     const garmentSelect = await screen.findByLabelText('Prenda guardada');

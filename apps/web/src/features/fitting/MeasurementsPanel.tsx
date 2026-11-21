@@ -14,6 +14,7 @@ import {
   Eye,
   EyeOff,
   RotateCcw,
+  X,
 } from 'lucide-react';
 import { Badge } from '@/design-system/components/Badge';
 import { MeasuringGuideDialog } from './MeasuringGuideDialog';
@@ -52,9 +53,10 @@ const OPTIONAL_FIELDS: readonly OptionalFieldSpec[] = [
 
 export interface MeasurementsPanelProps {
   validation: ValidationResult;
+  onClose?: () => void;
 }
 
-export function MeasurementsPanel({ validation }: MeasurementsPanelProps) {
+export function MeasurementsPanel({ validation, onClose }: MeasurementsPanelProps) {
   const [guideOpen, setGuideOpen] = useState(false);
   const [showOptionals, setShowOptionals] = useState(false);
 
@@ -74,41 +76,53 @@ export function MeasurementsPanel({ validation }: MeasurementsPanelProps) {
   ).length;
 
   return (
-    <section aria-label="Medidas corporales" className="vf-glass rounded-[24px] p-5">
+    <section aria-label="Medidas corporales" className="vf-glass-drawer rounded-[24px] p-5">
       <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2 border-b border-[var(--glass-divider)] pb-3">
         <div>
           <h2 className="font-display text-base font-semibold tracking-tight text-ink">Medidas</h2>
           <p className="text-[11px] text-muted">Cálculo local en tu dispositivo</p>
         </div>
-        <div
-          className="inline-flex rounded-full bg-[var(--vf-chip-bg)] p-0.5"
-          role="group"
-          aria-label="Unidad de medida"
-        >
-          <button
-            type="button"
-            aria-pressed={unit === 'cm'}
-            onClick={() => setUnit('cm')}
-            className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-semibold transition-all ${
-              unit === 'cm'
-                ? 'bg-[var(--vf-nav-indicator-bg)] text-[var(--vf-nav-active-ink)] shadow-xs'
-                : 'text-muted hover:text-ink'
-            }`}
+        <div className="flex items-center gap-1.5">
+          <div
+            className="inline-flex rounded-full bg-[var(--vf-chip-bg)] p-0.5"
+            role="group"
+            aria-label="Unidad de medida"
           >
-            cm
-          </button>
-          <button
-            type="button"
-            aria-pressed={unit === 'in'}
-            onClick={() => setUnit('in')}
-            className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-semibold transition-all ${
-              unit === 'in'
-                ? 'bg-[var(--vf-nav-indicator-bg)] text-[var(--vf-nav-active-ink)] shadow-xs'
-                : 'text-muted hover:text-ink'
-            }`}
-          >
-            in
-          </button>
+            <button
+              type="button"
+              aria-pressed={unit === 'cm'}
+              onClick={() => setUnit('cm')}
+              className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-semibold transition-all ${
+                unit === 'cm'
+                  ? 'bg-[var(--vf-nav-indicator-bg)] text-[var(--vf-nav-active-ink)] shadow-xs'
+                  : 'text-muted hover:text-ink'
+              }`}
+            >
+              cm
+            </button>
+            <button
+              type="button"
+              aria-pressed={unit === 'in'}
+              onClick={() => setUnit('in')}
+              className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-semibold transition-all ${
+                unit === 'in'
+                  ? 'bg-[var(--vf-nav-indicator-bg)] text-[var(--vf-nav-active-ink)] shadow-xs'
+                  : 'text-muted hover:text-ink'
+              }`}
+            >
+              in
+            </button>
+          </div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Cerrar panel de medidas"
+              className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-[var(--vf-chip-bg)] text-muted transition-colors hover:text-ink"
+            >
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          )}
         </div>
       </div>
 

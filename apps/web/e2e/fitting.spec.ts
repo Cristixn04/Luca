@@ -11,11 +11,13 @@ test.describe('Flujo e2e M2: medidas → prenda → mapa de calor (T2.9)', () =>
 
     await expect(page.getByRole('heading', { level: 1, name: 'Probador de calce' })).toBeVisible();
 
-    // 1. Ajustar medida corporal de pecho a 92 cm
+    // 1. Abrir panel de medidas desde la barra vertical derecha y ajustar pecho a 92 cm
+    await page.getByRole('button', { name: 'Panel de medidas' }).click();
     const chestBody = page.getByLabel('Pecho', { exact: true });
     await chestBody.fill('92');
 
-    // 2. Ajustar pecho en plano de la camiseta a 52 cm (104 - 92 = +12.0 cm -> Holgado)
+    // 2. Abrir panel de prenda y ajustar pecho en plano de la camiseta a 52 cm (+12.0 cm -> Holgado)
+    await page.getByRole('button', { name: 'Panel de prenda' }).click();
     const chestFlat = page.getByLabel('Pecho en plano');
     await chestFlat.fill('52');
 

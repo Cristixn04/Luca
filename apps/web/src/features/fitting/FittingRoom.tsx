@@ -8,7 +8,7 @@ import {
   type GarmentCategory,
   type GarmentFlatMeasurements,
 } from '@luca/domain';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Ruler, Shirt } from 'lucide-react';
 import { Badge } from '@/design-system/components/Badge';
 import { HEATMAP_TOKENS } from '@/design-system/tokens';
 import { useClosetStore } from '@/features/closet/closetStore';
@@ -122,7 +122,11 @@ export function FittingRoom() {
   const showHeatmap = useFittingStore((s) => s.showHeatmap);
   const toggleHeatmap = useFittingStore((s) => s.toggleHeatmap);
   const closetItems = useClosetStore((s) => s.items);
+  const closetLoaded = useClosetStore((s) => s.loaded);
+  const loadCloset = useClosetStore((s) => s.loadCloset);
 
+  // Barra vertical derecha con dos apartados desplegables mutuamente excluyentes (Prenda | Medidas)
+  const [activeDrawer, setActiveDrawer] = useState<'garment' | 'measurements' | null>(null);
   // Capa compañera opcional cuando el usuario combina desde el carrusel superior e inferior
   const [pairedLayer, setPairedLayer] = useState<PairedGarmentLayer | null>(null);
   const [scanTick, setScanTick] = useState(0);
@@ -134,6 +138,23 @@ export function FittingRoom() {
     return mq ? mq.matches : true;
   });
   const touchStartX = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!closetLoaded) {
+      void loadCloset();
+    }
+  }, [closetLoaded, loadCloset]);
+
+  useEffect(() => {
+    if (!activeDrawer) return;
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setActiveDrawer(null);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [activeDrawer]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
@@ -541,13 +562,12 @@ export function FittingRoom() {
     : false;
 
   return (
-    <div className="flex w-full flex-col gap-4">
-      <div className="grid w-full items-start gap-6 lg:grid-cols-[minmax(0,1fr)_390px] xl:grid-cols-[minmax(0,1fr)_420px] xl:gap-8">
-        {/* COLUMNA PRINCIPAL: Escenario Espacial con Maniquí Central + Doble Carrusel 3D + Dock Inferior */}
-        <section
-          aria-labelledby="fitting-heading"
-          className="flex min-w-0 flex-col gap-4 bg-transparent"
-        >
+    <div className="relative flex w-full flex-col gap-3 md:pr-16">
+      {/* ESCENARIO PRINCIPAL A ANCHO COMPLETO: Maniquí Central + Doble Carrusel 3D + Dock Inferior */}
+      <section
+        aria-labelledby="fitting-heading"
+        className="flex min-w-0 w-full flex-col gap-3 bg-transparent"
+      >
           {/* Barra superior del Probador con título y controles en cápsulas de vidrio */}
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
             <div className="flex items-baseline gap-3">
@@ -732,7 +752,7 @@ export function FittingRoom() {
                 <div
                   data-avatar-view={viewMode}
                   data-mannequin-silhouette={mannequinSilhouette}
-                  className="pointer-events-none relative z-30 flex h-[430px] w-[235px] flex-col items-center justify-end sm:h-[510px] sm:w-[270px] xl:h-[540px] xl:w-[288px]"
+                  className="pointer-events-none relative z-30 flex h-[410px] w-[225px] flex-col items-center justify-end sm:h-[455px] sm:w-[250px] xl:h-[470px] xl:w-[260px]"
                 >
                   {/* Etiqueta de estimado coherente si faltan medidas opcionales */}
                   {viewMode === 'front' && isTorsoEstimated && (
@@ -951,7 +971,7 @@ export function FittingRoom() {
           {/* Leyenda accesible del mapa de calor en píldora de vidrio */}
           <div
             aria-label="Leyenda del mapa de calor"
-            className="vf-glass mx-auto flex flex-wrap items-center justify-center gap-3 rounded-full px-4 py-2"
+            className="vf-glass mx-auto flex flex-wrap items-center justify-center gap-3 rounded-full px-4 py-1.5"
           >
             {HEATMAP_TOKENS.map((token) => (
               <div key={token.state} className="flex items-center gap-1.5 text-xs text-ink">
@@ -972,21 +992,85 @@ export function FittingRoom() {
               </div>
             ))}
           </div>
-        </section>
+      </section>
 
-        {/* COLUMNA DERECHA: Información del Probador organizada en paneles de vidrio (Prenda + Medidas) */}
-        <aside
-          aria-label="Paneles de información del probador"
-          className="flex flex-col gap-4 lg:sticky lg:top-[76px]"
+      {/* BARRA VERTICAL FLOTANTE DERECHA (estilo aside.rail.glass de la interfaz base) */}
+      <aside
+        aria-label="Paneles de información del probador"
+        data-testid="fitting-vertical-rail"
+        className="vf-glass fixed right-3 top-1/2 z-40 flex -translate-y-1/2 flex-col items-center gap-2 rounded-full p-1.5 sm:right-5 sm:p-2 lg:right-6"
+      >
+        {(
+          [
+            { id: 'garment', label: 'Prenda', ariaLabel: 'Panel de prenda', icon: Shirt, hasAlert: false },
+            {
+              id: 'measurements',
+              label: 'Medidas',
+              ariaLabel: 'Panel de medidas',
+              icon: Ruler,
+              hasAlert: !validation.valid,
+            },
+          ] as const
+        ).map((item) => {
+          const Icon = item.icon;
+          const isOpen = activeDrawer === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              aria-label={item.ariaLabel}
+              aria-expanded={isOpen}
+              aria-pressed={isOpen}
+              title={item.label}
+              onClick={() => setActiveDrawer((prev) => (prev === item.id ? null : item.id))}
+              className={`group relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-all duration-200 sm:h-[42px] sm:w-[42px] ${
+                isOpen
+                  ? 'bg-[var(--vf-nav-indicator-bg)] text-[var(--vf-nav-active-ink)] shadow-sm'
+                  : 'text-[var(--vf-nav-muted-ink)] hover:bg-white/25 hover:text-ink'
+              }`}
+            >
+              <Icon className="h-[19px] w-[19px]" strokeWidth={1.8} aria-hidden="true" />
+              {item.hasAlert && (
+                <span
+                  aria-hidden="true"
+                  className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#C2410C]"
+                />
+              )}
+              {!activeDrawer && (
+                <span
+                  aria-hidden="true"
+                  className="vf-glass pointer-events-none absolute right-[calc(100%+10px)] hidden whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium text-ink opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 md:inline-block"
+                >
+                  {item.label}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </aside>
+
+      {/* PANEL DESPLEGABLE FLOTANTE (muestra solo el apartado elegido: Prenda o Medidas) */}
+      {activeDrawer && (
+        <div
+          key={activeDrawer}
+          data-testid={`fitting-drawer-${activeDrawer}`}
+          className="vf-drawer-enter fixed right-[66px] top-[148px] z-40 max-h-[calc(100dvh-172px)] w-[min(390px,calc(100vw-80px))] overflow-y-auto rounded-[24px] sm:right-[82px] lg:right-[92px]"
         >
-          <GarmentPanel
-            fitReport={fitReport}
-            onManualCategorySelect={() => setPairedLayer(null)}
-            onClearAllGarments={() => setPairedLayer(null)}
-          />
-          <MeasurementsPanel validation={validation} />
-        </aside>
-      </div>
+          {activeDrawer === 'garment' ? (
+            <GarmentPanel
+              fitReport={fitReport}
+              onManualCategorySelect={() => setPairedLayer(null)}
+              onClearAllGarments={() => setPairedLayer(null)}
+              onClose={() => setActiveDrawer(null)}
+            />
+          ) : (
+            <MeasurementsPanel
+              validation={validation}
+              onClose={() => setActiveDrawer(null)}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

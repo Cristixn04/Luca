@@ -65,6 +65,11 @@
     rgb(220 215 207 / 52%) 50%,
     rgb(240 236 230 / 68%) 100%
   );
+  --vf-drawer-bg: linear-gradient(
+    155deg,
+    rgb(252 250 247 / 94%) 0%,
+    rgb(244 241 236 / 91%) 100%
+  );
   --vf-glass-border: rgb(255 255 255 / 82%);
   --vf-glass-outer-ring: rgb(21 20 19 / 10%);
   --vf-glass-inset-top: rgb(255 255 255 / 88%);
@@ -136,6 +141,11 @@
       rgb(72 70 66 / 62%) 0%,
       rgb(38 38 38 / 54%) 50%,
       rgb(54 52 50 / 60%) 100%
+    );
+    --vf-drawer-bg: linear-gradient(
+      155deg,
+      rgb(36 36 36 / 94%) 0%,
+      rgb(24 24 24 / 92%) 100%
     );
     --vf-glass-border: rgb(255 255 255 / 16%);
     --vf-glass-outer-ring: rgb(0 0 0 / 36%);
@@ -260,7 +270,17 @@
       rgb(38 38 38 / 54%) 50%,
       rgb(54 52 50 / 60%) 100%
     );
+    --vf-drawer-bg: linear-gradient(
+      155deg,
+      rgb(36 36 36 / 94%) 0%,
+      rgb(24 24 24 / 92%) 100%
+    );
     --vf-glass-shadow: 0 24px 52px -22px rgb(0 0 0 / 68%);
+    --vf-drawer-bg: linear-gradient(
+      155deg,
+      rgb(36 36 36 / 94%) 0%,
+      rgb(24 24 24 / 92%) 100%
+    );
     --vf-nav-indicator-shadow: 0 4px 16px -6px rgb(0 0 0 / 65%);
   }
 
@@ -280,6 +300,11 @@
       rgb(240 236 230 / 68%) 100%
     );
     --vf-glass-shadow: 0 20px 46px -22px rgb(40 30 20 / 28%);
+    --vf-drawer-bg: linear-gradient(
+      155deg,
+      rgb(252 250 247 / 94%) 0%,
+      rgb(244 241 236 / 91%) 100%
+    );
     --vf-nav-indicator-shadow: 0 4px 14px -6px rgb(0 0 0 / 28%);
   }
 }

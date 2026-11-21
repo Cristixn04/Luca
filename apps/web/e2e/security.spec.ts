@@ -36,6 +36,7 @@ test.describe('Auditoría e2e de seguridad, privacidad y modo offline (RNF-06, R
     await context.setOffline(true);
 
     // 3. Modificar medidas y añadir prenda con payload XSS en modo offline
+    await page.getByRole('button', { name: 'Panel de medidas' }).click();
     await page.getByLabel('Pecho', { exact: true }).fill('94');
     await page.getByRole('link', { name: 'Clóset' }).click();
 

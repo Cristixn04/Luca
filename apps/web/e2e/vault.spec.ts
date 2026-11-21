@@ -22,6 +22,7 @@ test.describe('Flujo e2e M3: bóveda cifrada, persistencia, bloqueo y recuperaci
 
     // 3. Modificar medida de pecho a 99 cm y esperar persistencia cifrada debounced
     await expect(page.getByRole('heading', { level: 1, name: 'Probador de calce' })).toBeVisible();
+    await page.getByRole('button', { name: 'Panel de medidas' }).click();
     const chestInput = page.getByLabel('Pecho', { exact: true });
     await chestInput.fill('99');
     await page.waitForTimeout(500);
@@ -35,6 +36,7 @@ test.describe('Flujo e2e M3: bóveda cifrada, persistencia, bloqueo y recuperaci
     await page.getByRole('button', { name: 'Desbloquear' }).click();
 
     await expect(page.getByRole('heading', { level: 1, name: 'Probador de calce' })).toBeVisible();
+    await page.getByRole('button', { name: 'Panel de medidas' }).click();
     await expect(page.getByLabel('Pecho', { exact: true })).toHaveValue('99');
 
     // 6. Bloquear y recuperar con la clave de recuperación + nueva contraseña
@@ -45,6 +47,7 @@ test.describe('Flujo e2e M3: bóveda cifrada, persistencia, bloqueo y recuperaci
     await page.getByRole('button', { name: /Recuperar y desbloquear/i }).click();
 
     await expect(page.getByRole('heading', { level: 1, name: 'Probador de calce' })).toBeVisible();
+    await page.getByRole('button', { name: 'Panel de medidas' }).click();
     await expect(page.getByLabel('Pecho', { exact: true })).toHaveValue('99');
   });
 });

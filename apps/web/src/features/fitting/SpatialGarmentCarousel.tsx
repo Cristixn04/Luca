@@ -51,7 +51,7 @@ function getArcSlotStyle(
   const sign = side < 0 ? '-' : '+';
   if (slotPos === 1) {
     return {
-      transform: `translate3d(calc(-50% ${sign} 190px), -50%, 0) perspective(1300px) rotateY(${-side * 16}deg) scale(1)`,
+      transform: `translate3d(calc(-50% ${sign} 210px), -50%, 0) perspective(1300px) rotateY(${-side * 16}deg) scale(1)`,
       opacity: 1,
       zIndex: 24,
       filter: 'blur(0px)',
@@ -60,7 +60,7 @@ function getArcSlotStyle(
   }
   if (slotPos === 2) {
     return {
-      transform: `translate3d(calc(-50% ${sign} 308px), calc(-50% + 4px), 0) perspective(1300px) translateZ(-100px) rotateY(${-side * 25}deg) scale(0.78)`,
+      transform: `translate3d(calc(-50% ${sign} 352px), calc(-50% + 4px), 0) perspective(1300px) translateZ(-110px) rotateY(${-side * 25}deg) scale(0.79)`,
       opacity: 0.94,
       zIndex: 18,
       filter: 'blur(0.95px)',
@@ -69,15 +69,15 @@ function getArcSlotStyle(
   }
   if (slotPos === 3) {
     return {
-      transform: `translate3d(calc(-50% ${sign} 388px), calc(-50% + 8px), 0) perspective(1300px) translateZ(-200px) rotateY(${-side * 34}deg) scale(0.61)`,
-      opacity: 0.62,
+      transform: `translate3d(calc(-50% ${sign} 460px), calc(-50% + 8px), 0) perspective(1300px) translateZ(-210px) rotateY(${-side * 34}deg) scale(0.62)`,
+      opacity: 0.64,
       zIndex: 12,
       filter: 'blur(2.6px)',
       pointerEvents: 'auto',
     };
   }
   return {
-    transform: `translate3d(calc(-50% ${sign} 430px), calc(-50% + 10px), 0) perspective(1300px) translateZ(-280px) rotateY(${-side * 34}deg) scale(0.48)`,
+    transform: `translate3d(calc(-50% ${sign} 510px), calc(-50% + 10px), 0) perspective(1300px) translateZ(-290px) rotateY(${-side * 34}deg) scale(0.48)`,
     opacity: 0,
     zIndex: 4,
     filter: 'blur(4.5px)',
@@ -269,7 +269,7 @@ export const SpatialGarmentCarousel = memo(function SpatialGarmentCarousel({
       data-spatial-carousel={slot}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className="relative flex h-[220px] w-full items-center justify-center overflow-visible sm:h-[246px]"
+      className="relative flex h-[204px] w-full items-center justify-center overflow-visible sm:h-[218px]"
     >
       {/* Etiqueta sutil de fila en la esquina izquierda */}
       <span className="vf-glass pointer-events-none absolute left-2 top-1 z-30 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--vf-nav-muted-ink)]">
@@ -300,7 +300,7 @@ export const SpatialGarmentCarousel = memo(function SpatialGarmentCarousel({
               onClick={() => onSelectItem(item)}
               onKeyDown={(event) => handleCardKeyDown(event, item)}
               style={style}
-              className="vf-glass-card vf-arc-card group absolute left-1/2 top-1/2 flex h-[204px] w-[144px] cursor-pointer flex-col justify-between rounded-[22px] p-3 text-left sm:h-[218px] sm:w-[152px]"
+              className="vf-glass-card vf-arc-card group absolute left-1/2 top-1/2 flex h-[192px] w-[142px] cursor-pointer flex-col justify-between rounded-[22px] p-2.5 text-left sm:h-[204px] sm:w-[154px] sm:p-3"
             >
               {sheenTick > 0 && (
                 <span
@@ -309,7 +309,7 @@ export const SpatialGarmentCarousel = memo(function SpatialGarmentCarousel({
                   className="vf-card-sheen pointer-events-none absolute inset-0"
                 />
               )}
-              <div className="flex h-[126px] w-full items-center justify-center p-1 transition-transform duration-300 group-hover:scale-[1.04] sm:h-[140px]">
+              <div className="flex h-[118px] w-full items-center justify-center p-1 transition-transform duration-300 group-hover:scale-[1.04] sm:h-[128px]">
                 {isSafeDataImageUrl(item.imageUrl) ? (
                   <img
                     src={item.imageUrl}

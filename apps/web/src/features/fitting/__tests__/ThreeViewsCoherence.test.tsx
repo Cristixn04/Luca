@@ -62,6 +62,7 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
     expect(sideChest).toBe(frontChest);
 
     // 2. Cambiar a Pantalón y forzar cintura ajustada/tensa -> las 3 vistas deben coincidir exactamente
+    await user.click(screen.getByRole('button', { name: 'Panel de prenda' }));
     await user.click(screen.getByRole('button', { name: 'Pantalón' }));
     const waistFlat = screen.getByLabelText('Cintura en plano');
     await user.clear(waistFlat);
@@ -104,7 +105,8 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
       'Espalda: estimado',
     );
 
-    // Abrir sección de medidas opcionales y llenar todas
+    // Abrir panel de medidas desde la barra vertical derecha y luego sección de medidas opcionales
+    await user.click(screen.getByRole('button', { name: 'Panel de medidas' }));
     await user.click(screen.getByRole('button', { name: /Medidas opcionales/i }));
     await user.type(screen.getByLabelText('Largo de torso'), '50');
     await user.type(screen.getByLabelText('Fondo de pecho'), '23');
