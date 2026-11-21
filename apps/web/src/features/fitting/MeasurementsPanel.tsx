@@ -76,8 +76,11 @@ export function MeasurementsPanel({ validation, onClose }: MeasurementsPanelProp
   ).length;
 
   return (
-    <section aria-label="Medidas corporales" className="vf-glass-drawer rounded-[24px] p-5">
-      <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2 border-b border-[var(--glass-divider)] pb-3">
+    <section
+      aria-label="Medidas corporales"
+      className="vf-glass-drawer flex max-h-full flex-col overflow-hidden rounded-[24px]"
+    >
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[var(--glass-divider)] px-5 pb-3 pt-4">
         <div>
           <h2 className="font-display text-base font-semibold tracking-tight text-ink">Medidas</h2>
           <p className="text-[11px] text-muted">Cálculo local en tu dispositivo</p>
@@ -126,7 +129,7 @@ export function MeasurementsPanel({ validation, onClose }: MeasurementsPanelProp
         </div>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="vf-drawer-scroll flex flex-1 min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain px-5 py-3.5">
         <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
           {BODY_FIELDS.map((field) => {
             const rawCm = bodyMeasurements[field.key];

@@ -26,6 +26,8 @@ export interface SpatialGarmentCarouselProps {
   onSelectItem: (item: SpatialCarouselItem) => void;
   /** 'arc' posiciona las tarjetas en perspectiva 3D a ambos lados del maniquí central; 'strip' usa franja compacta */
   layout: 'arc' | 'strip';
+  /** Compacta las distancias laterales del arco 3D cuando se despliega un panel lateral derecho */
+  compactArc?: boolean;
   sheenTick?: number;
 }
 
@@ -41,6 +43,7 @@ function getCircularOffset(index: number, anchorIndex: number, total: number): n
 function getArcSlotStyle(
   slotPos: number,
   side: -1 | 1,
+  compact: boolean,
 ): {
   transform: string;
   opacity: number;
@@ -49,9 +52,17 @@ function getArcSlotStyle(
   pointerEvents: 'auto' | 'none';
 } {
   const sign = side < 0 ? '-' : '+';
+  const x1 = compact ? 174 : 210;
+  const x2 = compact ? 276 : 352;
+  const x3 = compact ? 348 : 460;
+  const x4 = compact ? 385 : 510;
+  const s1 = compact ? 0.91 : 1;
+  const s2 = compact ? 0.72 : 0.79;
+  const s3 = compact ? 0.56 : 0.62;
+
   if (slotPos === 1) {
     return {
-      transform: `translate3d(calc(-50% ${sign} 210px), -50%, 0) perspective(1300px) rotateY(${-side * 16}deg) scale(1)`,
+      transform: `translate3d(calc(-50% ${sign} ${x1}px), -50%, 0) perspective(1300px) rotateY(${-side * 16}deg) scale(${s1})`,
       opacity: 1,
       zIndex: 24,
       filter: 'blur(0px)',
@@ -60,7 +71,7 @@ function getArcSlotStyle(
   }
   if (slotPos === 2) {
     return {
-      transform: `translate3d(calc(-50% ${sign} 352px), calc(-50% + 4px), 0) perspective(1300px) translateZ(-110px) rotateY(${-side * 25}deg) scale(0.79)`,
+      transform: `translate3d(calc(-50% ${sign} ${x2}px), calc(-50% + 4px), 0) perspective(1300px) translateZ(-110px) rotateY(${-side * 25}deg) scale(${s2})`,
       opacity: 0.94,
       zIndex: 18,
       filter: 'blur(0.95px)',
@@ -69,15 +80,15 @@ function getArcSlotStyle(
   }
   if (slotPos === 3) {
     return {
-      transform: `translate3d(calc(-50% ${sign} 460px), calc(-50% + 8px), 0) perspective(1300px) translateZ(-210px) rotateY(${-side * 34}deg) scale(0.62)`,
-      opacity: 0.64,
+      transform: `translate3d(calc(-50% ${sign} ${x3}px), calc(-50% + 8px), 0) perspective(1300px) translateZ(-210px) rotateY(${-side * 34}deg) scale(${s3})`,
+      opacity: compact ? 0.45 : 0.64,
       zIndex: 12,
       filter: 'blur(2.6px)',
       pointerEvents: 'auto',
     };
   }
   return {
-    transform: `translate3d(calc(-50% ${sign} 510px), calc(-50% + 10px), 0) perspective(1300px) translateZ(-290px) rotateY(${-side * 34}deg) scale(0.48)`,
+    transform: `translate3d(calc(-50% ${sign} ${x4}px), calc(-50% + 10px), 0) perspective(1300px) translateZ(-290px) rotateY(${-side * 34}deg) scale(0.48)`,
     opacity: 0,
     zIndex: 4,
     filter: 'blur(4.5px)',
@@ -92,6 +103,7 @@ export const SpatialGarmentCarousel = memo(function SpatialGarmentCarousel({
   activeItemId,
   onSelectItem,
   layout,
+  compactArc = false,
   sheenTick = 0,
 }: SpatialGarmentCarouselProps) {
   const [fallbackIndex, setFallbackIndex] = useState(0);
@@ -289,7 +301,7 @@ export const SpatialGarmentCarousel = memo(function SpatialGarmentCarousel({
       {/* Tarjetas de vidrio en arco 3D flanqueando al maniquí central */}
       <div role="listbox" aria-label={label} className="contents">
         {flankingEntries.map(({ item, side, slotPos }) => {
-          const style = getArcSlotStyle(slotPos, side);
+          const style = getArcSlotStyle(slotPos, side, compactArc);
           return (
             <div
               key={item.id}

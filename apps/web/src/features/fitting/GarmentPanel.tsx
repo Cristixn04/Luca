@@ -183,8 +183,11 @@ export function GarmentPanel({
 
   if (!garmentEnabled) {
     return (
-      <section aria-label="Configuración de prenda" className="vf-glass-drawer rounded-[24px] p-5">
-        <div className="mb-3 flex items-center justify-between gap-2 border-b border-[var(--glass-divider)] pb-3">
+      <section
+        aria-label="Configuración de prenda"
+        className="vf-glass-drawer flex max-h-full flex-col overflow-hidden rounded-[24px]"
+      >
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--glass-divider)] px-5 pb-3 pt-4">
           <h2 className="font-display text-base font-semibold tracking-tight text-ink">Prenda</h2>
           {onClose && (
             <button
@@ -197,7 +200,7 @@ export function GarmentPanel({
             </button>
           )}
         </div>
-        <div className="flex flex-col items-start gap-3 text-xs text-muted">
+        <div className="vf-drawer-scroll flex flex-1 min-h-0 flex-col items-start gap-3 overflow-y-auto overscroll-contain px-5 py-4 text-xs text-muted">
           <p>Sin prenda activa en el probador.</p>
           <div className="flex flex-wrap gap-2">
             {closetItems.length > 0 && (
@@ -242,13 +245,18 @@ export function GarmentPanel({
   const fields = GARMENT_FIELDS[garmentCategory];
 
   return (
-    <section aria-label="Configuración de prenda" className="vf-glass-drawer rounded-[24px] p-5">
-      <div className="mb-4 flex items-center justify-between gap-2 border-b border-[var(--glass-divider)] pb-3">
-        <div className="flex flex-col">
+    <section
+      aria-label="Configuración de prenda"
+      className="vf-glass-drawer flex max-h-full flex-col overflow-hidden rounded-[24px]"
+    >
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--glass-divider)] px-5 pb-3 pt-4">
+        <div className="min-w-0 flex flex-col">
           <h2 className="font-display text-base font-semibold tracking-tight text-ink">Prenda</h2>
-          <span className="text-[11px] text-muted">{garmentName || CATEGORY_LABELS[garmentCategory]}</span>
+          <span className="truncate text-[11px] text-muted">
+            {garmentName || CATEGORY_LABELS[garmentCategory]}
+          </span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-1.5">
           <button
             type="button"
             onClick={handleClear}
@@ -271,7 +279,7 @@ export function GarmentPanel({
         </div>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="vf-drawer-scroll flex flex-1 min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain px-5 py-3.5">
         {/* Conmutador de origen en cápsula */}
         <div
           className="grid grid-cols-2 gap-1 rounded-full bg-[var(--vf-chip-bg)] p-1"
@@ -521,9 +529,9 @@ export function GarmentPanel({
 
         {/* Veredicto y desglose numérico por zona */}
         {fitReport && fitReport.evaluatedZones.length > 0 && (
-          <div className="flex flex-col gap-2 border-t border-[var(--glass-divider)] pt-3">
+          <div className="flex flex-col gap-1.5 border-t border-[var(--glass-divider)] pt-2.5">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted">
                 Veredicto ({garmentSizeLabel || 'Sin talla'})
               </span>
               <Badge
@@ -542,18 +550,20 @@ export function GarmentPanel({
                 return (
                   <li
                     key={zone.zone}
-                    className="flex items-center justify-between gap-2 rounded-2xl border border-[var(--glass-border)] bg-bg/55 px-3 py-2 text-xs"
+                    className="flex items-center justify-between gap-2 rounded-xl border border-[var(--glass-border)] bg-bg/55 px-2.5 py-1.5 text-xs"
                   >
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-ink">{ZONE_LABELS[zone.zone]}</span>
-                      <span className="text-[11px] text-muted">
+                    <div className="min-w-0 flex flex-col">
+                      <span className="text-[11.5px] font-semibold leading-tight text-ink">
+                        {ZONE_LABELS[zone.zone]}
+                      </span>
+                      <span className="text-[10.5px] leading-snug text-muted">
                         La prenda queda {FIT_STATE_LABELS[zone.state].toLowerCase()}
-                        {zone.elasticCompensated ? ' (por elasticidad)' : ''}
-                        {matchesPreference ? ' · coincide con tu preferencia' : ''}
+                        {zone.elasticCompensated ? ' (elasticidad)' : ''}
+                        {matchesPreference ? ' · tu preferencia' : ''}
                       </span>
                     </div>
                     <span
-                      className="tabular-nums shrink-0 font-semibold"
+                      className="tabular-nums shrink-0 text-[11.5px] font-semibold"
                       style={{ color: FIT_STATE_HEX[zone.state] }}
                     >
                       {formatEase(zone.easeCm, unit)}

@@ -562,7 +562,11 @@ export function FittingRoom() {
     : false;
 
   return (
-    <div className="relative flex w-full flex-col gap-3 md:pr-16">
+    <div
+      className={`vf-stage-shift relative flex w-full flex-col gap-3 ${
+        activeDrawer ? 'md:pr-16 lg:pr-[468px]' : 'md:pr-16'
+      }`}
+    >
       {/* ESCENARIO PRINCIPAL A ANCHO COMPLETO: Maniquí Central + Doble Carrusel 3D + Dock Inferior */}
       <section
         aria-labelledby="fitting-heading"
@@ -846,6 +850,7 @@ export function FittingRoom() {
                         activeItemId={activeUpperId}
                         onSelectItem={handleSelectUpper}
                         layout="arc"
+                        compactArc={Boolean(activeDrawer)}
                         sheenTick={upperSheenTick}
                       />
                     </div>
@@ -857,6 +862,7 @@ export function FittingRoom() {
                         activeItemId={activeLowerId}
                         onSelectItem={handleSelectLower}
                         layout="arc"
+                        compactArc={Boolean(activeDrawer)}
                         sheenTick={lowerSheenTick}
                       />
                     </div>
@@ -1049,12 +1055,12 @@ export function FittingRoom() {
         })}
       </aside>
 
-      {/* PANEL DESPLEGABLE FLOTANTE (muestra solo el apartado elegido: Prenda o Medidas) */}
+      {/* PANEL DESPLEGABLE FLOTANTE (respetando margen superior bajo header/aviso y margen inferior sobre el footer) */}
       {activeDrawer && (
         <div
           key={activeDrawer}
           data-testid={`fitting-drawer-${activeDrawer}`}
-          className="vf-drawer-enter fixed right-[66px] top-[148px] z-40 max-h-[calc(100dvh-172px)] w-[min(390px,calc(100vw-80px))] overflow-y-auto rounded-[24px] sm:right-[82px] lg:right-[92px]"
+          className="vf-drawer-enter fixed right-[66px] top-[110px] z-40 flex max-h-[calc(100dvh-176px)] w-[min(388px,calc(100vw-80px))] flex-col sm:right-[82px] lg:right-[90px]"
         >
           {activeDrawer === 'garment' ? (
             <GarmentPanel
