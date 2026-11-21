@@ -19,7 +19,7 @@ import { GarmentCardPreviewSvg } from './GarmentCardPreviewSvg';
 import { applyClosetItemToFitting, GarmentPanel } from './GarmentPanel';
 import { MeasurementsPanel } from './MeasurementsPanel';
 import { SpatialGarmentCarousel, type SpatialCarouselItem } from './SpatialGarmentCarousel';
-import { DEFAULT_GARMENT_PRESETS, useFittingStore, type ViewerMode } from './store';
+import { DEFAULT_GARMENT_PRESETS, useFittingStore } from './store';
 import { BackAvatarSvg } from './svg/BackAvatarSvg';
 import {
   FrontAvatarSvg,
@@ -33,11 +33,10 @@ import { SideAvatarSvg } from './svg/SideAvatarSvg';
 
 const SINGLE_VIEWS: readonly AvatarView[] = ['front', 'side', 'back'];
 
-const VIEW_TABS: readonly { id: ViewerMode; label: string }[] = [
+const VIEW_TABS: readonly { id: AvatarView; label: string }[] = [
   { id: 'front', label: 'Frente' },
   { id: 'side', label: 'Perfil' },
   { id: 'back', label: 'Espalda' },
-  { id: 'all', label: '3 vistas' },
 ];
 
 const QUICK_UPPER_PRESETS: readonly {
@@ -497,19 +496,21 @@ export function FittingRoom() {
     pairedLayer,
   ]);
 
+  const activeView: AvatarView = viewMode === 'all' ? 'front' : viewMode;
+
   const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
     touchStartX.current = event.touches[0]?.clientX ?? null;
   };
 
   const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
-    if (touchStartX.current === null || viewMode === 'all') return;
+    if (touchStartX.current === null) return;
     const endX = event.changedTouches[0]?.clientX ?? touchStartX.current;
     const deltaX = endX - touchStartX.current;
     touchStartX.current = null;
 
     if (Math.abs(deltaX) < 40) return;
 
-    const currentIdx = SINGLE_VIEWS.indexOf(viewMode);
+    const currentIdx = SINGLE_VIEWS.indexOf(activeView);
     if (currentIdx === -1) return;
 
     const nextIdx =
@@ -621,7 +622,7 @@ export function FittingRoom() {
                 ))}
               </div>
 
-              {/* Selector de vistas: Frente | Perfil | Espalda | 3 vistas */}
+              {/* Selector de vistas: Frente | Perfil | Espalda */}
               <div
                 role="group"
                 aria-label="Selector de vistas del avatar"
@@ -631,10 +632,10 @@ export function FittingRoom() {
                   <button
                     key={tab.id}
                     type="button"
-                    aria-pressed={viewMode === tab.id}
+                    aria-pressed={activeView === tab.id}
                     onClick={() => setViewMode(tab.id)}
                     className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-medium transition-all ${
-                      viewMode === tab.id
+                      activeView === tab.id
                         ? 'bg-[var(--vf-nav-indicator-bg)] text-[var(--vf-nav-active-ink)] shadow-xs'
                         : 'text-[var(--vf-nav-muted-ink)] hover:text-ink'
                     }`}
@@ -672,69 +673,6 @@ export function FittingRoom() {
                 corporal.
               </p>
             </div>
-          ) : viewMode === 'all' ? (
-            <div className="flex flex-col gap-5">
-              {/* Modo 3 vistas coherentes + ambos carruseles debajo en franjas de vidrio */}
-              <div
-                data-testid="avatar-swipe-stage"
-                onTouchStart={handleTouchStart}
-                onTouchEnd={handleTouchEnd}
-                className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3"
-              >
-                <FrontAvatarSvg
-                  model={bodyModel}
-                  silhouette={mannequinSilhouette}
-                  garmentCategory={garmentCategory}
-                  fitReport={fitReport}
-                  showHeatmap={showHeatmap}
-                  garmentColorHex={garmentColorHex}
-                  garmentMeta={garmentVisualMeta}
-                  outfitLayers={outfitLayers}
-                  compact
-                />
-                <SideAvatarSvg
-                  model={bodyModel}
-                  silhouette={mannequinSilhouette}
-                  garmentCategory={garmentCategory}
-                  fitReport={fitReport}
-                  showHeatmap={showHeatmap}
-                  garmentColorHex={garmentColorHex}
-                  garmentMeta={garmentVisualMeta}
-                  outfitLayers={outfitLayers}
-                  compact
-                />
-                <BackAvatarSvg
-                  model={bodyModel}
-                  silhouette={mannequinSilhouette}
-                  garmentCategory={garmentCategory}
-                  fitReport={fitReport}
-                  showHeatmap={showHeatmap}
-                  garmentColorHex={garmentColorHex}
-                  garmentMeta={garmentVisualMeta}
-                  outfitLayers={outfitLayers}
-                  compact
-                />
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <SpatialGarmentCarousel
-                  slot="upper"
-                  label="Prendas superiores · Camisas y vestidos"
-                  items={upperCarouselItems}
-                  activeItemId={activeUpperId}
-                  onSelectItem={handleSelectUpper}
-                  layout="strip"
-                />
-                <SpatialGarmentCarousel
-                  slot="lower"
-                  label="Prendas inferiores · Pantalones, shorts y faldas"
-                  items={lowerCarouselItems}
-                  activeItemId={activeLowerId}
-                  onSelectItem={handleSelectLower}
-                  layout="strip"
-                />
-              </div>
-            </div>
           ) : (
             <div
               data-testid="avatar-swipe-stage"
@@ -742,24 +680,16 @@ export function FittingRoom() {
               onTouchEnd={handleTouchEnd}
               className="relative flex w-full flex-col items-center justify-center overflow-hidden pt-2"
             >
-              {/* Marca de agua editorial gigante detrás del maniquí (estilo .ghost) */}
-              <span
-                aria-hidden="true"
-                className="vf-ghost-watermark pointer-events-none absolute left-1/2 top-[34%] z-0 -translate-x-1/2 -translate-y-1/2 text-[140px] sm:text-[210px] xl:text-[250px]"
-              >
-                LUCA
-              </span>
-
               {/* Escenario desktop/tablet: Doble arco 3D (Superior arriba, Inferior abajo) rodeando al maniquí central */}
               <div className="relative flex w-full flex-col items-center">
                 {/* Maniquí central a altura completa (z-30 sobre el centro despejado de ambos arcos) */}
                 <div
-                  data-avatar-view={viewMode}
+                  data-avatar-view={activeView}
                   data-mannequin-silhouette={mannequinSilhouette}
                   className="pointer-events-none relative z-30 flex h-[410px] w-[225px] flex-col items-center justify-end sm:h-[455px] sm:w-[250px] xl:h-[470px] xl:w-[260px]"
                 >
                   {/* Etiqueta de estimado coherente si faltan medidas opcionales */}
-                  {viewMode === 'front' && isTorsoEstimated && (
+                  {activeView === 'front' && isTorsoEstimated && (
                     <Badge
                       data-estimated-badge="front"
                       className="vf-glass pointer-events-auto absolute right-0 top-1 z-40 text-[10px]"
@@ -767,7 +697,7 @@ export function FittingRoom() {
                       Torso: estimado
                     </Badge>
                   )}
-                  {viewMode === 'side' && anyDepthEstimated && (
+                  {activeView === 'side' && anyDepthEstimated && (
                     <Badge
                       data-estimated-badge="side"
                       className="vf-glass pointer-events-auto absolute right-0 top-1 z-40 text-[10px]"
@@ -775,7 +705,7 @@ export function FittingRoom() {
                       Fondo: estimado
                     </Badge>
                   )}
-                  {viewMode === 'back' && isBackEstimated && (
+                  {activeView === 'back' && isBackEstimated && (
                     <Badge
                       data-estimated-badge="back"
                       className="vf-glass pointer-events-auto absolute right-0 top-1 z-40 text-[10px]"
@@ -785,7 +715,7 @@ export function FittingRoom() {
                   )}
 
                   <div className="relative flex h-full w-full items-end justify-center">
-                    {viewMode === 'front' && (
+                    {activeView === 'front' && (
                       <FrontAvatarSvg
                         model={bodyModel}
                         silhouette={mannequinSilhouette}
@@ -798,7 +728,7 @@ export function FittingRoom() {
                         frameless
                       />
                     )}
-                    {viewMode === 'side' && (
+                    {activeView === 'side' && (
                       <SideAvatarSvg
                         model={bodyModel}
                         silhouette={mannequinSilhouette}
@@ -811,7 +741,7 @@ export function FittingRoom() {
                         frameless
                       />
                     )}
-                    {viewMode === 'back' && (
+                    {activeView === 'back' && (
                       <BackAvatarSvg
                         model={bodyModel}
                         silhouette={mannequinSilhouette}

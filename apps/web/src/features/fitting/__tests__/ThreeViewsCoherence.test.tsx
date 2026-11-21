@@ -13,7 +13,7 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
       hideNumbers: false,
       bodyMeasurements: { ...DEFAULT_BODY_MEASUREMENTS },
       optionalMeasurements: {},
-      viewMode: 'all',
+      viewMode: 'front',
       garmentEnabled: true,
       garmentCategory: 'tshirt',
       garmentName: DEFAULT_GARMENT_PRESETS.tshirt.name,
@@ -30,36 +30,30 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
     const { container } = render(<FittingRoom />);
 
     // 1. Camiseta: hombros en las 3 vistas y pecho en frente + perfil
-    const front = container.querySelector('[data-avatar-view="front"]')!;
-    const side = container.querySelector('[data-avatar-view="side"]')!;
-    const back = container.querySelector('[data-avatar-view="back"]')!;
-
-    expect(front).not.toBeNull();
-    expect(side).not.toBeNull();
-    expect(back).not.toBeNull();
-
-    const frontShoulders = front
-      .querySelector('[data-heatmap-zone="shoulders"]')
+    const frontShoulders = container
+      .querySelector('[data-avatar-view="front"] [data-heatmap-zone="shoulders"]')
       ?.getAttribute('data-fit-state');
-    const sideShoulders = side
-      .querySelector('[data-heatmap-zone="shoulders"]')
+    const frontChest = container
+      .querySelector('[data-avatar-view="front"] [data-heatmap-zone="chest"]')
       ?.getAttribute('data-fit-state');
-    const backShoulders = back
-      .querySelector('[data-heatmap-zone="shoulders"]')
-      ?.getAttribute('data-fit-state');
-
     expect(frontShoulders).toBe('regular');
-    expect(sideShoulders).toBe(frontShoulders);
-    expect(backShoulders).toBe(frontShoulders);
-
-    const frontChest = front
-      .querySelector('[data-heatmap-zone="chest"]')
-      ?.getAttribute('data-fit-state');
-    const sideChest = side
-      .querySelector('[data-heatmap-zone="chest"]')
-      ?.getAttribute('data-fit-state');
     expect(frontChest).toBe('regular');
+
+    await user.click(screen.getByRole('button', { name: 'Perfil' }));
+    const sideShoulders = container
+      .querySelector('[data-avatar-view="side"] [data-heatmap-zone="shoulders"]')
+      ?.getAttribute('data-fit-state');
+    const sideChest = container
+      .querySelector('[data-avatar-view="side"] [data-heatmap-zone="chest"]')
+      ?.getAttribute('data-fit-state');
+    expect(sideShoulders).toBe(frontShoulders);
     expect(sideChest).toBe(frontChest);
+
+    await user.click(screen.getByRole('button', { name: 'Espalda' }));
+    const backShoulders = container
+      .querySelector('[data-avatar-view="back"] [data-heatmap-zone="shoulders"]')
+      ?.getAttribute('data-fit-state');
+    expect(backShoulders).toBe(frontShoulders);
 
     // 2. Cambiar a Pantalón y forzar cintura ajustada/tensa -> las 3 vistas deben coincidir exactamente
     await user.click(screen.getByRole('button', { name: 'Panel de prenda' }));
@@ -68,27 +62,32 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
     await user.clear(waistFlat);
     await user.type(waistFlat, '35'); // 70 - 78 = -8 cm (con 5 % alivio +3.5 -> -4.5 -> tense)
 
-    for (const zone of ['waist', 'hip'] as const) {
-      const fState = container
-        .querySelector(`[data-avatar-view="front"] [data-heatmap-zone="${zone}"]`)
-        ?.getAttribute('data-fit-state');
-      const sState = container
-        .querySelector(`[data-avatar-view="side"] [data-heatmap-zone="${zone}"]`)
-        ?.getAttribute('data-fit-state');
-      const bState = container
-        .querySelector(`[data-avatar-view="back"] [data-heatmap-zone="${zone}"]`)
-        ?.getAttribute('data-fit-state');
+    const statesByView: Record<'front' | 'side' | 'back', Record<'waist' | 'hip', string | null | undefined>> = {
+      front: { waist: null, hip: null },
+      side: { waist: null, hip: null },
+      back: { waist: null, hip: null },
+    };
 
-      expect(fState).toBeTruthy();
-      expect(sState).toBe(fState);
-      expect(bState).toBe(fState);
+    for (const [view, label] of [
+      ['front', 'Frente'],
+      ['side', 'Perfil'],
+      ['back', 'Espalda'],
+    ] as const) {
+      await user.click(screen.getByRole('button', { name: label }));
+      statesByView[view].waist = container
+        .querySelector(`[data-avatar-view="${view}"] [data-heatmap-zone="waist"]`)
+        ?.getAttribute('data-fit-state');
+      statesByView[view].hip = container
+        .querySelector(`[data-avatar-view="${view}"] [data-heatmap-zone="hip"]`)
+        ?.getAttribute('data-fit-state');
     }
 
-    expect(
-      container
-        .querySelector('[data-avatar-view="front"] [data-heatmap-zone="waist"]')
-        ?.getAttribute('data-fit-state'),
-    ).toBe('tense');
+    for (const zone of ['waist', 'hip'] as const) {
+      expect(statesByView.front[zone]).toBeTruthy();
+      expect(statesByView.side[zone]).toBe(statesByView.front[zone]);
+      expect(statesByView.back[zone]).toBe(statesByView.front[zone]);
+    }
+    expect(statesByView.front.waist).toBe('tense');
   });
 
   it('marca como "estimado" las vistas sin medidas opcionales y quita la marca al ingresarlas', async () => {
@@ -98,9 +97,11 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
     expect(container.querySelector('[data-estimated-badge="front"]')).toHaveTextContent(
       'Torso: estimado',
     );
+    await user.click(screen.getByRole('button', { name: 'Perfil' }));
     expect(container.querySelector('[data-estimated-badge="side"]')).toHaveTextContent(
       'Fondo: estimado',
     );
+    await user.click(screen.getByRole('button', { name: 'Espalda' }));
     expect(container.querySelector('[data-estimated-badge="back"]')).toHaveTextContent(
       'Espalda: estimado',
     );
@@ -115,13 +116,31 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
     await user.type(container.querySelector('#optional-backWidth') as HTMLElement, '41');
     await user.type(screen.getByLabelText('Largo de espalda'), '48');
 
-    expect(container.querySelector('[data-estimated-badge="front"]')).toBeNull();
-    expect(container.querySelector('[data-estimated-badge="side"]')).toBeNull();
     expect(container.querySelector('[data-estimated-badge="back"]')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Perfil' }));
+    expect(container.querySelector('[data-estimated-badge="side"]')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Frente' }));
+    expect(container.querySelector('[data-estimated-badge="front"]')).toBeNull();
   }, 12_000);
 
-  it('mantiene IDs únicos de patrones SVG cuando se muestran las 3 vistas simultáneamente', () => {
-    const { container } = render(<FittingRoom />);
+  it('mantiene IDs únicos de patrones SVG cuando se muestran las 3 vistas simultáneamente en AvatarViewer', () => {
+    const model = createBodyModel({ required: DEFAULT_BODY_MEASUREMENTS });
+    const fitReport = evaluateGarmentFit(model, {
+      category: 'tshirt',
+      sizeLabel: 'M',
+      elasticity: 0.05,
+      flatMeasuresCm: DEFAULT_GARMENT_PRESETS.tshirt.flatMeasuresCm,
+    });
+    const { container } = render(
+      <AvatarViewer
+        model={model}
+        garmentCategory="tshirt"
+        fitReport={fitReport}
+        showHeatmap
+        viewMode="all"
+        onChangeViewMode={() => {}}
+      />,
+    );
     const patterns = Array.from(container.querySelectorAll('pattern[id]'));
     const ids = patterns.map((el) => el.getAttribute('id'));
     const uniqueIds = new Set(ids);
@@ -223,13 +242,18 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
     expect(
       container.querySelector('[data-avatar-view="front"]')?.getAttribute('data-mannequin-silhouette'),
     ).toBe('male');
+
+    await user.click(screen.getByRole('button', { name: 'Perfil' }));
     expect(
       container.querySelector('[data-avatar-view="side"]')?.getAttribute('data-mannequin-silhouette'),
     ).toBe('male');
+
+    await user.click(screen.getByRole('button', { name: 'Espalda' }));
     expect(
       container.querySelector('[data-avatar-view="back"]')?.getAttribute('data-mannequin-silhouette'),
     ).toBe('male');
 
+    await user.click(screen.getByRole('button', { name: 'Frente' }));
     await user.click(screen.getByRole('button', { name: 'Mujer' }));
     expect(
       container.querySelector('[data-avatar-view="front"]')?.getAttribute('data-mannequin-silhouette'),

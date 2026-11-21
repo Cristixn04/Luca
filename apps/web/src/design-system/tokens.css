@@ -2,19 +2,19 @@
   color-scheme: light dark;
 
   /* Raw theme values for light-dark() and prefers-color-scheme fallback */
-  --bg-light: #ffffff;
+  --bg-light: #e6e6e4;
   --bg-dark: #181818;
-  --surface-light: #ffffff;
+  --surface-light: #f7f7f5;
   --surface-dark: #202020;
   --ink-light: #151413;
   --ink-dark: #f2f1ee;
-  --muted-light: #66625c;
+  --muted-light: #5c5953;
   --muted-dark: #a3a09a;
   --accent-light: #1f5f6b;
   --accent-dark: #5fb3c0;
   --accent-ink-light: #ffffff;
   --accent-ink-dark: #141414;
-  --border-light: #d4d4d4;
+  --border-light: #c8c6c2;
   --border-dark: #343434;
 
   /* Fallback for browsers without light-dark() support */
@@ -27,51 +27,51 @@
   --border: var(--border-light);
 
   /* Editorial Runway & Interactive Studio Stage Tokens */
-  --rw-stage: #ffffff;
-  --rw-panel: #ffffff;
+  --rw-stage: #e6e6e4;
+  --rw-panel: #f7f7f5;
   --rw-ink: #151413;
-  --rw-muted: #66625c;
-  --rw-line: #c8c8c8;
-  --rw-card: #ececec;
+  --rw-muted: #5c5953;
+  --rw-line: #c2c0bc;
+  --rw-card: #ecebe8;
   --rw-cta: #0e0e0e;
   --rw-cta-ink: #ffffff;
-  --rw-shadow-color: rgb(0 0 0 / 16%);
-  --rw-sweep-primary: rgb(21 20 19 / 7%);
-  --rw-sweep-secondary: rgb(21 20 19 / 2.8%);
-  --rw-floor-tint: rgb(21 20 19 / 4.8%);
-  --rw-overhead-glow: rgb(255 255 255 / 92%);
-  --rw-cursor-bg: rgb(21 20 19 / 3.5%);
-  --rw-cursor-ring: rgb(21 20 19 / 14%);
+  --rw-shadow-color: rgb(0 0 0 / 18%);
+  --rw-sweep-primary: rgb(95 98 104 / 20%);
+  --rw-sweep-secondary: rgb(95 98 104 / 9%);
+  --rw-floor-tint: rgb(21 20 19 / 7.5%);
+  --rw-overhead-glow: rgb(255 255 255 / 42%);
+  --rw-cursor-bg: rgb(95 98 104 / 12%);
+  --rw-cursor-ring: rgb(65 68 74 / 28%);
 
   /* Frosted Glass Panel Tokens */
-  --glass-bg-top: rgb(255 255 255 / 76%);
-  --glass-bg-bottom: rgb(246 246 244 / 60%);
-  --glass-pill-bg: rgb(255 255 255 / 66%);
-  --glass-border: rgb(21 20 19 / 9%);
-  --glass-divider: rgb(21 20 19 / 8%);
-  --glass-highlight: rgb(255 255 255 / 92%);
-  --glass-shadow: 0 22px 50px -26px rgb(21 20 19 / 16%), 0 2px 8px -2px rgb(21 20 19 / 6%);
+  --glass-bg-top: rgb(255 255 255 / 84%);
+  --glass-bg-bottom: rgb(247 246 244 / 72%);
+  --glass-pill-bg: rgb(255 255 255 / 76%);
+  --glass-border: rgb(21 20 19 / 12%);
+  --glass-divider: rgb(21 20 19 / 11%);
+  --glass-highlight: rgb(255 255 255 / 95%);
+  --glass-shadow: 0 22px 50px -26px rgb(21 20 19 / 18%), 0 2px 8px -2px rgb(21 20 19 / 8%);
 
   /* Spatial Try-On Liquid Glass Tokens (VirtualFit Reference) */
   --vf-glass-bg: linear-gradient(
     155deg,
-    rgb(250 248 245 / 76%) 0%,
-    rgb(214 209 201 / 46%) 48%,
-    rgb(236 232 226 / 62%) 100%
+    rgb(252 251 249 / 84%) 0%,
+    rgb(232 229 224 / 62%) 48%,
+    rgb(245 243 240 / 76%) 100%
   );
   --vf-glass-card-bg: linear-gradient(
     155deg,
-    rgb(252 250 247 / 78%) 0%,
-    rgb(220 215 207 / 52%) 50%,
-    rgb(240 236 230 / 68%) 100%
+    rgb(255 254 252 / 86%) 0%,
+    rgb(236 233 228 / 66%) 50%,
+    rgb(247 245 242 / 78%) 100%
   );
   --vf-drawer-bg: linear-gradient(
     155deg,
-    rgb(252 250 247 / 94%) 0%,
-    rgb(244 241 236 / 91%) 100%
+    rgb(255 254 252 / 96%) 0%,
+    rgb(246 245 242 / 94%) 100%
   );
-  --vf-glass-border: rgb(255 255 255 / 82%);
-  --vf-glass-outer-ring: rgb(21 20 19 / 10%);
+  --vf-glass-border: rgb(255 255 255 / 88%);
+  --vf-glass-outer-ring: rgb(21 20 19 / 13%);
   --vf-glass-inset-top: rgb(255 255 255 / 88%);
   --vf-glass-inset-bottom: rgb(255 255 255 / 26%);
   --vf-glass-shadow: 0 20px 46px -22px rgb(40 30 20 / 28%);
@@ -183,31 +183,31 @@
     --accent-ink: light-dark(var(--accent-ink-light), var(--accent-ink-dark));
     --border: light-dark(var(--border-light), var(--border-dark));
 
-    --rw-stage: light-dark(#ffffff, #181818);
-    --rw-panel: light-dark(#ffffff, #1e1e1e);
+    --rw-stage: light-dark(#e6e6e4, #181818);
+    --rw-panel: light-dark(#f7f7f5, #1e1e1e);
     --rw-ink: light-dark(#151413, #f2f1ee);
-    --rw-muted: light-dark(#66625c, #a3a09a);
-    --rw-line: light-dark(#c8c8c8, #343434);
-    --rw-card: light-dark(#ececec, #282828);
+    --rw-muted: light-dark(#5c5953, #a3a09a);
+    --rw-line: light-dark(#c2c0bc, #343434);
+    --rw-card: light-dark(#ecebe8, #282828);
     --rw-cta: light-dark(#0e0e0e, #f2f1ee);
     --rw-cta-ink: light-dark(#ffffff, #141414);
-    --rw-shadow-color: light-dark(rgb(0 0 0 / 16%), rgb(0 0 0 / 56%));
-    --rw-sweep-primary: light-dark(rgb(21 20 19 / 7%), rgb(255 255 255 / 8.5%));
-    --rw-sweep-secondary: light-dark(rgb(21 20 19 / 2.8%), rgb(255 255 255 / 3.4%));
-    --rw-floor-tint: light-dark(rgb(21 20 19 / 4.8%), rgb(0 0 0 / 34%));
-    --rw-overhead-glow: light-dark(rgb(255 255 255 / 92%), rgb(255 255 255 / 5%));
-    --rw-cursor-bg: light-dark(rgb(21 20 19 / 3.5%), rgb(255 255 255 / 5%));
-    --rw-cursor-ring: light-dark(rgb(21 20 19 / 14%), rgb(255 255 255 / 18%));
+    --rw-shadow-color: light-dark(rgb(0 0 0 / 18%), rgb(0 0 0 / 56%));
+    --rw-sweep-primary: light-dark(rgb(95 98 104 / 20%), rgb(255 255 255 / 8.5%));
+    --rw-sweep-secondary: light-dark(rgb(95 98 104 / 9%), rgb(255 255 255 / 3.4%));
+    --rw-floor-tint: light-dark(rgb(21 20 19 / 7.5%), rgb(0 0 0 / 34%));
+    --rw-overhead-glow: light-dark(rgb(255 255 255 / 42%), rgb(255 255 255 / 5%));
+    --rw-cursor-bg: light-dark(rgb(95 98 104 / 12%), rgb(255 255 255 / 5%));
+    --rw-cursor-ring: light-dark(rgb(65 68 74 / 28%), rgb(255 255 255 / 18%));
 
-    --glass-bg-top: light-dark(rgb(255 255 255 / 76%), rgb(42 42 42 / 62%));
-    --glass-bg-bottom: light-dark(rgb(246 246 244 / 60%), rgb(26 26 26 / 52%));
-    --glass-pill-bg: light-dark(rgb(255 255 255 / 66%), rgb(38 38 38 / 58%));
-    --glass-border: light-dark(rgb(21 20 19 / 9%), rgb(255 255 255 / 11%));
-    --glass-divider: light-dark(rgb(21 20 19 / 8%), rgb(255 255 255 / 9%));
-    --glass-highlight: light-dark(rgb(255 255 255 / 92%), rgb(255 255 255 / 13%));
+    --glass-bg-top: light-dark(rgb(255 255 255 / 84%), rgb(42 42 42 / 62%));
+    --glass-bg-bottom: light-dark(rgb(247 246 244 / 72%), rgb(26 26 26 / 52%));
+    --glass-pill-bg: light-dark(rgb(255 255 255 / 76%), rgb(38 38 38 / 58%));
+    --glass-border: light-dark(rgb(21 20 19 / 12%), rgb(255 255 255 / 11%));
+    --glass-divider: light-dark(rgb(21 20 19 / 11%), rgb(255 255 255 / 9%));
+    --glass-highlight: light-dark(rgb(255 255 255 / 95%), rgb(255 255 255 / 13%));
 
-    --vf-glass-border: light-dark(rgb(255 255 255 / 82%), rgb(255 255 255 / 16%));
-    --vf-glass-outer-ring: light-dark(rgb(21 20 19 / 10%), rgb(0 0 0 / 36%));
+    --vf-glass-border: light-dark(rgb(255 255 255 / 88%), rgb(255 255 255 / 16%));
+    --vf-glass-outer-ring: light-dark(rgb(21 20 19 / 13%), rgb(0 0 0 / 36%));
     --vf-glass-inset-top: light-dark(rgb(255 255 255 / 88%), rgb(255 255 255 / 20%));
     --vf-glass-inset-bottom: light-dark(rgb(255 255 255 / 26%), rgb(255 255 255 / 6%));
     --vf-nav-indicator-bg: light-dark(rgb(255 255 255 / 95%), rgb(246 245 242 / 94%));
@@ -286,24 +286,24 @@
 
   &:has(> head > meta[name='color-scheme'][content='light']) {
     color-scheme: light;
-    --glass-shadow: 0 22px 50px -26px rgb(21 20 19 / 16%), 0 2px 8px -2px rgb(21 20 19 / 6%);
+    --glass-shadow: 0 22px 50px -26px rgb(21 20 19 / 18%), 0 2px 8px -2px rgb(21 20 19 / 8%);
     --vf-glass-bg: linear-gradient(
       155deg,
-      rgb(250 248 245 / 76%) 0%,
-      rgb(214 209 201 / 46%) 48%,
-      rgb(236 232 226 / 62%) 100%
+      rgb(252 251 249 / 84%) 0%,
+      rgb(232 229 224 / 62%) 48%,
+      rgb(245 243 240 / 76%) 100%
     );
     --vf-glass-card-bg: linear-gradient(
       155deg,
-      rgb(252 250 247 / 78%) 0%,
-      rgb(220 215 207 / 52%) 50%,
-      rgb(240 236 230 / 68%) 100%
+      rgb(255 254 252 / 86%) 0%,
+      rgb(236 233 228 / 66%) 50%,
+      rgb(247 245 242 / 78%) 100%
     );
-    --vf-glass-shadow: 0 20px 46px -22px rgb(40 30 20 / 28%);
+    --vf-glass-shadow: 0 20px 46px -22px rgb(40 30 20 / 26%);
     --vf-drawer-bg: linear-gradient(
       155deg,
-      rgb(252 250 247 / 94%) 0%,
-      rgb(244 241 236 / 91%) 100%
+      rgb(255 254 252 / 96%) 0%,
+      rgb(246 245 242 / 94%) 100%
     );
     --vf-nav-indicator-shadow: 0 4px 14px -6px rgb(0 0 0 / 28%);
   }

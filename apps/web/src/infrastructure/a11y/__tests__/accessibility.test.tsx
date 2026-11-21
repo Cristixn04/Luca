@@ -78,13 +78,19 @@ describe('Accesibilidad, i18n ES/EN, 7 plantillas 3 vistas, onboarding y privaci
     const { container } = render(<App />);
 
     await screen.findByRole('heading', { level: 1, name: 'Probador de calce' });
-    await user.click(screen.getByRole('button', { name: '3 vistas' }));
 
     for (const category of GARMENT_CATEGORIES) {
       useFittingStore.getState().setGarmentCategory(category);
+      await user.click(screen.getByRole('button', { name: 'Frente' }));
       await waitFor(() => {
         expect(container.querySelector(`[data-garment="${category}"]`)).not.toBeNull();
+      });
+      await user.click(screen.getByRole('button', { name: 'Perfil' }));
+      await waitFor(() => {
         expect(container.querySelector(`[data-garment="${category}-side"]`)).not.toBeNull();
+      });
+      await user.click(screen.getByRole('button', { name: 'Espalda' }));
+      await waitFor(() => {
         expect(container.querySelector(`[data-garment="${category}-back"]`)).not.toBeNull();
       });
     }

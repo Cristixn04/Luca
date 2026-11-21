@@ -7,23 +7,21 @@ test.describe('Flujo e2e M11 (v1.0): onboarding, 7 plantillas 3 vistas, i18n ES/
     await page.goto('/');
     await page.getByRole('button', { name: 'Continuar sin cifrado' }).click();
 
-    // 1. Verificar nuevas plantillas en modo 3 vistas (Chaqueta, Falda, Vestido)
-    await page.getByRole('button', { name: '3 vistas' }).click();
+    // 1. Verificar nuevas plantillas en Frente, Perfil y Espalda (Chaqueta, Falda, Vestido)
     await page.getByRole('button', { name: 'Panel de prenda' }).click();
-    await page.getByRole('button', { name: 'Chaqueta' }).click();
-    await expect(page.locator('[data-garment="jacket"]')).toBeVisible();
-    await expect(page.locator('[data-garment="jacket-side"]')).toBeVisible();
-    await expect(page.locator('[data-garment="jacket-back"]')).toBeVisible();
-
-    await page.getByRole('button', { name: 'Falda' }).click();
-    await expect(page.locator('[data-garment="skirt"]')).toBeVisible();
-    await expect(page.locator('[data-garment="skirt-side"]')).toBeVisible();
-    await expect(page.locator('[data-garment="skirt-back"]')).toBeVisible();
-
-    await page.getByRole('button', { name: 'Vestido' }).click();
-    await expect(page.locator('[data-garment="dress"]')).toBeVisible();
-    await expect(page.locator('[data-garment="dress-side"]')).toBeVisible();
-    await expect(page.locator('[data-garment="dress-back"]')).toBeVisible();
+    for (const [label, key] of [
+      ['Chaqueta', 'jacket'],
+      ['Falda', 'skirt'],
+      ['Vestido', 'dress'],
+    ] as const) {
+      await page.getByRole('button', { name: label }).click();
+      await page.getByRole('button', { name: 'Frente' }).click();
+      await expect(page.locator(`[data-garment="${key}"]`)).toBeVisible();
+      await page.getByRole('button', { name: 'Perfil' }).click();
+      await expect(page.locator(`[data-garment="${key}-side"]`)).toBeVisible();
+      await page.getByRole('button', { name: 'Espalda' }).click();
+      await expect(page.locator(`[data-garment="${key}-back"]`)).toBeVisible();
+    }
 
     // 2. Alternar idioma ES -> EN -> ES
     await page.getByRole('button', { name: 'Cambiar idioma a inglés' }).click();
