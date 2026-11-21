@@ -9,20 +9,14 @@ import {
   validateBodyMeasurements,
   type GarmentCategory,
 } from '@luca/domain';
-import { Plus, Search, Shirt, Sparkles } from 'lucide-react';
-import { Badge } from '@/design-system/components/Badge';
+import { Plus, RotateCcw, Search, Sparkles } from 'lucide-react';
 import { Button } from '@/design-system/components/Button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/design-system/components/Card';
 import { getActiveSeasonId, useColorStore } from '@/features/color/colorStore';
+import { applyClosetItemToFitting } from '@/features/fitting/GarmentPanel';
 import { useFittingStore } from '@/features/fitting/store';
 import { toOutfitGarmentInputs, useOutfitsStore } from '@/features/outfits/outfitsStore';
 import { useT } from '@/i18n/i18nStore';
+import { ClosetRackStage, type RackItemMeta } from './ClosetRackStage';
 import { createClosetSearchIndex } from './closetSearch';
 import { useClosetStore, type ClosetSortBy } from './closetStore';
 import { GarmentDetailView } from './GarmentDetailView';
@@ -76,9 +70,11 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
   const wearLogs = useOutfitsStore((s) => s.wearLogs);
   const outfitsLoaded = useOutfitsStore((s) => s.loaded);
   const loadOutfits = useOutfitsStore((s) => s.loadAll);
+  const logGarmentWear = useOutfitsStore((s) => s.logGarmentWear);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<GarmentWithSizes | null>(null);
+  const [spotlightId, setSpotlightId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loaded) {
@@ -161,7 +157,10 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
         case 'name_asc':
           return a.garment.name.localeCompare(b.garment.name);
         case 'price_asc':
-          return (a.garment.price ?? Number.POSITIVE_INFINITY) - (b.garment.price ?? Number.POSITIVE_INFINITY);
+          return (
+            (a.garment.price ?? Number.POSITIVE_INFINITY) -
+            (b.garment.price ?? Number.POSITIVE_INFINITY)
+          );
         case 'price_desc':
           return (b.garment.price ?? -1) - (a.garment.price ?? -1);
         case 'recent':
@@ -171,10 +170,62 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
     });
   }, [categoryFilter, formalityFilter, items, search, searchIndex, sortBy, statusFilter]);
 
+  // Si un filtro oculta la prenda actualmente en spotlight, cerramos el spotlight limpiamente
+  const effectiveSpotlightId = useMemo(() => {
+    if (!spotlightId) return null;
+    return filteredItems.some((item) => item.garment.id === spotlightId) ? spotlightId : null;
+  }, [filteredItems, spotlightId]);
+
+  const rackEntries = useMemo<RackItemMeta[]>(
+    () =>
+      filteredItems.map((item) => {
+        const { garment, sizes } = item;
+        const recommendation =
+          bodyModel && sizes.length > 0
+            ? recommendSize(
+                bodyModel,
+                sizes.map((s) => ({
+                  category: garment.category,
+                  sizeLabel: s.label,
+                  elasticity: garment.elasticity,
+                  flatMeasuresCm: s.flatMeasuresCm,
+                })),
+                fitPreference,
+              )
+            : null;
+        const harmony =
+          activeSeasonId && garment.dominantColorHex
+            ? evaluateGarmentColorHarmony(garment.dominantColorHex, activeSeasonId)
+            : null;
+        return {
+          item,
+          recommendation,
+          harmony,
+          usage: usageMetricsById[garment.id],
+          wishlistUnlocks: wishlistUnlocksById[garment.id],
+        };
+      }),
+    [
+      activeSeasonId,
+      bodyModel,
+      filteredItems,
+      fitPreference,
+      usageMetricsById,
+      wishlistUnlocksById,
+    ],
+  );
+
   const selectedItem = useMemo(
-    () => (selectedId ? items.find((item) => item.garment.id === selectedId) ?? null : null),
+    () => (selectedId ? (items.find((item) => item.garment.id === selectedId) ?? null) : null),
     [items, selectedId],
   );
+
+  const hasActiveFilters =
+    search.trim().length > 0 ||
+    categoryFilter !== 'all' ||
+    statusFilter !== 'all' ||
+    formalityFilter !== 'all' ||
+    sortBy !== 'recent';
 
   const handleSave = async (draft: GarmentDraft, editingId?: string) => {
     if (editingId) {
@@ -182,6 +233,11 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
     } else {
       await addGarment(draft);
     }
+  };
+
+  const handleOpenInFittingRoom = (item: GarmentWithSizes, recommendedSize?: string) => {
+    applyClosetItemToFitting(item, recommendedSize);
+    onOpenInFitting();
   };
 
   if (selectedItem) {
@@ -216,73 +272,159 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-h-[calc(100dvh-215px)] w-full flex-col justify-between gap-3">
+      {/* Encabezado limpio del Clóset */}
       <section
         aria-labelledby="closet-heading"
-        className="flex flex-wrap items-end justify-between gap-4"
+        className={`flex flex-wrap items-center justify-between gap-3 px-1 transition-opacity duration-300 ${
+          effectiveSpotlightId ? 'pointer-events-none opacity-25' : 'opacity-100'
+        }`}
       >
-        <div className="flex items-center gap-2.5">
-          <h1 id="closet-heading" className="text-2xl font-bold tracking-tight sm:text-3xl">
+        <div className="flex items-center gap-3">
+          <h1
+            id="closet-heading"
+            className="font-display text-2xl font-normal tracking-[-0.025em] text-[var(--rw-ink)] sm:text-3xl"
+          >
             {t.headings.closet}
           </h1>
-          <Badge className="tabular-nums">{items.length} prendas</Badge>
+          <span className="vf-glass inline-flex items-center rounded-full px-3 py-1 text-xs font-medium tabular-nums text-muted">
+            {hasActiveFilters
+              ? `${filteredItems.length} de ${items.length} prendas`
+              : `${items.length} prendas`}
+          </span>
         </div>
 
-        <Button
+        <button
           type="button"
           onClick={() => {
             setEditingItem(null);
             setFormOpen(true);
           }}
+          className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[var(--rw-cta)] px-4 py-2 text-xs font-medium text-[var(--rw-cta-ink)] shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           Añadir prenda
-        </Button>
+        </button>
       </section>
 
-      {/* Barra de búsqueda, filtros y orden (T4.4) */}
-      <div className="grid gap-3 rounded-[var(--radius-md)] border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="relative lg:col-span-2">
-          <Search
-            className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted"
-            aria-hidden="true"
-          />
-          <input
-            type="search"
-            aria-label="Buscar prendas en el clóset"
-            placeholder="Buscar texto libre (ej. camisa lino verano)..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            className="w-full rounded-[var(--radius-sm)] border border-border bg-bg py-1.5 pr-3 pl-9 text-sm text-ink"
-          />
+      {/* Escenario principal: Perchero 3D con prendas colgadas o estados vacíos en vidrio */}
+      {items.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center py-8">
+          <div className="vf-glass-drawer flex max-w-md flex-col items-center gap-4 rounded-[28px] p-8 text-center">
+            <h2 className="font-display text-xl font-medium tracking-tight text-ink">
+              Tu clóset está vacío
+            </h2>
+            <p className="text-sm text-muted">
+              Guarda tu primera prenda con sus medidas en plano para colgarla en el perchero y
+              recibir recomendaciones de talla cifradas en tu dispositivo.
+            </p>
+            <div className="mt-1 flex flex-wrap items-center justify-center gap-2.5">
+              <Button
+                type="button"
+                onClick={() => {
+                  setEditingItem(null);
+                  setFormOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Añadir primera prenda
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={busy}
+                onClick={() => void seedSamples()}
+              >
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+                Cargar 2 prendas de ejemplo
+              </Button>
+            </div>
+          </div>
         </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center py-8">
+          <div className="vf-glass-drawer flex max-w-md flex-col items-center gap-3 rounded-[28px] p-7 text-center">
+            <h2 className="font-display text-lg font-medium text-ink">
+              Sin resultados con estos filtros
+            </h2>
+            <p className="text-sm text-muted">
+              Prueba limpiando la búsqueda o seleccionando otra categoría en la barra inferior.
+            </p>
+            <Button type="button" variant="secondary" size="sm" onClick={resetFilters}>
+              Restablecer filtros
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <ClosetRackStage
+          entries={rackEntries}
+          spotlightId={effectiveSpotlightId}
+          onSelectSpotlight={setSpotlightId}
+          onOpenInFittingRoom={handleOpenInFittingRoom}
+          onOpenDetail={(garmentId) => selectGarment(garmentId)}
+          onEdit={(target) => {
+            setEditingItem(target);
+            setFormOpen(true);
+          }}
+          onDelete={async (id) => {
+            await removeGarment(id);
+          }}
+          onLogWear={async (id) => {
+            await logGarmentWear(id);
+          }}
+        />
+      )}
 
-        <select
-          aria-label="Filtrar por categoría"
-          value={categoryFilter}
-          onChange={(event) => setCategoryFilter(event.target.value as 'all' | GarmentCategory)}
-          className="rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
-        >
-          <option value="all">Todas las categorías</option>
-          {GARMENT_CATEGORIES.map((cat) => (
-            <option key={cat} value={cat}>
-              {CATEGORY_LABELS[cat]}
-            </option>
-          ))}
-        </select>
+      {/* BARRA INFERIOR DE FILTROS EN VIDRIO LÍQUIDO (estilo .vf-glass consistente con los demás apartados) */}
+      <div
+        data-testid="closet-filter-dock"
+        aria-label="Filtros y búsqueda del clóset"
+        className={`mx-auto w-full max-w-[1060px] transition-opacity duration-300 ${
+          effectiveSpotlightId ? 'pointer-events-none opacity-0' : 'opacity-100'
+        }`}
+      >
+        <div className="vf-glass flex flex-wrap items-center gap-2 rounded-[24px] p-2 sm:rounded-full sm:px-3 sm:py-2">
+          {/* Búsqueda libre MiniSearch */}
+          <div className="relative min-w-[200px] flex-1">
+            <Search
+              className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              aria-label="Buscar prendas en el clóset"
+              placeholder="Buscar prenda, tela o estilo..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="w-full rounded-full border border-[var(--glass-border)] bg-[var(--glass-pill-bg)] py-1.5 pr-3 pl-8 text-xs text-ink placeholder:text-muted focus:border-accent focus:outline-none"
+            />
+          </div>
 
-        <select
-          aria-label="Filtrar por estado"
-          value={statusFilter}
-          onChange={(event) => setStatusFilter(event.target.value as 'all' | GarmentStatus)}
-          className="rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
-        >
-          <option value="all">Propia y deseos</option>
-          <option value="owned">{STATUS_LABELS.owned}</option>
-          <option value="wishlist">{STATUS_LABELS.wishlist}</option>
-        </select>
+          <select
+            aria-label="Filtrar por categoría"
+            value={categoryFilter}
+            onChange={(event) => setCategoryFilter(event.target.value as 'all' | GarmentCategory)}
+            className="cursor-pointer rounded-full border border-[var(--glass-border)] bg-[var(--glass-pill-bg)] px-3 py-1.5 text-xs text-ink focus:border-accent focus:outline-none"
+          >
+            <option value="all">Todas las categorías</option>
+            {GARMENT_CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {CATEGORY_LABELS[cat]}
+              </option>
+            ))}
+          </select>
 
-        <div className="flex gap-2">
+          <select
+            aria-label="Filtrar por estado"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as 'all' | GarmentStatus)}
+            className="cursor-pointer rounded-full border border-[var(--glass-border)] bg-[var(--glass-pill-bg)] px-3 py-1.5 text-xs text-ink focus:border-accent focus:outline-none"
+          >
+            <option value="all">Propia y deseos</option>
+            <option value="owned">{STATUS_LABELS.owned}</option>
+            <option value="wishlist">{STATUS_LABELS.wishlist}</option>
+          </select>
+
           <select
             aria-label="Filtrar por formalidad"
             value={formalityFilter}
@@ -292,7 +434,7 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
                 raw === 'all' ? 'all' : (Number.parseInt(raw, 10) as FormalityLevel),
               );
             }}
-            className="w-1/2 rounded-[var(--radius-sm)] border border-border bg-bg px-2 py-1.5 text-sm text-ink"
+            className="cursor-pointer rounded-full border border-[var(--glass-border)] bg-[var(--glass-pill-bg)] px-3 py-1.5 text-xs text-ink focus:border-accent focus:outline-none"
           >
             <option value="all">Formalidad</option>
             <option value="1">1</option>
@@ -306,182 +448,27 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
             aria-label="Ordenar prendas"
             value={sortBy}
             onChange={(event) => setSortBy(event.target.value as ClosetSortBy)}
-            className="w-1/2 rounded-[var(--radius-sm)] border border-border bg-bg px-2 py-1.5 text-sm text-ink"
+            className="cursor-pointer rounded-full border border-[var(--glass-border)] bg-[var(--glass-pill-bg)] px-3 py-1.5 text-xs text-ink focus:border-accent focus:outline-none"
           >
             <option value="recent">Recientes</option>
             <option value="name_asc">Nombre A–Z</option>
             <option value="price_asc">Menor precio</option>
             <option value="price_desc">Mayor precio</option>
           </select>
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              aria-label="Restablecer filtros del clóset"
+              onClick={resetFilters}
+              className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-[var(--vf-chip-bg)] px-2.5 py-1.5 text-[11px] font-medium text-ink transition-colors hover:bg-[var(--vf-nav-indicator-bg)] hover:text-[var(--vf-nav-active-ink)]"
+            >
+              <RotateCcw className="h-3 w-3" aria-hidden="true" />
+              Limpiar
+            </button>
+          )}
         </div>
       </div>
-
-      {/* Estados vacíos o grilla de prendas */}
-      {items.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Tu clóset está vacío</CardTitle>
-            <CardDescription>
-              Guarda tu primera prenda con sus medidas en plano para recibir recomendaciones de
-              talla cifradas en tu dispositivo.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              onClick={() => {
-                setEditingItem(null);
-                setFormOpen(true);
-              }}
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              Añadir primera prenda
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={busy}
-              onClick={() => void seedSamples()}
-            >
-              <Sparkles className="h-4 w-4" aria-hidden="true" />
-              Cargar 2 prendas de ejemplo
-            </Button>
-          </CardContent>
-        </Card>
-      ) : filteredItems.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Sin resultados con estos filtros</CardTitle>
-            <CardDescription>
-              Prueba limpiando la búsqueda o seleccionando otra categoría.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button type="button" variant="secondary" size="sm" onClick={resetFilters}>
-              Restablecer filtros
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
-          {filteredItems.map((item) => {
-            const { garment, sizes } = item;
-            const rec =
-              bodyModel && sizes.length > 0
-                ? recommendSize(
-                    bodyModel,
-                    sizes.map((s) => ({
-                      category: garment.category,
-                      sizeLabel: s.label,
-                      elasticity: garment.elasticity,
-                      flatMeasuresCm: s.flatMeasuresCm,
-                    })),
-                    fitPreference,
-                  )
-                : null;
-
-            const harmony =
-              activeSeasonId && garment.dominantColorHex
-                ? evaluateGarmentColorHarmony(garment.dominantColorHex, activeSeasonId)
-                : null;
-            const usage = usageMetricsById[garment.id];
-            const wishlistUnlocks = wishlistUnlocksById[garment.id];
-
-            return (
-              <Card
-                key={garment.id}
-                className="flex flex-col justify-between transition-colors hover:border-accent/60"
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="inline-flex h-6 w-6 items-center justify-center rounded-[var(--radius-sm)] border border-border"
-                        style={{ backgroundColor: garment.dominantColorHex ?? '#1F5F6B' }}
-                        aria-hidden="true"
-                      >
-                        <Shirt className="h-3.5 w-3.5 text-white" />
-                      </span>
-                      <Badge>{CATEGORY_LABELS[garment.category]}</Badge>
-                    </div>
-                    <Badge variant={garment.status === 'wishlist' ? 'accent' : 'neutral'}>
-                      {STATUS_LABELS[garment.status]}
-                    </Badge>
-                  </div>
-
-                  <CardTitle className="mt-2 truncate text-base">{garment.name}</CardTitle>
-                  <CardDescription className="truncate">
-                    {garment.brand || 'Sin marca'} · {sizes.length} talla(s)
-                    {garment.price !== undefined ? ` · $${garment.price.toFixed(0)}` : ''}
-                  </CardDescription>
-                </CardHeader>
-
-                <CardContent className="flex flex-col gap-3">
-                  {item.image?.dataUrl && (
-                    <div className="flex h-32 w-full items-center justify-center overflow-hidden rounded-[var(--radius-sm)] border border-border bg-bg p-2">
-                      <img
-                        src={item.image.dataUrl}
-                        alt={`Foto de ${garment.name}`}
-                        className="max-h-full max-w-full object-contain"
-                        onError={(event) => {
-                          event.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
-                  {rec && (
-                    <div className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-xs">
-                      <span className="text-muted">Talla sugerida</span>
-                      <span className="font-semibold text-accent">{rec.recommendedSize}</span>
-                    </div>
-                  )}
-                  {harmony && (
-                    <div
-                      data-testid={`garment-harmony-${garment.id}`}
-                      className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-xs"
-                    >
-                      <span className="text-muted">Afinidad paleta</span>
-                      <span className="tabular-nums font-semibold text-ink">
-                        {harmony.scorePercent} %
-                      </span>
-                    </div>
-                  )}
-                  {garment.status === 'wishlist' && wishlistUnlocks !== undefined && (
-                    <div className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-xs">
-                      <span className="text-muted">Desbloquea</span>
-                      <span className="tabular-nums font-semibold text-accent">
-                        {wishlistUnlocks} outfit(s)
-                      </span>
-                    </div>
-                  )}
-                  {garment.status === 'owned' && usage && (
-                    <div className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 text-xs">
-                      <span className="tabular-nums text-muted">
-                        {usage.wearCount} uso(s)
-                        {usage.cpw !== null ? ` · $${usage.cpw.toFixed(0)}/uso` : ''}
-                      </span>
-                      {usage.isOrphan ? (
-                        <Badge>Huérfana</Badge>
-                      ) : (
-                        <span className="tabular-nums text-muted">{usage.versatility} outfit(s)</span>
-                      )}
-                    </div>
-                  )}
-
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => selectGarment(garment.id)}
-                  >
-                    Ver calce y tallas
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
 
       <GarmentFormDialog
         open={formOpen}

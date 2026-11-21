@@ -35,8 +35,9 @@ test.describe('Flujo e2e M7: etiquetado local, búsqueda libre y prendas similar
     await expect(page.getByText('Camiseta básica de lino')).toBeVisible();
     await expect(page.getByText('Pantalón chino recto')).toHaveCount(0);
 
-    // 5. Abrir detalle y verificar tarjeta "Prendas similares" y navegación
-    await page.getByRole('button', { name: /Ver calce y tallas/i }).first().click();
+    // 5. Seleccionar en el perchero, abrir ficha y verificar tarjeta "Prendas similares" y navegación
+    await page.locator('[data-closet-rack-item]').first().click();
+    await page.getByRole('button', { name: /Ficha y detalles/i }).click();
     await expect(page.getByTestId('similar-garments-card')).toBeVisible();
     await expect(page.getByTestId('similar-garments-card')).toContainText(
       'Camiseta fresca de verano',

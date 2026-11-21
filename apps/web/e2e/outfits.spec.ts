@@ -26,11 +26,12 @@ test.describe('Flujo e2e M9: sugerir outfits → guardar → registrar uso y CPW
     await page.getByRole('button', { name: 'Usé este outfit hoy' }).click();
     await expect(page.getByText('Uso registrado para hoy.')).toBeVisible();
 
-    // 4. Ir al Clóset, ubicar la prenda usada hoy (1 uso) y comprobar uso = 1 y CPW actualizado
+    // 4. Ir al Clóset, ubicar la prenda usada hoy (1 uso) en el perchero y comprobar uso = 1 y CPW actualizado
     await page.getByRole('link', { name: 'Clóset' }).click();
-    const wornCard = page.locator('div[class*="rounded"]', { hasText: '1 uso(s)' }).first();
-    await expect(wornCard).toBeVisible();
-    await wornCard.getByRole('button', { name: /Ver calce y tallas/i }).click();
+    const wornHanger = page.locator('[data-closet-rack-item]', { hasText: '1 uso(s)' }).first();
+    await expect(wornHanger).toBeVisible();
+    await wornHanger.click();
+    await page.getByRole('button', { name: /Ficha y detalles/i }).click();
     await expect(page.getByTestId('garment-usage-card')).toBeVisible();
     await expect(page.getByTestId('garment-wear-count')).toHaveText('1');
 

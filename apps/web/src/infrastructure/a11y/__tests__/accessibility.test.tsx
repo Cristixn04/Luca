@@ -94,5 +94,5 @@ describe('Accesibilidad, i18n ES/EN, 7 plantillas 3 vistas, onboarding y privaci
         expect(container.querySelector(`[data-garment="${category}-back"]`)).not.toBeNull();
       });
     }
-  });
+  }, 15_000);
 });

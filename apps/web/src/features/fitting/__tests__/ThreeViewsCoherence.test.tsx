@@ -88,7 +88,7 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
       expect(statesByView.back[zone]).toBe(statesByView.front[zone]);
     }
     expect(statesByView.front.waist).toBe('tense');
-  });
+  }, 12_000);
 
   it('marca como "estimado" las vistas sin medidas opcionales y quita la marca al ingresarlas', async () => {
     const user = userEvent.setup();

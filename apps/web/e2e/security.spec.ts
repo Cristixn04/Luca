@@ -47,7 +47,9 @@ test.describe('Auditoría e2e de seguridad, privacidad y modo offline (RNF-06, R
     await page.getByRole('button', { name: 'Guardar prenda' }).click();
 
     await expect(page.getByText(xssName)).toBeVisible();
-    await page.getByRole('button', { name: /Ver calce y tallas/i }).click();
+    await page.locator('[data-closet-rack-item]').first().click();
+    await expect(page.getByTestId('spotlight-recommended-size')).toBeVisible();
+    await page.getByRole('button', { name: /Ficha y detalles/i }).click();
     await expect(page.getByTestId('recommended-size-banner')).toBeVisible();
 
     // 4. Verificar que XSS no ejecutó nada en el navegador real

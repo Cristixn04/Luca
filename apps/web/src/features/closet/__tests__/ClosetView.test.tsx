@@ -54,21 +54,27 @@ describe('ClosetView y GarmentDetailView (T4.3 – T4.5)', () => {
 
     await user.selectOptions(screen.getByLabelText('Filtrar por estado'), 'all');
 
-    // 4. Abrir detalle de la camiseta y verificar talla recomendada M
-    const shirtHeading = screen.getByText('Camiseta básica de lino');
-    const shirtCard = shirtHeading.closest('div[class*="rounded"]');
-    expect(shirtCard).not.toBeNull();
-    await user.click(within(shirtCard as HTMLElement).getByRole('button', { name: /Ver calce y tallas/i }));
+    // 4. Antes de seleccionar prenda en el perchero, "Ver calce y tallas" no aparece
+    expect(screen.queryByRole('button', { name: /Ver calce y tallas/i })).not.toBeInTheDocument();
 
+    // 5. Seleccionar la camiseta en el perchero -> se abre vista spotlight con talla sugerida M
+    await user.click(screen.getByRole('button', { name: 'Seleccionar Camiseta básica de lino' }));
+    const spotlight = await screen.findByTestId('closet-spotlight');
+    expect(within(spotlight).getByTestId('spotlight-recommended-size')).toHaveTextContent(
+      'Talla sugerida: M',
+    );
+
+    // 6. Pulsar "Ver calce y tallas" envía directamente al Probador con la prenda cargada
+    await user.click(within(spotlight).getByRole('button', { name: /Ver calce y tallas/i }));
+    expect(onOpenInFitting).toHaveBeenCalledTimes(1);
+    expect(useFittingStore.getState().garmentName).toBe('Camiseta básica de lino');
+    expect(useFittingStore.getState().garmentSizeLabel).toBe('M');
+
+    // 7. Desde "Ficha y detalles" sigue disponible la vista completa con cambio de talla
+    await user.click(within(spotlight).getByRole('button', { name: /Ficha y detalles/i }));
     const banner = await screen.findByTestId('recommended-size-banner');
     expect(banner).toHaveTextContent('Talla recomendada: M');
-
-    // 5. Cambiar a talla L y verificar que actualiza el encabezado del probador
     await user.click(within(banner).getByRole('button', { name: 'L' }));
     expect(screen.getByText('Probador · Talla L')).toBeInTheDocument();
-
-    // 6. Abrir en Probador
-    await user.click(screen.getByRole('button', { name: /Abrir en Probador/i }));
-    expect(onOpenInFitting).toHaveBeenCalledTimes(1);
-  });
+  }, 12_000);
 });

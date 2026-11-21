@@ -23,12 +23,13 @@ test.describe('Flujo e2e M8: colorimetría estacional, afinidad de prendas y opc
     await page.getByRole('button', { name: /Guardar perfil de color/i }).click();
     await expect(page.getByText(/Perfil de color guardado/i)).toBeVisible();
 
-    // 2. Ir al Clóset, cargar prendas de ejemplo y ver afinidad en tarjeta y detalle
+    // 2. Ir al Clóset, cargar prendas de ejemplo, seleccionar en perchero y ver afinidad en spotlight y ficha
     await page.getByRole('link', { name: 'Clóset' }).click();
     await page.getByRole('button', { name: /Cargar 2 prendas de ejemplo/i }).click();
-    await expect(page.getByText('Afinidad paleta').first()).toBeVisible();
+    await page.locator('[data-closet-rack-item]').first().click();
+    await expect(page.getByTestId('closet-spotlight')).toContainText('Afinidad paleta');
 
-    await page.getByRole('button', { name: /Ver calce y tallas/i }).first().click();
+    await page.getByRole('button', { name: /Ficha y detalles/i }).click();
     await expect(page.getByTestId('garment-color-harmony-card')).toBeVisible();
     await expect(page.getByTestId('garment-color-harmony-card')).toContainText('ΔE₀₀');
 

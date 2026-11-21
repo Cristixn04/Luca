@@ -32,9 +32,12 @@ test.describe('Flujo e2e M4: clóset local cifrado, tallas y talla recomendada (
     await page.getByRole('link', { name: 'Clóset' }).click();
     await expect(page.getByText('Camisa Oxford Azul')).toBeVisible();
 
-    // 4. Abrir detalle y verificar talla sugerida M y mapa de calor
+    // 4. Seleccionar prenda en el perchero, verificar talla sugerida M y abrir en Probador con "Ver calce y tallas"
+    await expect(page.getByRole('button', { name: /Ver calce y tallas/i })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Seleccionar Camisa Oxford Azul' }).click();
+    await expect(page.getByTestId('spotlight-recommended-size')).toContainText('Talla sugerida: M');
     await page.getByRole('button', { name: /Ver calce y tallas/i }).click();
-    await expect(page.getByTestId('recommended-size-banner')).toContainText('Talla recomendada: M');
+    await expect(page.getByRole('heading', { level: 1, name: 'Probador de calce' })).toBeVisible();
     await expect(page.locator('[data-heatmap-zone="chest"]')).toBeVisible();
   });
 });
