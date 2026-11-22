@@ -11,19 +11,11 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react';
-import { Badge } from '@/design-system/components/Badge';
 import { Button } from '@/design-system/components/Button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/design-system/components/Card';
-import { formatBytes } from '@/infrastructure/storage/persistence';
-import { MIN_PASSWORD_LENGTH } from '@/infrastructure/vault/vaultService';
 import { TasteMemorySection } from '@/features/taste/TasteMemorySection';
 import { useT } from '@/i18n/i18nStore';
+import { formatBytes } from '@/infrastructure/storage/persistence';
+import { MIN_PASSWORD_LENGTH } from '@/infrastructure/vault/vaultService';
 import { useVaultStore } from './vaultStore';
 
 export function MemoryVaultPanel() {
@@ -43,6 +35,7 @@ export function MemoryVaultPanel() {
   const requestPersistence = useVaultStore((s) => s.requestPersistence);
   const wipeAll = useVaultStore((s) => s.wipeAll);
 
+  const [securityTab, setSecurityTab] = useState<'backup' | 'password'>('backup');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
@@ -51,6 +44,7 @@ export function MemoryVaultPanel() {
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
   const [backupError, setBackupError] = useState<string | null>(null);
   const [importJson, setImportJson] = useState('');
+  const [importFileName, setImportFileName] = useState<string | null>(null);
   const [importCredential, setImportCredential] = useState('');
   const [importMethod, setImportMethod] = useState<'password' | 'recovery'>('password');
 
@@ -88,7 +82,7 @@ export function MemoryVaultPanel() {
       await changePassword(currentPassword, newPassword);
       setCurrentPassword('');
       setNewPassword('');
-      setPasswordMessage('Contraseña actualizada. La DEK se reenvolvió sin recifrar tus datos.');
+      setPasswordMessage('Contraseña actualizada.');
     } catch (err) {
       setPasswordError(err instanceof Error ? err.message : 'No se pudo cambiar la contraseña.');
     }
@@ -106,7 +100,7 @@ export function MemoryVaultPanel() {
       link.download = `luca-respaldo-cifrado-${new Date().toISOString().slice(0, 10)}.json`;
       link.click();
       URL.revokeObjectURL(url);
-      setBackupStatus('Respaldo cifrado exportado correctamente.');
+      setBackupStatus('Respaldo cifrado exportado.');
     } catch (err) {
       setBackupError(err instanceof Error ? err.message : 'No se pudo exportar el respaldo.');
     }
@@ -119,8 +113,9 @@ export function MemoryVaultPanel() {
     try {
       const count = await importBackup(importJson, importCredential, importMethod);
       setImportJson('');
+      setImportFileName(null);
       setImportCredential('');
-      setBackupStatus(`Respaldo restaurado (${count} registros verificados).`);
+      setBackupStatus(`Respaldo restaurado (${count} registros).`);
     } catch (err) {
       setBackupError(err instanceof Error ? err.message : 'No se pudo importar el respaldo.');
     }
@@ -131,373 +126,444 @@ export function MemoryVaultPanel() {
     setCompactMessage(
       summary.compactedEvents > 0
         ? `Compactados ${summary.compactedEvents} eventos en ${summary.updatedMonths.length} mes(es).`
-        : 'No hay eventos pendientes por compactar.',
+        : 'Sin eventos pendientes.',
     );
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <section aria-labelledby="vault-heading" className="flex flex-col gap-1">
-        <h1 id="vault-heading" className="text-2xl font-bold tracking-tight sm:text-3xl">
-          {t.headings.memory}
-        </h1>
+    <div className="flex w-full flex-1 flex-col gap-3.5 xl:gap-4">
+      {/* Encabezado compacto a ancho completo */}
+      <section
+        aria-labelledby="vault-heading"
+        className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-1"
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          <h1
+            id="vault-heading"
+            className="font-display text-2xl font-normal tracking-[-0.025em] text-[var(--rw-ink)] sm:text-3xl"
+          >
+            {t.headings.memory}
+          </h1>
+
+          <span className="vf-glass inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium text-ink">
+            {isEncrypted ? (
+              <>
+                <ShieldCheck className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                Cifrada · {meta?.autoLockMinutes ?? 15} min
+              </>
+            ) : (
+              <>
+                <ShieldAlert className="h-3.5 w-3.5 text-[#E0A526]" aria-hidden="true" />
+                Sin cifrado
+              </>
+            )}
+          </span>
+
+          {persistence?.isIosNonStandalone && (
+            <span className="vf-glass inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium text-[#E0A526]">
+              <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+              iOS Safari: añade a pantalla de inicio
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {isEncrypted && (
+            <>
+              <button
+                type="button"
+                onClick={() => void handleExport()}
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
+                  persistence?.backupReminderDue
+                    ? 'bg-[var(--vf-chip-active-bg)] text-[var(--vf-chip-active-ink)] shadow-xs hover:opacity-90'
+                    : 'vf-glass text-ink hover:opacity-90'
+                }`}
+              >
+                <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                {persistence?.backupReminderDue ? 'Exportar respaldo ahora' : 'Exportar respaldo'}
+              </button>
+
+              <button
+                type="button"
+                onClick={lock}
+                className="vf-glass inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium text-ink transition-opacity hover:opacity-90"
+              >
+                <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+                Bloquear ahora
+              </button>
+            </>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setWipeDialogOpen(true)}
+            className="vf-glass inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium text-[#C2410C] transition-opacity hover:opacity-90"
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+            Borrar todos los datos
+          </button>
+        </div>
       </section>
 
-      <TasteMemorySection />
+      {/* Bento principal a ancho y alto completos (sin scroll vertical en escritorio) */}
+      <div className="grid min-h-0 flex-1 gap-3.5 lg:grid-cols-12 xl:gap-4">
+        {/* COLUMNA IZQUIERDA (7 cols): Gustos aprendidos y preferencias explícitas */}
+        <TasteMemorySection className="lg:col-span-7" />
 
-      {/* Avisos críticos: modo sin cifrado, iOS Safari y recordatorio de respaldo (T3.6) */}
-      {!isEncrypted && (
-        <div
-          role="status"
-          className="flex items-start gap-3 rounded-[var(--radius-md)] border border-[#E0A526] bg-surface p-4 text-sm"
-        >
-          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-[#E0A526]" aria-hidden="true" />
-          <div className="flex flex-col gap-1">
-            <p className="font-semibold text-ink">Modo sin cifrado activo</p>
-            <p className="text-xs text-muted">
-              Tus datos viven solo en tu dispositivo, pero no están cifrados con contraseña. Puedes
-              borrar e inicializar una bóveda cifrada cuando quieras.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {persistence?.isIosNonStandalone && (
-        <div
-          role="status"
-          className="flex items-start gap-3 rounded-[var(--radius-md)] border border-border bg-surface p-4 text-sm"
-        >
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[#E0A526]" aria-hidden="true" />
-          <p className="text-xs text-muted">
-            En Safari iOS, el navegador puede purgar datos locales tras varios días sin uso.
-            Instala Luca desde Compartir → «Añadir a pantalla de inicio» y exporta respaldos
-            periódicos.
-          </p>
-        </div>
-      )}
-
-      {isEncrypted && persistence?.backupReminderDue && (
-        <div
-          role="status"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-md)] border border-border bg-surface p-4"
-        >
-          <div className="flex items-start gap-2.5 text-xs text-muted">
-            <Download className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-            <span>
-              {persistence.daysSinceBackup === null
-                ? 'Aún no has exportado tu primer respaldo cifrado.'
-                : `Han pasado ${persistence.daysSinceBackup} días desde tu último respaldo cifrado.`}
-            </span>
-          </div>
-          <Button type="button" size="sm" variant="secondary" onClick={() => void handleExport()}>
-            Exportar respaldo ahora
-          </Button>
-        </div>
-      )}
-
-      <div className="grid gap-5 md:grid-cols-2">
-        {/* Estado de bóveda */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between gap-2">
-              <CardTitle>Estado de la bóveda</CardTitle>
-              {isEncrypted ? (
-                <ShieldCheck className="h-5 w-5 text-accent" aria-hidden="true" />
-              ) : (
-                <ShieldAlert className="h-5 w-5 text-[#E0A526]" aria-hidden="true" />
-              )}
-            </div>
-            <CardDescription>
-              {isEncrypted ? 'Protegida con contraseña en este dispositivo' : 'Guardado local sin contraseña'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 text-sm">
-            <div className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-2 text-xs">
-              <span className="text-muted">Bloqueo automático por inactividad</span>
-              <span className="tabular-nums font-semibold text-ink">
-                {meta?.autoLockMinutes ?? 15} min
-              </span>
-            </div>
-            {isEncrypted && (
-              <Button type="button" variant="secondary" onClick={lock}>
-                <Lock className="h-4 w-4" aria-hidden="true" />
-                Bloquear bóveda ahora
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Persistencia y cuota (T3.6) */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between gap-2">
-              <CardTitle>Almacenamiento persistente</CardTitle>
-              <HardDrive className="h-5 w-5 text-accent" aria-hidden="true" />
-            </div>
-            <CardDescription>Estado de IndexedDB y cuota del navegador</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 text-xs">
-            <div className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-2">
-              <span className="text-muted">Protección contra purga</span>
-              <Badge variant={persistence?.persisted ? 'accent' : 'neutral'}>
+        {/* COLUMNA DERECHA (5 cols): Almacenamiento local + Seguridad y respaldos */}
+        <div className="flex min-h-0 flex-col gap-3.5 lg:col-span-5 xl:gap-4">
+          {/* Panel superior derecho: Almacenamiento y eventos */}
+          <section
+            aria-label="Almacenamiento y registro local"
+            className="vf-glass-drawer flex shrink-0 flex-col gap-3 rounded-[26px] p-4 xl:p-5"
+          >
+            <div className="flex items-center justify-between gap-2 border-b border-[var(--glass-divider)] pb-2.5">
+              <div className="flex items-center gap-2">
+                <HardDrive className="h-4 w-4 text-accent" aria-hidden="true" />
+                <h2 className="font-display text-base font-semibold tracking-tight text-ink">
+                  Almacenamiento local
+                </h2>
+              </div>
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                  persistence?.persisted
+                    ? 'bg-[var(--vf-chip-active-bg)] text-[var(--vf-chip-active-ink)]'
+                    : 'bg-[var(--vf-chip-bg)] text-muted'
+                }`}
+              >
                 {persistence?.persisted ? 'Persistente' : 'Estándar'}
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-2">
-              <span className="text-muted">Uso / cuota estimada</span>
-              <span className="tabular-nums font-medium text-ink">
-                {formatBytes(persistence?.usageBytes ?? null)} /{' '}
-                {formatBytes(persistence?.quotaBytes ?? null)}
               </span>
             </div>
-            {!persistence?.persisted && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => void requestPersistence()}
-              >
-                Solicitar almacenamiento persistente
-              </Button>
-            )}
-          </CardContent>
-        </Card>
 
-        {/* Respaldo cifrado (T3.7) */}
-        {isEncrypted && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Respaldo cifrado</CardTitle>
-              <CardDescription>
-                Solo puede abrirse con tu contraseña o tu clave de recuperación.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <Button type="button" variant="secondary" onClick={() => void handleExport()}>
-                <Download className="h-4 w-4" aria-hidden="true" />
-                Exportar respaldo cifrado (.json)
-              </Button>
-
-              <form
-                onSubmit={handleImport}
-                className="flex flex-col gap-2.5 border-t border-border pt-3"
-              >
-                <label htmlFor="panel-import-file" className="text-xs font-semibold text-ink">
-                  Importar respaldo cifrado
-                </label>
-                <input
-                  id="panel-import-file"
-                  type="file"
-                  accept="application/json,.json"
-                  onChange={async (event) => {
-                    const file = event.target.files?.[0];
-                    if (file) setImportJson(await file.text());
-                  }}
-                  className="text-xs text-muted"
-                />
-                <div className="flex gap-1.5">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={importMethod === 'password' ? 'primary' : 'outline'}
-                    onClick={() => setImportMethod('password')}
-                  >
-                    Contraseña
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={importMethod === 'recovery' ? 'primary' : 'outline'}
-                    onClick={() => setImportMethod('recovery')}
-                  >
-                    Clave de recuperación
-                  </Button>
-                </div>
-                <input
-                  type={importMethod === 'password' ? 'password' : 'text'}
-                  placeholder={
-                    importMethod === 'password'
-                      ? 'Contraseña del respaldo'
-                      : 'Clave de recuperación'
-                  }
-                  value={importCredential}
-                  onChange={(event) => setImportCredential(event.target.value)}
-                  className="rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
-                />
-                <Button
-                  type="submit"
-                  size="sm"
-                  variant="outline"
-                  disabled={busy || !importJson.trim() || !importCredential.trim()}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
+              {[
+                { label: 'Auto-bloqueo', value: `${meta?.autoLockMinutes ?? 15} min` },
+                { label: 'Uso local', value: formatBytes(persistence?.usageBytes ?? null) },
+                { label: 'Eventos', value: String(eventCount) },
+                { label: 'Resúmenes', value: String(snapshotCount) },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-2xl border border-[var(--glass-border)] bg-[var(--vf-chip-bg)]/60 px-3 py-2 text-center"
                 >
-                  <Upload className="h-3.5 w-3.5" aria-hidden="true" />
-                  Restaurar archivo
-                </Button>
-              </form>
+                  <p className="text-[10px] font-medium text-muted">{stat.label}</p>
+                  <p className="tabular-nums text-xs font-semibold text-ink">{stat.value}</p>
+                </div>
+              ))}
+            </div>
 
-              {backupStatus && (
-                <p role="status" className="text-xs font-medium text-accent">
-                  {backupStatus}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => void handleCompact()}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-bg)] px-3 py-1.5 text-[11px] font-medium text-ink transition-opacity hover:opacity-85"
+                >
+                  <Archive className="h-3.5 w-3.5" aria-hidden="true" />
+                  Compactar eventos
+                </button>
+
+                {!persistence?.persisted && (
+                  <button
+                    type="button"
+                    onClick={() => void requestPersistence()}
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-bg)] px-3 py-1.5 text-[11px] font-medium text-ink transition-opacity hover:opacity-85"
+                  >
+                    <HardDrive className="h-3.5 w-3.5" aria-hidden="true" />
+                    Solicitar persistencia
+                  </button>
+                )}
+              </div>
+
+              {compactMessage && (
+                <p role="status" className="text-[11px] font-medium text-accent">
+                  {compactMessage}
                 </p>
               )}
-              {backupError && (
-                <p role="alert" className="text-xs font-medium text-[#C2410C]">
-                  {backupError}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          </section>
 
-        {/* Cambio de contraseña (ADR-004: reenvuelve DEK) */}
-        {isEncrypted && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Cambiar contraseña</CardTitle>
-              <CardDescription>
-                Reenvuelve la clave de datos (DEK) sin recifrar tus registros.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleChangePassword} className="flex flex-col gap-3">
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="change-current-pass" className="text-xs font-medium text-muted">
-                    Contraseña actual
-                  </label>
-                  <input
-                    id="change-current-pass"
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    value={currentPassword}
-                    onChange={(event) => setCurrentPassword(event.target.value)}
-                    className="rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="change-new-pass" className="text-xs font-medium text-muted">
-                    Nueva contraseña (mín. {MIN_PASSWORD_LENGTH} caracteres)
-                  </label>
-                  <input
-                    id="change-new-pass"
-                    type="password"
-                    autoComplete="new-password"
-                    required
-                    minLength={MIN_PASSWORD_LENGTH}
-                    value={newPassword}
-                    onChange={(event) => setNewPassword(event.target.value)}
-                    className="rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
-                  />
+          {/* Panel inferior derecho: Respaldo cifrado y contraseña (en pestañas limpias) */}
+          <section
+            aria-label="Seguridad y respaldos"
+            className="vf-glass-drawer flex min-h-0 flex-1 flex-col justify-between gap-3 rounded-[26px] p-4 xl:p-5"
+          >
+            {isEncrypted ? (
+              <>
+                <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[var(--glass-divider)] pb-2.5">
+                  <h2 className="font-display text-base font-semibold tracking-tight text-ink">
+                    Seguridad
+                  </h2>
+                  <div
+                    className="inline-flex items-center gap-1 rounded-full bg-[var(--vf-chip-bg)] p-1"
+                    role="tablist"
+                    aria-label="Opciones de seguridad"
+                  >
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={securityTab === 'backup'}
+                      onClick={() => setSecurityTab('backup')}
+                      className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-medium transition-all ${
+                        securityTab === 'backup'
+                          ? 'bg-[var(--vf-chip-active-bg)] text-[var(--vf-chip-active-ink)] shadow-xs'
+                          : 'text-muted hover:text-ink'
+                      }`}
+                    >
+                      Respaldo
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={securityTab === 'password'}
+                      onClick={() => setSecurityTab('password')}
+                      className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-medium transition-all ${
+                        securityTab === 'password'
+                          ? 'bg-[var(--vf-chip-active-bg)] text-[var(--vf-chip-active-ink)] shadow-xs'
+                          : 'text-muted hover:text-ink'
+                      }`}
+                    >
+                      Contraseña
+                    </button>
+                  </div>
                 </div>
 
-                {passwordMessage && (
-                  <p role="status" className="text-xs font-medium text-accent">
-                    {passwordMessage}
-                  </p>
-                )}
-                {passwordError && (
-                  <p role="alert" className="text-xs font-medium text-[#C2410C]">
-                    {passwordError}
-                  </p>
-                )}
+                {securityTab === 'backup' ? (
+                  <form
+                    onSubmit={handleImport}
+                    className="flex flex-1 flex-col justify-between gap-3"
+                  >
+                    <div className="flex flex-col gap-2.5">
+                      <label
+                        htmlFor="panel-import-file"
+                        className="flex cursor-pointer items-center justify-between gap-2 rounded-2xl border border-dashed border-[var(--glass-border)] bg-[var(--vf-chip-bg)]/50 px-3.5 py-2.5 text-xs transition-colors hover:border-ink/40"
+                      >
+                        <span className="truncate font-medium text-ink">
+                          {importFileName ?? 'Seleccionar respaldo cifrado (.json)'}
+                        </span>
+                        <span className="shrink-0 rounded-full bg-[var(--vf-chip-bg)] px-2.5 py-0.5 text-[11px] text-muted">
+                          Explorar
+                        </span>
+                        <input
+                          id="panel-import-file"
+                          type="file"
+                          accept="application/json,.json"
+                          onChange={async (event) => {
+                            const file = event.target.files?.[0];
+                            if (file) {
+                              setImportFileName(file.name);
+                              setImportJson(await file.text());
+                            }
+                          }}
+                          className="sr-only"
+                        />
+                      </label>
 
-                <Button type="submit" size="sm" disabled={busy}>
-                  <KeyRound className="h-3.5 w-3.5" aria-hidden="true" />
-                  Actualizar contraseña
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        )}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setImportMethod('password')}
+                          className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-medium transition-all ${
+                            importMethod === 'password'
+                              ? 'bg-[var(--vf-chip-active-bg)] text-[var(--vf-chip-active-ink)]'
+                              : 'bg-[var(--vf-chip-bg)] text-muted hover:text-ink'
+                          }`}
+                        >
+                          Contraseña
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setImportMethod('recovery')}
+                          className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-medium transition-all ${
+                            importMethod === 'recovery'
+                              ? 'bg-[var(--vf-chip-active-bg)] text-[var(--vf-chip-active-ink)]'
+                              : 'bg-[var(--vf-chip-bg)] text-muted hover:text-ink'
+                          }`}
+                        >
+                          Clave de recuperación
+                        </button>
+                      </div>
 
-        {/* Registro de eventos y compactación (T3.5) */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between gap-2">
-              <CardTitle>Registro de eventos</CardTitle>
-              <Archive className="h-5 w-5 text-accent" aria-hidden="true" />
-            </div>
-            <CardDescription>
-              Bitácora de solo añadir compactable en resúmenes mensuales.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 text-xs">
-            <div className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-2">
-              <span className="text-muted">Eventos activos</span>
-              <span className="tabular-nums font-semibold text-ink">{eventCount}</span>
-            </div>
-            <div className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-2">
-              <span className="text-muted">Resúmenes mensuales</span>
-              <span className="tabular-nums font-semibold text-ink">{snapshotCount}</span>
-            </div>
-            {compactMessage && (
-              <p role="status" className="text-xs text-accent">
-                {compactMessage}
-              </p>
+                      <input
+                        type={importMethod === 'password' ? 'password' : 'text'}
+                        placeholder={
+                          importMethod === 'password'
+                            ? 'Contraseña del respaldo'
+                            : 'Clave de recuperación'
+                        }
+                        value={importCredential}
+                        onChange={(event) => setImportCredential(event.target.value)}
+                        className="rounded-xl border border-[var(--glass-border)] bg-bg/70 px-3 py-2 text-xs text-ink placeholder:text-muted focus:border-accent focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--glass-divider)] pt-3">
+                      <div className="min-w-0 text-xs">
+                        {backupStatus && (
+                          <p role="status" className="font-medium text-accent">
+                            {backupStatus}
+                          </p>
+                        )}
+                        {backupError && (
+                          <p role="alert" className="font-medium text-[#C2410C]">
+                            {backupError}
+                          </p>
+                        )}
+                        {!backupStatus && !backupError && (
+                          <span className="text-[11px] text-muted">
+                            Solo legible con tu clave local
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={busy || !importJson.trim() || !importCredential.trim()}
+                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-active-bg)] px-4 py-1.5 text-xs font-medium text-[var(--vf-chip-active-ink)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Upload className="h-3.5 w-3.5" aria-hidden="true" />
+                        Restaurar archivo
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <form
+                    onSubmit={handleChangePassword}
+                    className="flex flex-1 flex-col justify-between gap-3"
+                  >
+                    <div className="flex flex-col gap-2.5">
+                      <div className="flex flex-col gap-1">
+                        <label
+                          htmlFor="change-current-pass"
+                          className="text-[11px] font-medium text-muted"
+                        >
+                          Contraseña actual
+                        </label>
+                        <input
+                          id="change-current-pass"
+                          type="password"
+                          autoComplete="current-password"
+                          required
+                          value={currentPassword}
+                          onChange={(event) => setCurrentPassword(event.target.value)}
+                          className="rounded-xl border border-[var(--glass-border)] bg-bg/70 px-3 py-2 text-xs text-ink focus:border-accent focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label
+                          htmlFor="change-new-pass"
+                          className="text-[11px] font-medium text-muted"
+                        >
+                          Nueva contraseña (mín. {MIN_PASSWORD_LENGTH} caracteres)
+                        </label>
+                        <input
+                          id="change-new-pass"
+                          type="password"
+                          autoComplete="new-password"
+                          required
+                          minLength={MIN_PASSWORD_LENGTH}
+                          value={newPassword}
+                          onChange={(event) => setNewPassword(event.target.value)}
+                          className="rounded-xl border border-[var(--glass-border)] bg-bg/70 px-3 py-2 text-xs text-ink focus:border-accent focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--glass-divider)] pt-3">
+                      <div className="min-w-0 text-xs">
+                        {passwordMessage && (
+                          <p role="status" className="font-medium text-accent">
+                            {passwordMessage}
+                          </p>
+                        )}
+                        {passwordError && (
+                          <p role="alert" className="font-medium text-[#C2410C]">
+                            {passwordError}
+                          </p>
+                        )}
+                        {!passwordMessage && !passwordError && (
+                          <span className="text-[11px] text-muted">Reenvuelve tu DEK local</span>
+                        )}
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={busy}
+                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-active-bg)] px-4 py-1.5 text-xs font-medium text-[var(--vf-chip-active-ink)] transition-opacity hover:opacity-90 disabled:opacity-40"
+                      >
+                        <KeyRound className="h-3.5 w-3.5" aria-hidden="true" />
+                        Actualizar contraseña
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-1 flex-col items-center justify-center gap-3 py-4 text-center">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#E0A526]/15 text-[#E0A526]">
+                  <ShieldAlert className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <div className="flex max-w-xs flex-col gap-1">
+                  <h2 className="font-display text-base font-semibold text-ink">
+                    Modo sin cifrado activo
+                  </h2>
+                  <p className="text-xs text-muted">
+                    Tus datos viven solo en este dispositivo sin contraseña. Borra e inicializa una
+                    bóveda cifrada para habilitar respaldos.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setWipeDialogOpen(true)}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-active-bg)] px-4 py-2 text-xs font-medium text-[var(--vf-chip-active-ink)] transition-opacity hover:opacity-90"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                  Inicializar bóveda cifrada
+                </button>
+              </div>
             )}
-            <Button type="button" size="sm" variant="outline" onClick={() => void handleCompact()}>
-              Compactar eventos en resúmenes
-            </Button>
-          </CardContent>
-        </Card>
+          </section>
+        </div>
+      </div>
 
-        {/* Borrado total (T3.7) */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Borrado total del dispositivo</CardTitle>
-            <CardDescription>
-              Elimina permanentemente la bóveda, tus medidas y todos los registros locales.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+      {/* Diálogo modal de borrado total en vidrio líquido */}
+      <dialog
+        ref={wipeDialogRef}
+        aria-labelledby={wipeTitleId}
+        onClose={() => {
+          if (wipeDialogRef.current) wipeDialogRef.current.returnValue = '';
+          setWipeDialogOpen(false);
+        }}
+        className="vf-glass-drawer m-auto w-[min(92vw,28rem)] rounded-[28px] p-0 text-ink"
+      >
+        <div className="flex flex-col gap-4 p-6">
+          <h2 id={wipeTitleId} className="font-display text-lg font-semibold text-ink">
+            ¿Borrar todos los datos locales?
+          </h2>
+          <p className="text-xs leading-relaxed text-muted">
+            Se eliminarán tu bóveda, prendas, medidas y gustos de este navegador de forma
+            permanente.
+          </p>
+          <div className="flex justify-end gap-2 pt-1">
+            <form method="dialog">
+              <Button type="submit" variant="secondary" autoFocus>
+                Cancelar
+              </Button>
+            </form>
             <Button
               type="button"
-              variant="outline"
-              onClick={() => setWipeDialogOpen(true)}
-              className="border-[#C2410C] text-[#C2410C]"
-            >
-              <Trash2 className="h-4 w-4" aria-hidden="true" />
-              Borrar todos los datos
-            </Button>
-
-            <dialog
-              ref={wipeDialogRef}
-              aria-labelledby={wipeTitleId}
-              onClose={() => {
-                if (wipeDialogRef.current) wipeDialogRef.current.returnValue = '';
+              onClick={async () => {
                 setWipeDialogOpen(false);
+                await wipeAll();
               }}
+              className="bg-[#C2410C] text-white"
             >
-              <div className="flex flex-col gap-4 p-5">
-                <h2 id={wipeTitleId} className="text-lg font-semibold text-ink">
-                  ¿Borrar todos los datos locales?
-                </h2>
-                <p className="text-sm text-muted">
-                  Esta acción elimina tu bóveda, medidas y eventos de este navegador. Asegúrate de
-                  tener un respaldo cifrado si deseas conservarlos.
-                </p>
-                <div className="flex justify-end gap-2">
-                  <form method="dialog">
-                    <Button type="submit" variant="secondary" autoFocus>
-                      Cancelar
-                    </Button>
-                  </form>
-                  <Button
-                    type="button"
-                    onClick={async () => {
-                      setWipeDialogOpen(false);
-                      await wipeAll();
-                    }}
-                    className="bg-[#C2410C] text-white"
-                  >
-                    Confirmar borrado total
-                  </Button>
-                </div>
-              </div>
-            </dialog>
-          </CardContent>
-        </Card>
-      </div>
+              Confirmar borrado total
+            </Button>
+          </div>
+        </div>
+      </dialog>
     </div>
   );
 }

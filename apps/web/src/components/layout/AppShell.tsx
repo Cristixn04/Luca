@@ -101,7 +101,10 @@ export function AppShell({
   };
 
   const isFullBleedSection =
-    activeSection === 'outfits' || activeSection === 'fitting' || activeSection === 'color';
+    activeSection === 'outfits' ||
+    activeSection === 'fitting' ||
+    activeSection === 'color' ||
+    activeSection === 'memory';
 
   return (
     <div className="relative flex min-h-dvh flex-col bg-transparent text-ink">
@@ -288,7 +291,7 @@ export function AppShell({
           isFullBleedSection
             ? 'px-4 py-3 sm:px-6 sm:py-4 lg:px-10'
             : 'mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8',
-          activeSection === 'color' && 'flex flex-col',
+          (activeSection === 'color' || activeSection === 'memory') && 'flex flex-col',
         )}
       >
         {children}

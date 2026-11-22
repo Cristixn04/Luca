@@ -110,7 +110,9 @@ export function App() {
       <div
         key={activeSection}
         data-section-transition={transitionDirection}
-        className={`w-full ${activeSection === 'color' ? 'flex flex-1 flex-col' : ''} ${sectionAnimClass}`}
+        className={`w-full ${
+          activeSection === 'color' || activeSection === 'memory' ? 'flex flex-1 flex-col' : ''
+        } ${sectionAnimClass}`}
       >
         {activeSection === 'fitting' && (
           <FittingRoom onOpenCloset={() => navigateToSection('closet')} />
