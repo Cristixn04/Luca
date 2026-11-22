@@ -3,9 +3,11 @@ import {
   CalendarCheck,
   ChevronLeft,
   ChevronRight,
+  Image as ImageIcon,
+  ImageOff,
   Pencil,
+  RotateCw,
   Ruler,
-  SlidersHorizontal,
   Trash2,
   X,
 } from 'lucide-react';
@@ -15,6 +17,7 @@ import type {
   SizeRecommendation,
 } from '@luca/domain';
 import { Badge } from '@/design-system/components/Badge';
+import { isSafeDataImageUrl } from '@/features/fitting/svg/garmentVisuals';
 import { HangingGarmentVisual } from './HangingGarmentVisual';
 import { CATEGORY_LABELS, STATUS_LABELS, type GarmentWithSizes } from './types';
 
@@ -31,7 +34,6 @@ export interface ClosetRackStageProps {
   spotlightId: string | null;
   onSelectSpotlight: (garmentId: string | null) => void;
   onOpenInFittingRoom: (item: GarmentWithSizes, recommendedSize?: string) => void;
-  onOpenDetail: (garmentId: string) => void;
   onEdit: (item: GarmentWithSizes) => void;
   onDelete: (garmentId: string) => Promise<void>;
   onLogWear: (garmentId: string) => Promise<void>;
@@ -47,7 +49,6 @@ export function ClosetRackStage({
   spotlightId,
   onSelectSpotlight,
   onOpenInFittingRoom,
-  onOpenDetail,
   onEdit,
   onDelete,
   onLogWear,
@@ -57,6 +58,13 @@ export function ClosetRackStage({
   const [stageWidth, setStageWidth] = useState(1120);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [wearLoggedForId, setWearLoggedForId] = useState<string | null>(null);
+  const [showReferencePhoto, setShowReferencePhoto] = useState(false);
+  const [photoSide, setPhotoSide] = useState<'front' | 'back'>('front');
+
+  useEffect(() => {
+    setShowReferencePhoto(false);
+    setPhotoSide('front');
+  }, [spotlightId]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -351,9 +359,115 @@ export function ClosetRackStage({
 
             <div
               key={spotlightEntry.item.garment.id}
-              className="closet-spotlight-garment relative flex h-[270px] w-[220px] items-start justify-center sm:h-[330px] sm:w-[270px]"
+              className="closet-spotlight-garment closet-flip-scene relative h-[270px] w-[220px] sm:h-[330px] sm:w-[270px]"
             >
-              <HangingGarmentVisual item={spotlightEntry.item} className="h-full w-full" />
+              {(() => {
+                const frontPhotoUrl = isSafeDataImageUrl(spotlightEntry.item.image?.dataUrl)
+                  ? spotlightEntry.item.image?.dataUrl
+                  : undefined;
+                const backPhotoUrl = isSafeDataImageUrl(spotlightEntry.item.image?.backDataUrl)
+                  ? spotlightEntry.item.image?.backDataUrl
+                  : undefined;
+                const activePhotoUrl =
+                  photoSide === 'back' && backPhotoUrl ? backPhotoUrl : frontPhotoUrl;
+
+                return (
+                  <div
+                    data-testid="closet-spotlight-flip"
+                    data-flipped={showReferencePhoto ? 'true' : 'false'}
+                    className={`closet-flip-card ${showReferencePhoto ? 'is-flipped' : ''}`}
+                  >
+                    {/* Cara frontal: prenda digital colgada */}
+                    <div
+                      aria-hidden={showReferencePhoto}
+                      className="closet-flip-face closet-flip-front flex items-start justify-center"
+                    >
+                      <HangingGarmentVisual item={spotlightEntry.item} className="h-full w-full" />
+                    </div>
+
+                    {/* Cara trasera: foto de referencia subida dentro de marco vidrio líquido */}
+                    <div
+                      aria-hidden={!showReferencePhoto}
+                      className="closet-flip-face closet-flip-back"
+                    >
+                      <div className="vf-glass-card flex h-full w-full flex-col justify-between gap-2 rounded-[26px] p-3">
+                        <div className="flex items-center justify-between gap-1.5">
+                          <span className="rounded-full bg-[var(--vf-chip-bg)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+                            Referencia
+                          </span>
+                          {frontPhotoUrl && backPhotoUrl && (
+                            <div
+                              className="inline-flex items-center gap-0.5 rounded-full bg-[var(--vf-chip-bg)] p-0.5"
+                              role="group"
+                              aria-label="Lado de la foto"
+                            >
+                              <button
+                                type="button"
+                                tabIndex={showReferencePhoto ? 0 : -1}
+                                onClick={() => setPhotoSide('front')}
+                                className={`cursor-pointer rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                                  photoSide === 'front'
+                                    ? 'bg-[var(--vf-chip-active-bg)] text-[var(--vf-chip-active-ink)]'
+                                    : 'text-muted hover:text-ink'
+                                }`}
+                              >
+                                Frente
+                              </button>
+                              <button
+                                type="button"
+                                tabIndex={showReferencePhoto ? 0 : -1}
+                                onClick={() => setPhotoSide('back')}
+                                className={`cursor-pointer rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                                  photoSide === 'back'
+                                    ? 'bg-[var(--vf-chip-active-bg)] text-[var(--vf-chip-active-ink)]'
+                                    : 'text-muted hover:text-ink'
+                                }`}
+                              >
+                                Espalda
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {activePhotoUrl ? (
+                          <button
+                            type="button"
+                            tabIndex={showReferencePhoto ? 0 : -1}
+                            aria-label="Volver a la prenda digital"
+                            onClick={() => setShowReferencePhoto(false)}
+                            className="flex min-h-0 flex-1 cursor-pointer items-center justify-center overflow-hidden rounded-[18px] bg-bg/55 p-2"
+                          >
+                            <img
+                              data-testid="spotlight-reference-photo"
+                              src={activePhotoUrl}
+                              alt={`Foto de referencia de ${spotlightEntry.item.garment.name}`}
+                              className="max-h-full max-w-full rounded-[12px] object-contain"
+                            />
+                          </button>
+                        ) : (
+                          <div
+                            data-testid="spotlight-no-reference-photo"
+                            className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2.5 rounded-[18px] bg-bg/45 p-4 text-center"
+                          >
+                            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--vf-chip-bg)] text-muted">
+                              <ImageOff className="h-5 w-5" aria-hidden="true" />
+                            </span>
+                            <p className="text-xs font-medium text-ink">Sin foto de referencia</p>
+                            <button
+                              type="button"
+                              tabIndex={showReferencePhoto ? 0 : -1}
+                              onClick={() => onEdit(spotlightEntry.item)}
+                              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-active-bg)] px-3.5 py-1.5 text-[11px] font-medium text-[var(--vf-chip-active-ink)] transition-opacity hover:opacity-90"
+                            >
+                              Subir foto
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             <button
@@ -416,7 +530,8 @@ export function ClosetRackStage({
                   data-testid={`garment-harmony-${spotlightEntry.item.garment.id}`}
                   className="vf-glass inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium text-ink"
                 >
-                  Afinidad paleta: {spotlightEntry.harmony.scorePercent} %
+                  Afinidad paleta: {spotlightEntry.harmony.scorePercent} % · ΔE₀₀{' '}
+                  {spotlightEntry.harmony.minDeltaE00.toFixed(1)}
                 </span>
               )}
               {spotlightEntry.item.garment.status === 'wishlist' &&
@@ -453,14 +568,23 @@ export function ClosetRackStage({
                 Ver calce y tallas
               </button>
 
-              {/* Acceso a ficha completa (tabla comparativa, CPW, similares, ΔE₀₀) */}
+              {/* Giro 3D para ver la foto de referencia subida */}
               <button
                 type="button"
-                onClick={() => onOpenDetail(spotlightEntry.item.garment.id)}
-                className="vf-glass inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-medium text-ink transition-transform hover:scale-[1.02]"
+                aria-pressed={showReferencePhoto}
+                onClick={() => setShowReferencePhoto((prev) => !prev)}
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-medium transition-transform hover:scale-[1.02] active:scale-[0.98] ${
+                  showReferencePhoto
+                    ? 'bg-[var(--vf-chip-active-bg)] text-[var(--vf-chip-active-ink)] shadow-sm'
+                    : 'vf-glass text-ink'
+                }`}
               >
-                <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
-                Ficha y detalles
+                {showReferencePhoto ? (
+                  <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
+                ) : (
+                  <ImageIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                )}
+                {showReferencePhoto ? 'Ver prenda digital' : 'Ver foto de referencia'}
               </button>
 
               {spotlightEntry.item.garment.status === 'owned' && (

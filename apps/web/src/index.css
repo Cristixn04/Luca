@@ -519,8 +519,80 @@ dialog::backdrop {
 
 .closet-spotlight-garment {
   transform-origin: 50% 4%;
+  animation: closet-spotlight-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Giro 3D limpio para alternar prenda digital <-> foto de referencia en Clóset */
+.closet-flip-scene {
+  perspective: 1200px;
+}
+
+.closet-flip-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 520ms cubic-bezier(0.23, 1, 0.32, 1);
+  will-change: transform;
+}
+
+.closet-flip-card.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.closet-flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.closet-flip-front {
   filter: drop-shadow(0 28px 36px rgb(0 0 0 / 42%));
-  animation: closet-spotlight-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.closet-flip-back {
+  transform: rotateY(180deg);
+}
+
+/* Transición direccional tipo carrusel entre apartados de la web */
+@keyframes luca-section-enter-forward {
+  from {
+    opacity: 0;
+    transform: translate3d(44px, 0, 0) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes luca-section-enter-backward {
+  from {
+    opacity: 0;
+    transform: translate3d(-44px, 0, 0) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.luca-section-enter-forward {
+  animation: luca-section-enter-forward 280ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.luca-section-enter-backward {
+  animation: luca-section-enter-backward 280ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes luca-section-fade-reduced {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes closet-spotlight-meta-in {
@@ -546,6 +618,30 @@ dialog::backdrop {
   .closet-hanger-slot,
   .closet-hanger-body {
     transition: none;
+  }
+  .closet-flip-card {
+    transition: none;
+  }
+  .closet-flip-face {
+    transition: opacity 180ms ease;
+  }
+  .closet-flip-card.is-flipped {
+    transform: none;
+  }
+  .closet-flip-card.is-flipped .closet-flip-front {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .closet-flip-card:not(.is-flipped) .closet-flip-back {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .closet-flip-back {
+    transform: none;
+  }
+  .luca-section-enter-forward,
+  .luca-section-enter-backward {
+    animation: luca-section-fade-reduced 160ms ease;
   }
   .vf-card-sheen::after,
   .vf-scan-bar {

@@ -29,20 +29,13 @@ test.describe('Flujo e2e M7: búsqueda libre y prendas similares (T7.2–T7.5)',
     await expect(page.getByText('Camiseta básica de lino')).toBeVisible();
     await expect(page.getByText('Pantalón chino recto')).toHaveCount(0);
 
-    // 4. Seleccionar en el perchero, abrir ficha y verificar tarjeta "Prendas similares" y navegación
+    // 4. Seleccionar en el perchero y comprobar giro 3D de foto de referencia (sin "Ficha y detalles")
     await page.locator('[data-closet-rack-item]').first().click();
-    await page.getByRole('button', { name: /Ficha y detalles/i }).click();
-    await expect(page.getByTestId('similar-garments-card')).toBeVisible();
-    await expect(page.getByTestId('similar-garments-card')).toContainText(
-      'Camiseta fresca de verano',
-    );
-
-    await page
-      .getByTestId('similar-garments-card')
-      .getByRole('button', { name: /Camiseta fresca de verano/i })
-      .click();
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Camiseta fresca de verano' }),
-    ).toBeVisible();
+    await expect(page.getByRole('button', { name: /Ficha y detalles/i })).toHaveCount(0);
+    await expect(page.getByTestId('closet-spotlight-flip')).toHaveAttribute('data-flipped', 'false');
+    await page.getByRole('button', { name: /Ver foto de referencia/i }).click();
+    await expect(page.getByTestId('closet-spotlight-flip')).toHaveAttribute('data-flipped', 'true');
+    await page.getByRole('button', { name: /Ver prenda digital/i }).click();
+    await expect(page.getByTestId('closet-spotlight-flip')).toHaveAttribute('data-flipped', 'false');
   });
 });

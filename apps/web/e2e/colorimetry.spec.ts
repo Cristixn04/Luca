@@ -30,10 +30,7 @@ test.describe('Flujo e2e M8: colorimetría estacional, afinidad de prendas y opc
     await page.getByRole('button', { name: 'Guardar prenda' }).click();
     await page.locator('[data-closet-rack-item]').first().click();
     await expect(page.getByTestId('closet-spotlight')).toContainText('Afinidad paleta');
-
-    await page.getByRole('button', { name: /Ficha y detalles/i }).click();
-    await expect(page.getByTestId('garment-color-harmony-card')).toBeVisible();
-    await expect(page.getByTestId('garment-color-harmony-card')).toContainText('ΔE₀₀');
+    await expect(page.getByTestId('closet-spotlight')).toContainText('ΔE₀₀');
 
     // 3. Volver a Color y activar "Ignorar colorimetría"
     await page.getByRole('link', { name: 'Color' }).click();

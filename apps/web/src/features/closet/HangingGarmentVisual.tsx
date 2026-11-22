@@ -1,7 +1,7 @@
 import { memo, useId } from 'react';
 import { GarmentCardPreviewSvg } from '@/features/fitting/GarmentCardPreviewSvg';
 import { isLowerCategory } from '@/features/fitting/svg/FrontAvatarSvg';
-import { isSafeDataImageUrl, type GarmentVisualMeta } from '@/features/fitting/svg/garmentVisuals';
+import type { GarmentVisualMeta } from '@/features/fitting/svg/garmentVisuals';
 import type { GarmentWithSizes } from './types';
 
 export interface HangingGarmentVisualProps {
@@ -13,18 +13,15 @@ export interface HangingGarmentVisualProps {
  * Representación visual de una prenda colgada de una percha de madera y gancho metálico.
  * - Prendas superiores y vestidos: percha anatómica de madera cálida bajo los hombros.
  * - Prendas inferiores (pantalón, short, falda): barra de madera con dos pinzas metálicas en cintura.
- * - Usa la foto real recortada del usuario si existe y es segura, o el SVG paramétrico en color real.
+ * - Renderiza siempre la prenda digital a medida; la foto de referencia subida se inspecciona con el giro 3D.
  */
 export const HangingGarmentVisual = memo(function HangingGarmentVisual({
   item,
   className = 'h-full w-full',
 }: HangingGarmentVisualProps) {
   const uid = useId();
-  const { garment, image } = item;
+  const { garment } = item;
   const isLower = isLowerCategory(garment.category);
-  // Cuando existe gemelo digital generado por IA (visualSpec), mostramos siempre el gemelo digital limpio
-  const safePhoto =
-    !garment.visualSpec && isSafeDataImageUrl(image?.dataUrl) ? image?.dataUrl : undefined;
   const colorHex = garment.visualSpec?.primary_color_hex ?? garment.dominantColorHex ?? '#1F5F6B';
 
   const visualMeta: GarmentVisualMeta = {
@@ -132,33 +129,18 @@ export const HangingGarmentVisual = memo(function HangingGarmentVisual({
         )}
       </svg>
 
-      {/* Prenda colgando directamente de la percha (sin brecha de aire) */}
+      {/* Prenda digital colgando directamente de la percha (sin brecha de aire) */}
       <div
         className={`relative z-20 flex w-full flex-1 items-start justify-center ${
-          safePhoto
-            ? isLower
-              ? '-mt-3'
-              : '-mt-5'
-            : isLower
-              ? '-mt-8'
-              : '-mt-11'
+          isLower ? '-mt-8' : '-mt-11'
         }`}
       >
-        {safePhoto ? (
-          <img
-            src={safePhoto}
-            alt={`Foto de ${garment.name}`}
-            className="max-h-full max-w-[92%] object-contain object-top"
-            draggable={false}
-          />
-        ) : (
-          <GarmentCardPreviewSvg
-            category={garment.category}
-            colorHex={colorHex}
-            meta={visualMeta}
-            className="h-full w-full"
-          />
-        )}
+        <GarmentCardPreviewSvg
+          category={garment.category}
+          colorHex={colorHex}
+          meta={visualMeta}
+          className="h-full w-full"
+        />
       </div>
     </div>
   );

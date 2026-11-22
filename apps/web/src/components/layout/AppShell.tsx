@@ -284,7 +284,7 @@ export function AppShell({
       <main
         id="contenido-principal"
         className={cn(
-          'relative z-10 w-full flex-1',
+          'relative z-10 w-full flex-1 overflow-x-clip',
           isFullBleedSection
             ? 'px-4 py-3 sm:px-6 sm:py-4 lg:px-10'
             : 'mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8',

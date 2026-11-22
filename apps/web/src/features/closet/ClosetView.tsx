@@ -350,7 +350,6 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
           spotlightId={effectiveSpotlightId}
           onSelectSpotlight={setSpotlightId}
           onOpenInFittingRoom={handleOpenInFittingRoom}
-          onOpenDetail={(garmentId) => selectGarment(garmentId)}
           onEdit={(target) => {
             setEditingItem(target);
             setFormOpen(true);

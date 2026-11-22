@@ -43,7 +43,7 @@ describe('ClosetView y GarmentDetailView (T4.3 – T4.5)', () => {
     expect(await screen.findByText('Tu clóset está vacío')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /ejemplo/i })).not.toBeInTheDocument();
 
-    // 2. Añadir prendas reales del usuario al clóset
+    // 2. Añadir prendas reales del usuario al clóset (con foto de referencia en la camiseta)
     await useClosetStore.getState().addGarment({
       category: 'tshirt',
       name: 'Camiseta básica de lino',
@@ -53,6 +53,12 @@ describe('ClosetView y GarmentDetailView (T4.3 – T4.5)', () => {
       formality: 2,
       tags: ['básico'],
       dominantColorHex: '#1F5F6B',
+      image: {
+        dataUrl: 'data:image/png;base64,iVBORw0KGgo=',
+        width: 200,
+        height: 260,
+        source: 'manual',
+      },
       sizes: [
         { label: 'S', flatMeasuresCm: { chestFlat: 46, shoulders: 42, backWidth: 39 } },
         { label: 'M', flatMeasuresCm: { chestFlat: 50, shoulders: 45, backWidth: 42 } },
@@ -93,17 +99,25 @@ describe('ClosetView y GarmentDetailView (T4.3 – T4.5)', () => {
       'Talla sugerida: M',
     );
 
-    // 6. Pulsar "Ver calce y tallas" envía directamente al Probador con la prenda cargada
+    // 6. El botón "Ficha y detalles" ya no existe; en su lugar "Ver foto de referencia" gira la prenda en 3D
+    expect(within(spotlight).queryByRole('button', { name: /Ficha y detalles/i })).not.toBeInTheDocument();
+    const flipCard = within(spotlight).getByTestId('closet-spotlight-flip');
+    expect(flipCard).toHaveAttribute('data-flipped', 'false');
+
+    await user.click(within(spotlight).getByRole('button', { name: /Ver foto de referencia/i }));
+    expect(flipCard).toHaveAttribute('data-flipped', 'true');
+    expect(within(spotlight).getByTestId('spotlight-reference-photo')).toHaveAttribute(
+      'src',
+      'data:image/png;base64,iVBORw0KGgo=',
+    );
+
+    await user.click(within(spotlight).getByRole('button', { name: /Ver prenda digital/i }));
+    expect(flipCard).toHaveAttribute('data-flipped', 'false');
+
+    // 7. Pulsar "Ver calce y tallas" envía directamente al Probador con la prenda cargada
     await user.click(within(spotlight).getByRole('button', { name: /Ver calce y tallas/i }));
     expect(onOpenInFitting).toHaveBeenCalledTimes(1);
     expect(useFittingStore.getState().garmentName).toBe('Camiseta básica de lino');
     expect(useFittingStore.getState().garmentSizeLabel).toBe('M');
-
-    // 7. Desde "Ficha y detalles" sigue disponible la vista completa con cambio de talla
-    await user.click(within(spotlight).getByRole('button', { name: /Ficha y detalles/i }));
-    const banner = await screen.findByTestId('recommended-size-banner');
-    expect(banner).toHaveTextContent('Talla recomendada: M');
-    await user.click(within(banner).getByRole('button', { name: 'L' }));
-    expect(screen.getByText('Probador · Talla L')).toBeInTheDocument();
   }, 12_000);
 });

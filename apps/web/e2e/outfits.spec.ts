@@ -52,16 +52,13 @@ test.describe('Flujo e2e M9: clóset real → probador → outfits → registrar
     await page.getByRole('button', { name: 'Usé este outfit hoy' }).click();
     await expect(page.getByText('Uso registrado para hoy.')).toBeVisible();
 
-    // 6. Ir al Clóset, ubicar la prenda usada hoy (1 uso) en el perchero y comprobar incremento de usos
+    // 6. Ir al Clóset, ubicar la prenda usada hoy (1 uso) en el perchero y registrar un segundo uso desde spotlight
     await page.getByRole('link', { name: 'Clóset' }).click();
     const wornHanger = page.locator('[data-closet-rack-item]', { hasText: '1 uso(s)' }).first();
     await expect(wornHanger).toBeVisible();
     await wornHanger.click();
-    await page.getByRole('button', { name: /Ficha y detalles/i }).click();
-    await expect(page.getByTestId('garment-usage-card')).toBeVisible();
-    await expect(page.getByTestId('garment-wear-count')).toHaveText('1');
-
-    await page.getByRole('button', { name: 'Registrar uso hoy' }).click();
-    await expect(page.getByTestId('garment-wear-count')).toHaveText('2');
+    await expect(page.getByTestId('closet-spotlight')).toContainText('1 uso(s)');
+    await page.getByRole('button', { name: 'Usé hoy' }).click();
+    await expect(page.getByTestId('closet-spotlight')).toContainText('2 uso(s)');
   });
 });
