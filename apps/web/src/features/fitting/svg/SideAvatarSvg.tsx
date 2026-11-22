@@ -27,13 +27,18 @@ export function SideAvatarSvg({
   const sa = rig.sideArm;
   const patternPrefix = patternIdSuffix ? `side-${patternIdSuffix}` : 'side';
 
-  // Cabeza de perfil limpia estilo atelier (sin rostro, curva frontal suave y mandíbula fina)
+  const isFemale = silhouette === 'female';
+
+  // Cabeza de perfil humano realista 2D (frente, puente nasal, nariz, labios y mentón)
   const hr = rig.headRy;
   const profileHeadPath = [
     `M ${cx - hr * 0.14} ${rig.headTopY}`,
-    `C ${cx + hr * 0.66} ${rig.headTopY}, ${cx + hr * 0.78} ${rig.headCenterY - hr * 0.42}, ${cx + hr * 0.78} ${rig.headCenterY + hr * 0.08}`,
-    `C ${cx + hr * 0.8} ${rig.headCenterY + hr * 0.56}, ${cx + hr * 0.68} ${rig.chinY - 2}, ${cx + hr * 0.42} ${rig.chinY}`,
-    `C ${cx + hr * 0.06} ${rig.chinY}, ${cx - hr * 0.22} ${rig.chinY - 5}, ${cx - hr * 0.52} ${rig.headCenterY + hr * 0.5}`,
+    `C ${cx + hr * 0.58} ${rig.headTopY}, ${cx + hr * 0.72} ${rig.headCenterY - hr * 0.42}, ${cx + hr * 0.7} ${rig.headCenterY - hr * 0.18}`,
+    `L ${cx + hr * 0.88} ${rig.headCenterY + hr * 0.14}`,
+    `Q ${cx + hr * 0.88} ${rig.headCenterY + hr * 0.24} ${cx + hr * 0.72} ${rig.headCenterY + hr * 0.27}`,
+    `Q ${cx + hr * 0.78} ${rig.headCenterY + hr * 0.42} ${cx + hr * 0.72} ${rig.headCenterY + hr * 0.56}`,
+    `Q ${cx + hr * 0.74} ${rig.chinY - 4} ${cx + hr * 0.48} ${rig.chinY}`,
+    `C ${cx + hr * 0.08} ${rig.chinY}, ${cx - hr * 0.22} ${rig.chinY - 5}, ${cx - hr * 0.52} ${rig.headCenterY + hr * 0.5}`,
     `C ${cx - hr * 0.84} ${rig.headCenterY + hr * 0.12}, ${cx - hr * 0.82} ${rig.headTopY + 3}, ${cx - hr * 0.14} ${rig.headTopY}`,
     'Z',
   ].join(' ');
@@ -140,26 +145,75 @@ export function SideAvatarSvg({
         data-avatar-body="side"
       />
 
-      {/* Costuras de taller en vista de perfil */}
-      <g fill="none" stroke="var(--mannequin-detail)" strokeWidth="0.65" pointerEvents="none">
-        <path d={`M ${s.shoulderBackX} ${rig.shoulderY - 1} Q ${cx} ${rig.shoulderY + 4} ${s.shoulderFrontX} ${rig.shoulderY + 2}`} />
-        <path d={`M ${s.hipBackX + 1} ${rig.hipY - 4} Q ${cx} ${rig.hipY - 8} ${s.hipFrontX - 1} ${rig.hipY + 2}`} />
+      {/* Prenda base neutra en perfil */}
+      <g pointerEvents="none" opacity="0.88">
+        <path
+          d={[
+            `M ${s.hipBackX + 1} ${rig.hipY - 12}`,
+            `L ${s.hipFrontX - 1} ${rig.hipY - 10}`,
+            `L ${s.thighFrontX} ${rig.crotchY + 14}`,
+            `L ${s.thighBackX} ${rig.crotchY + 14}`,
+            'Z',
+          ].join(' ')}
+          fill="var(--avatar-basewear)"
+        />
       </g>
 
-      {/* Cabeza de perfil + oreja fina */}
+      {/* Cabeza de perfil humano realista 2D + cabello */}
       <path
         d={profileHeadPath}
         fill={`url(#${patternPrefix}-head-grad)`}
         stroke="var(--mannequin-stroke)"
-        strokeWidth="1.05"
+        strokeWidth="0.95"
         strokeLinejoin="round"
       />
+      {/* Ojo, ceja y labio en perfil */}
+      <g pointerEvents="none">
+        <path
+          d={`M ${cx + hr * 0.34} ${rig.headCenterY - 4.2} Q ${cx + hr * 0.52} ${rig.headCenterY - 5.2} ${cx + hr * 0.66} ${rig.headCenterY - 3.8}`}
+          fill="none"
+          stroke="var(--avatar-hair-dark)"
+          strokeWidth={isFemale ? '0.9' : '1.15'}
+          strokeLinecap="round"
+        />
+        <ellipse cx={cx + hr * 0.52} cy={rig.headCenterY - 1.3} rx={1.6} ry={1.1} fill="#faf8f6" />
+        <circle cx={cx + hr * 0.56} cy={rig.headCenterY - 1.3} r={0.95} fill="var(--avatar-iris)" />
+        <path
+          d={`M ${cx + hr * 0.62} ${rig.headCenterY + hr * 0.44} L ${cx + hr * 0.74} ${rig.headCenterY + hr * 0.44}`}
+          stroke="var(--avatar-lip)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </g>
       <path
         d={`M ${cx - 3.5} ${rig.headCenterY - 2} C ${cx - 7.5} ${rig.headCenterY - 2}, ${cx - 7.5} ${rig.headCenterY + 6.5}, ${cx - 2.5} ${rig.headCenterY + 5.5}`}
         fill="none"
         stroke="var(--mannequin-detail)"
         strokeWidth="1"
         strokeLinecap="round"
+      />
+      {/* Cabello lateral realista */}
+      <path
+        d={
+          isFemale
+            ? [
+                `M ${cx + hr * 0.56} ${rig.headTopY + 1}`,
+                `C ${cx + hr * 0.25} ${rig.headTopY - 4.5}, ${cx - hr * 0.75} ${rig.headTopY - 2}, ${cx - hr * 0.94} ${rig.headCenterY + 4}`,
+                `C ${cx - hr * 1.04} ${rig.chinY + 12}, ${cx - hr * 0.95} ${rig.shoulderY + 14}, ${cx - hr * 0.52} ${rig.shoulderY + 20}`,
+                `C ${cx - hr * 0.14} ${rig.shoulderY + 14}, ${cx - hr * 0.1} ${rig.chinY + 4}, ${cx - 3} ${rig.headCenterY + 6}`,
+                `C ${cx - 1} ${rig.headCenterY - 5}, ${cx + hr * 0.28} ${rig.headTopY + 5.5}, ${cx + hr * 0.56} ${rig.headTopY + 1}`,
+                'Z',
+              ].join(' ')
+            : [
+                `M ${cx + hr * 0.62} ${rig.headTopY + 2}`,
+                `C ${cx + hr * 0.25} ${rig.headTopY - 4.5}, ${cx - hr * 0.78} ${rig.headTopY - 2}, ${cx - hr * 0.88} ${rig.headCenterY + 2}`,
+                `C ${cx - hr * 0.82} ${rig.chinY - 6}, ${cx - hr * 0.45} ${rig.chinY - 4}, ${cx - 4.5} ${rig.headCenterY + 5}`,
+                `C ${cx - 2} ${rig.headCenterY - 5}, ${cx + hr * 0.3} ${rig.headTopY + 6}, ${cx + hr * 0.62} ${rig.headTopY + 2}`,
+                'Z',
+              ].join(' ')
+        }
+        fill={`url(#${patternPrefix}-hair-grad)`}
+        pointerEvents="none"
       />
 
       {/* Brazo base cuando no hay prendas o como referencia */}

@@ -148,12 +148,24 @@ export function PantsTemplate({
             'Z',
           ].join(' ');
 
-  const baseFill = garmentColorHex ?? 'var(--accent)';
-  const strokeColor = resolveGarmentAccentStroke(garmentColorHex);
-  const seamColor = resolveGarmentSeamColor(garmentColorHex);
-  const buttonColor = resolveGarmentButtonColor(garmentColorHex);
-  const hasPhoto = isSafeDataImageUrl(garmentMeta?.imageUrl);
+  const resolvedPrimary = bp.primaryColorHex ?? garmentColorHex;
+  const baseFill = resolvedPrimary ?? 'var(--accent)';
+  const strokeColor = resolveGarmentAccentStroke(resolvedPrimary);
+  const seamColor = resolveGarmentSeamColor(resolvedPrimary);
+  const buttonColor = bp.accentColorHex ?? resolveGarmentButtonColor(resolvedPrimary);
+  // Si existe gemelo digital (visualSpec), nunca pegamos la foto recortada: sintetizamos la prenda a medida
+  const hasPhoto = !garmentMeta?.visualSpec && isSafeDataImageUrl(garmentMeta?.imageUrl);
   const clipId = `${patternPrefix}-${variant}-clip`;
+  const customPatternId = `${patternPrefix}-${variant}-twin-pat`;
+  const stripeStep = bp.stripeDensity === 'fine' ? 6 : bp.stripeDensity === 'wide' ? 14 : 9.5;
+  const stripeColor = bp.secondaryColorHex ?? 'rgb(255 255 255 / 28%)';
+  const hasCustomPattern =
+    !hasPhoto &&
+    (bp.patternType === 'horizontal_stripes' ||
+      bp.patternType === 'vertical_stripes' ||
+      bp.patternType === 'plaid' ||
+      bp.patternType === 'dots' ||
+      bp.patternType === 'ribbed');
 
   const hemBottom = variant === 'skirt' ? skirtHemY : variant === 'shorts' ? shortHemY : pantsHemY;
   const maxHalfX = Math.max(hHalf + skirtFlare, ankleOuter + 3, hHalf + 4);
@@ -187,6 +199,34 @@ export function PantsTemplate({
         <clipPath id={clipId}>
           <path d={garmentPath} />
         </clipPath>
+        {hasCustomPattern && bp.patternType === 'horizontal_stripes' && (
+          <pattern id={customPatternId} width="16" height={stripeStep} patternUnits="userSpaceOnUse">
+            <rect width="16" height={stripeStep * 0.36} fill={stripeColor} opacity="0.78" />
+          </pattern>
+        )}
+        {hasCustomPattern && bp.patternType === 'vertical_stripes' && (
+          <pattern id={customPatternId} width={stripeStep} height="16" patternUnits="userSpaceOnUse">
+            <rect width={stripeStep * 0.3} height="16" fill={stripeColor} opacity="0.76" />
+          </pattern>
+        )}
+        {hasCustomPattern && bp.patternType === 'plaid' && (
+          <pattern id={customPatternId} width={stripeStep * 1.5} height={stripeStep * 1.5} patternUnits="userSpaceOnUse">
+            <rect width={stripeStep * 1.5} height={stripeStep * 0.24} fill={stripeColor} opacity="0.6" />
+            <rect width={stripeStep * 0.24} height={stripeStep * 1.5} fill={stripeColor} opacity="0.6" />
+          </pattern>
+        )}
+        {hasCustomPattern && bp.patternType === 'dots' && (
+          <pattern id={customPatternId} width="11" height="11" patternUnits="userSpaceOnUse">
+            <circle cx="3" cy="3" r="1.4" fill={stripeColor} opacity="0.82" />
+            <circle cx="8.5" cy="8.5" r="1.4" fill={stripeColor} opacity="0.82" />
+          </pattern>
+        )}
+        {hasCustomPattern && bp.patternType === 'ribbed' && (
+          <pattern id={customPatternId} width="3.8" height="10" patternUnits="userSpaceOnUse">
+            <line x1="1" y1="0" x2="1" y2="10" stroke="rgb(255 255 255 / 15%)" strokeWidth="0.75" />
+            <line x1="2.7" y1="0" x2="2.7" y2="10" stroke="rgb(0 0 0 / 14%)" strokeWidth="0.75" />
+          </pattern>
+        )}
       </defs>
 
       <path d={garmentPath} fill={baseFill} fillOpacity={showHeatmap ? 0.16 : 0.96} />
@@ -205,8 +245,10 @@ export function PantsTemplate({
         />
       )}
 
-      {patternId && !showHeatmap && (
-        <path d={garmentPath} fill={`url(#${patternId})`} opacity="0.82" />
+      {hasCustomPattern && !showHeatmap ? (
+        <path d={garmentPath} fill={`url(#${customPatternId})`} />
+      ) : (
+        patternId && !showHeatmap && <path d={garmentPath} fill={`url(#${patternId})`} opacity="0.82" />
       )}
 
       {!showHeatmap && (

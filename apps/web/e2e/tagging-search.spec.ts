@@ -18,7 +18,6 @@ test.describe('Flujo e2e M7: etiquetado local, búsqueda libre y prendas similar
     // 3. Añadir una camiseta similar usando el etiquetador local (sin API)
     await page.getByRole('button', { name: 'Añadir prenda' }).click();
     await page.getByLabel('Nombre *').fill('Camiseta fresca de verano');
-    await page.getByLabel('Marca').fill('Taller Norte');
     await page.getByRole('button', { name: /Sugerir etiquetas locales/i }).click();
 
     await expect(page.getByTestId('tag-suggestion-panel')).toBeVisible();

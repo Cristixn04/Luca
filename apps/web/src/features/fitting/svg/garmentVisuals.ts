@@ -2,12 +2,16 @@ import type { GarmentCategory } from '@luca/domain';
 import type { GarmentPattern, GarmentStyle, GarmentVisualSpec } from '@/features/closet/types';
 import type {
   ApiClosure,
+  ApiColorblockLayout,
   ApiFabricTexture,
   ApiFitCut,
   ApiGarmentLength,
   ApiNeckline,
   ApiPocketStyle,
+  ApiSimplePatternType,
   ApiSleeveLength,
+  ApiStripeDensity,
+  ApiWaistRise,
 } from '@/infrastructure/api-client/generated.types';
 
 export interface GarmentVisualMeta {
@@ -54,8 +58,15 @@ export interface ResolvedUpperBlueprint {
   readonly hasRibbedTrim: boolean;
   readonly hasLapels: boolean;
   readonly hasPleats: boolean;
+  readonly primaryColorHex?: string;
   readonly secondaryColorHex?: string;
   readonly accentColorHex?: string;
+  readonly patternType: ApiSimplePatternType;
+  readonly colorblockLayout: ApiColorblockLayout;
+  readonly stripeDensity: ApiStripeDensity;
+  readonly collarContrast: boolean;
+  readonly cuffContrast: boolean;
+  readonly buttonCount: number;
   readonly fabricTexture: ApiFabricTexture;
 }
 
@@ -67,7 +78,12 @@ export interface ResolvedLowerBlueprint {
   readonly closure: ApiClosure;
   readonly pockets: ApiPocketStyle;
   readonly hasPleats: boolean;
+  readonly primaryColorHex?: string;
   readonly secondaryColorHex?: string;
+  readonly accentColorHex?: string;
+  readonly patternType: ApiSimplePatternType;
+  readonly stripeDensity: ApiStripeDensity;
+  readonly waistRise: ApiWaistRise;
   readonly fabricTexture: ApiFabricTexture;
 }
 
@@ -248,6 +264,16 @@ export function resolveUpperBlueprint(
   const defaultPockets: ApiPocketStyle =
     subtype === 'hoodie' ? 'kangaroo' : variant === 'jacket' ? 'side' : 'none';
 
+  const inferredPatternType: ApiSimplePatternType =
+    spec?.pattern_type ??
+    (meta?.pattern === 'striped'
+      ? 'horizontal_stripes'
+      : meta?.pattern === 'plaid'
+        ? 'plaid'
+        : spec?.fabric_texture === 'ribbed'
+          ? 'ribbed'
+          : 'solid');
+
   return {
     subtype,
     neckline,
@@ -261,8 +287,15 @@ export function resolveUpperBlueprint(
     hasRibbedTrim: spec ? spec.has_ribbed_trim : subtype === 'hoodie' || subtype === 'sweater',
     hasLapels: spec ? spec.has_lapels : variant === 'jacket',
     hasPleats: spec ? spec.has_pleats : variant === 'dress',
+    primaryColorHex: isValidHex(spec?.primary_color_hex) ? spec.primary_color_hex : undefined,
     secondaryColorHex: isValidHex(spec?.secondary_color_hex) ? spec.secondary_color_hex : undefined,
     accentColorHex: isValidHex(spec?.accent_color_hex) ? spec.accent_color_hex : undefined,
+    patternType: inferredPatternType,
+    colorblockLayout: spec?.colorblock_layout ?? 'none',
+    stripeDensity: spec?.stripe_density ?? 'medium',
+    collarContrast: Boolean(spec?.collar_contrast),
+    cuffContrast: Boolean(spec?.cuff_contrast),
+    buttonCount: spec?.button_count ?? (defaultClosure === 'buttons' ? 5 : 0),
     fabricTexture: spec?.fabric_texture ?? 'smooth',
   };
 }
@@ -314,6 +347,16 @@ export function resolveLowerBlueprint(
               ? 3.8
               : 0;
 
+  const inferredLowerPattern: ApiSimplePatternType =
+    spec?.pattern_type ??
+    (meta?.pattern === 'striped'
+      ? 'vertical_stripes'
+      : meta?.pattern === 'plaid'
+        ? 'plaid'
+        : spec?.fabric_texture === 'ribbed'
+          ? 'ribbed'
+          : 'solid');
+
   return {
     subtype,
     garmentLength,
@@ -322,7 +365,12 @@ export function resolveLowerBlueprint(
     closure: spec?.closure ?? (variant === 'skirt' ? 'zipper' : 'buttons'),
     pockets: spec?.pockets ?? (variant === 'skirt' ? 'none' : 'side'),
     hasPleats: spec ? spec.has_pleats || spec.fit_cut === 'pleated' : variant === 'skirt',
+    primaryColorHex: isValidHex(spec?.primary_color_hex) ? spec.primary_color_hex : undefined,
     secondaryColorHex: isValidHex(spec?.secondary_color_hex) ? spec.secondary_color_hex : undefined,
+    accentColorHex: isValidHex(spec?.accent_color_hex) ? spec.accent_color_hex : undefined,
+    patternType: inferredLowerPattern,
+    stripeDensity: spec?.stripe_density ?? 'medium',
+    waistRise: spec?.waist_rise ?? 'mid',
     fabricTexture: spec?.fabric_texture ?? (subtype === 'jeans' ? 'denim' : 'smooth'),
   };
 }

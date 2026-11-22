@@ -110,7 +110,40 @@ export type ApiFabricTexture =
   | 'satin'
   | 'corduroy';
 
+export type ApiDesignComplexity = 'solid' | 'simple_pattern' | 'complex_rejected';
+
+export type ApiSimplePatternType =
+  | 'solid'
+  | 'horizontal_stripes'
+  | 'vertical_stripes'
+  | 'plaid'
+  | 'dots'
+  | 'colorblock'
+  | 'ribbed';
+
+export type ApiColorblockLayout =
+  | 'none'
+  | 'raglan_sleeves'
+  | 'top_bottom_split'
+  | 'chest_band'
+  | 'side_panels';
+
+export type ApiStripeDensity = 'fine' | 'medium' | 'wide';
+
+export type ApiWaistRise = 'low' | 'mid' | 'high' | 'none';
+
 export interface GarmentVisualSpec {
+  readonly design_supported?: boolean;
+  readonly design_complexity?: ApiDesignComplexity;
+  readonly rejection_reason?: string | null;
+  readonly primary_color_hex?: string | null;
+  readonly pattern_type?: ApiSimplePatternType;
+  readonly colorblock_layout?: ApiColorblockLayout;
+  readonly stripe_density?: ApiStripeDensity;
+  readonly waist_rise?: ApiWaistRise;
+  readonly button_count?: number;
+  readonly collar_contrast?: boolean;
+  readonly cuff_contrast?: boolean;
   readonly neckline: ApiNeckline;
   readonly sleeve_length: ApiSleeveLength;
   readonly garment_length: ApiGarmentLength;
@@ -140,6 +173,10 @@ export interface GarmentTagSuggestion {
   readonly seasons_confidence: number;
   readonly suggested_tags: readonly string[];
   readonly overall_confidence: number;
+  readonly suggested_name?: string | null;
+  readonly estimated_elasticity?: number | null;
+  readonly design_supported?: boolean;
+  readonly rejection_reason?: string | null;
   readonly visual_spec?: GarmentVisualSpec | null;
   readonly provider: string;
 }

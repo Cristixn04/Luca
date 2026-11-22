@@ -43,7 +43,6 @@ test.describe('Auditoría e2e de seguridad, privacidad y modo offline (RNF-06, R
     await page.getByRole('button', { name: 'Añadir prenda' }).click();
     const xssName = '<img src=x onerror="window.__lucaXss=true"> PrendaUltraPrivada';
     await page.getByLabel('Nombre *').fill(xssName);
-    await page.getByLabel('Marca').fill('MarcaConfidencial');
     await page.getByRole('button', { name: 'Guardar prenda' }).click();
 
     await expect(page.getByText(xssName)).toBeVisible();

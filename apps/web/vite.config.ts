@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const API_PROXY_TARGET = process.env.LUCA_API_PROXY_TARGET || 'http://127.0.0.1:8001';
 const WEATHER_CACHE_TTL_MS = 30 * 60 * 1000;
 const weatherDevCache = new Map<string, { expiresAt: number; payload: string }>();
 
@@ -36,10 +37,10 @@ async function handleWeatherDevFallback(req: IncomingMessage, res: ServerRespons
   const roundedLat = Math.round(lat * 10) / 10;
   const roundedLon = Math.round(lon * 10) / 10;
 
-  // 1. Intenta primero la API FastAPI local si está levantada en :8000
+  // 1. Intenta primero la API FastAPI local si está levantada
   try {
     const upstream = await fetch(
-      `http://127.0.0.1:8000/v1/weather?lat=${encodeURIComponent(String(roundedLat))}&lon=${encodeURIComponent(String(roundedLon))}`,
+      `${API_PROXY_TARGET}/v1/weather?lat=${encodeURIComponent(String(roundedLat))}&lon=${encodeURIComponent(String(roundedLon))}`,
       { signal: AbortSignal.timeout(2500) },
     );
     if (upstream.ok) {
@@ -196,7 +197,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/v1': {
-        target: 'http://127.0.0.1:8000',
+        target: API_PROXY_TARGET,
         changeOrigin: true,
       },
     },
@@ -204,7 +205,7 @@ export default defineConfig({
   preview: {
     proxy: {
       '/v1': {
-        target: 'http://127.0.0.1:8000',
+        target: API_PROXY_TARGET,
         changeOrigin: true,
       },
     },

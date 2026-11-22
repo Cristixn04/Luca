@@ -85,14 +85,20 @@
   --vf-chip-active-bg: #111111;
   --vf-chip-active-ink: #ffffff;
 
-  /* Maniquí anatómico de taller (referencia editorial lino-piedra) */
-  --mannequin-highlight: #f2efe9;
-  --mannequin-mid: #e4dfd6;
-  --mannequin-shadow: #c7bfb3;
-  --mannequin-rim: #dbd5ca;
-  --mannequin-stroke: #3c3833;
-  --mannequin-detail: rgb(72 66 58 / 36%);
-  --mannequin-shade-deep: rgb(78 70 60 / 22%);
+  /* Avatar humano 2D realista (piel natural con volumen, cabello y basewear de estudio) */
+  --mannequin-highlight: #f6dfd0;
+  --mannequin-mid: #e6c0aa;
+  --mannequin-shadow: #c39378;
+  --mannequin-rim: #f1d2be;
+  --mannequin-stroke: #7f5946;
+  --mannequin-detail: rgb(146 98 76 / 26%);
+  --mannequin-shade-deep: rgb(104 66 48 / 24%);
+  --avatar-hair-dark: #35251d;
+  --avatar-hair-mid: #5a3e30;
+  --avatar-hair-hi: #87614d;
+  --avatar-lip: #c57e76;
+  --avatar-iris: #3c2c22;
+  --avatar-basewear: #34373c;
 
   --scrollbar-track: #f2f2f2;
   --scrollbar-thumb: #9e9b95;
@@ -162,13 +168,19 @@
     --vf-chip-active-bg: #f4f3f0;
     --vf-chip-active-ink: #111111;
 
-    --mannequin-highlight: #dcd7ce;
-    --mannequin-mid: #c4beb4;
-    --mannequin-shadow: #948d83;
-    --mannequin-rim: #b0a99f;
-    --mannequin-stroke: rgb(242 240 236 / 44%);
-    --mannequin-detail: rgb(242 240 236 / 24%);
-    --mannequin-shade-deep: rgb(20 18 16 / 28%);
+    --mannequin-highlight: #f0d4c2;
+    --mannequin-mid: #dcb29a;
+    --mannequin-shadow: #b4856b;
+    --mannequin-rim: #e8c4af;
+    --mannequin-stroke: rgb(235 198 176 / 52%);
+    --mannequin-detail: rgb(225 180 156 / 24%);
+    --mannequin-shade-deep: rgb(62 38 28 / 34%);
+    --avatar-hair-dark: #2c1f19;
+    --avatar-hair-mid: #4e362a;
+    --avatar-hair-hi: #7c5846;
+    --avatar-lip: #bd7870;
+    --avatar-iris: #33241b;
+    --avatar-basewear: #2a2d32;
 
     --scrollbar-track: #181818;
     --scrollbar-thumb: #525252;
@@ -219,13 +231,19 @@
     --vf-chip-active-bg: light-dark(#111111, #f4f3f0);
     --vf-chip-active-ink: light-dark(#ffffff, #111111);
 
-    --mannequin-highlight: light-dark(#f2efe9, #dcd7ce);
-    --mannequin-mid: light-dark(#e4dfd6, #c4beb4);
-    --mannequin-shadow: light-dark(#c7bfb3, #948d83);
-    --mannequin-rim: light-dark(#dbd5ca, #b0a99f);
-    --mannequin-stroke: light-dark(#3c3833, rgb(242 240 236 / 44%));
-    --mannequin-detail: light-dark(rgb(72 66 58 / 36%), rgb(242 240 236 / 24%));
-    --mannequin-shade-deep: light-dark(rgb(78 70 60 / 22%), rgb(20 18 16 / 28%));
+    --mannequin-highlight: light-dark(#f6dfd0, #f0d4c2);
+    --mannequin-mid: light-dark(#e6c0aa, #dcb29a);
+    --mannequin-shadow: light-dark(#c39378, #b4856b);
+    --mannequin-rim: light-dark(#f1d2be, #e8c4af);
+    --mannequin-stroke: light-dark(#7f5946, rgb(235 198 176 / 52%));
+    --mannequin-detail: light-dark(rgb(146 98 76 / 26%), rgb(225 180 156 / 24%));
+    --mannequin-shade-deep: light-dark(rgb(104 66 48 / 24%), rgb(62 38 28 / 34%));
+    --avatar-hair-dark: light-dark(#35251d, #2c1f19);
+    --avatar-hair-mid: light-dark(#5a3e30, #4e362a);
+    --avatar-hair-hi: light-dark(#87614d, #7c5846);
+    --avatar-lip: light-dark(#c57e76, #bd7870);
+    --avatar-iris: light-dark(#3c2c22, #33241b);
+    --avatar-basewear: light-dark(#34373c, #2a2d32);
 
     --scrollbar-track: light-dark(#f2f2f2, #181818);
     --scrollbar-thumb: light-dark(#9e9b95, #525252);

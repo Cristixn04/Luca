@@ -22,8 +22,10 @@ export const HangingGarmentVisual = memo(function HangingGarmentVisual({
   const uid = useId();
   const { garment, image } = item;
   const isLower = isLowerCategory(garment.category);
-  const safePhoto = isSafeDataImageUrl(image?.dataUrl) ? image?.dataUrl : undefined;
-  const colorHex = garment.dominantColorHex ?? '#1F5F6B';
+  // Cuando existe gemelo digital generado por IA (visualSpec), mostramos siempre el gemelo digital limpio
+  const safePhoto =
+    !garment.visualSpec && isSafeDataImageUrl(image?.dataUrl) ? image?.dataUrl : undefined;
+  const colorHex = garment.visualSpec?.primary_color_hex ?? garment.dominantColorHex ?? '#1F5F6B';
 
   const visualMeta: GarmentVisualMeta = {
     name: garment.name,

@@ -284,13 +284,25 @@ export function TshirtTemplate({
     'Z',
   ].join(' ');
 
-  const baseFill = garmentColorHex ?? 'var(--accent)';
+  const resolvedPrimary = bp.primaryColorHex ?? garmentColorHex;
+  const baseFill = resolvedPrimary ?? 'var(--accent)';
   const trimFill = bp.secondaryColorHex ?? baseFill;
-  const strokeColor = resolveGarmentAccentStroke(garmentColorHex);
-  const seamColor = resolveGarmentSeamColor(garmentColorHex);
-  const buttonColor = bp.accentColorHex ?? resolveGarmentButtonColor(garmentColorHex);
-  const hasPhoto = isSafeDataImageUrl(garmentMeta?.imageUrl);
+  const strokeColor = resolveGarmentAccentStroke(resolvedPrimary);
+  const seamColor = resolveGarmentSeamColor(resolvedPrimary);
+  const buttonColor = bp.accentColorHex ?? resolveGarmentButtonColor(resolvedPrimary);
+  // Si existe gemelo digital (visualSpec), nunca pegamos la foto recortada: sintetizamos la prenda a medida
+  const hasPhoto = !garmentMeta?.visualSpec && isSafeDataImageUrl(garmentMeta?.imageUrl);
   const clipId = `${patternPrefix}-${variant}-clip`;
+  const customPatternId = `${patternPrefix}-${variant}-twin-pat`;
+  const stripeStep = bp.stripeDensity === 'fine' ? 6 : bp.stripeDensity === 'wide' ? 14 : 9.5;
+  const stripeColor = bp.secondaryColorHex ?? 'rgb(255 255 255 / 32%)';
+  const hasCustomPattern =
+    !hasPhoto &&
+    (bp.patternType === 'horizontal_stripes' ||
+      bp.patternType === 'vertical_stripes' ||
+      bp.patternType === 'plaid' ||
+      bp.patternType === 'dots' ||
+      bp.patternType === 'ribbed');
 
   const maxHalfX =
     Math.max(
@@ -334,6 +346,48 @@ export function TshirtTemplate({
         <clipPath id={clipId}>
           <path d={garmentPath} />
         </clipPath>
+        {hasCustomPattern && bp.patternType === 'horizontal_stripes' && (
+          <pattern id={customPatternId} width="16" height={stripeStep} patternUnits="userSpaceOnUse">
+            <rect width="16" height={stripeStep * 0.38} fill={stripeColor} opacity="0.82" />
+          </pattern>
+        )}
+        {hasCustomPattern && bp.patternType === 'vertical_stripes' && (
+          <pattern id={customPatternId} width={stripeStep} height="16" patternUnits="userSpaceOnUse">
+            <rect width={stripeStep * 0.34} height="16" fill={stripeColor} opacity="0.8" />
+          </pattern>
+        )}
+        {hasCustomPattern && bp.patternType === 'plaid' && (
+          <pattern id={customPatternId} width={stripeStep * 1.5} height={stripeStep * 1.5} patternUnits="userSpaceOnUse">
+            <rect width={stripeStep * 1.5} height={stripeStep * 0.26} fill={stripeColor} opacity="0.62" />
+            <rect width={stripeStep * 0.26} height={stripeStep * 1.5} fill={stripeColor} opacity="0.62" />
+            <rect
+              y={stripeStep * 0.78}
+              width={stripeStep * 1.5}
+              height="1.2"
+              fill={bp.accentColorHex ?? seamColor}
+              opacity="0.55"
+            />
+            <rect
+              x={stripeStep * 0.78}
+              width="1.2"
+              height={stripeStep * 1.5}
+              fill={bp.accentColorHex ?? seamColor}
+              opacity="0.55"
+            />
+          </pattern>
+        )}
+        {hasCustomPattern && bp.patternType === 'dots' && (
+          <pattern id={customPatternId} width="11" height="11" patternUnits="userSpaceOnUse">
+            <circle cx="3" cy="3" r="1.45" fill={stripeColor} opacity="0.85" />
+            <circle cx="8.5" cy="8.5" r="1.45" fill={stripeColor} opacity="0.85" />
+          </pattern>
+        )}
+        {hasCustomPattern && bp.patternType === 'ribbed' && (
+          <pattern id={customPatternId} width="3.8" height="10" patternUnits="userSpaceOnUse">
+            <line x1="1" y1="0" x2="1" y2="10" stroke="rgb(255 255 255 / 16%)" strokeWidth="0.75" />
+            <line x1="2.7" y1="0" x2="2.7" y2="10" stroke="rgb(0 0 0 / 15%)" strokeWidth="0.75" />
+          </pattern>
+        )}
       </defs>
 
       {/* Profundidad interior del cuello */}
@@ -391,9 +445,47 @@ export function TshirtTemplate({
         />
       )}
 
-      {/* Patrón / textura procedural */}
-      {patternId && !showHeatmap && (
-        <path d={garmentPath} fill={`url(#${patternId})`} opacity="0.82" />
+      {/* Bloques de color (colorblock) ajustados a las proporciones del avatar */}
+      {!showHeatmap && !hasPhoto && bp.secondaryColorHex && bp.colorblockLayout !== 'none' && (
+        <g clipPath={`url(#${clipId})`} pointerEvents="none">
+          {bp.colorblockLayout === 'raglan_sleeves' && (
+            <>
+              <rect x={imgX} y={imgY} width={cx - armpitX - imgX + 4} height={imgH} fill={bp.secondaryColorHex} />
+              <rect x={cx + armpitX - 4} y={imgY} width={imgX + imgW - (cx + armpitX - 4)} height={imgH} fill={bp.secondaryColorHex} />
+            </>
+          )}
+          {bp.colorblockLayout === 'top_bottom_split' && (
+            <rect
+              x={imgX}
+              y={(rig.chestY + rig.waistY) * 0.52}
+              width={imgW}
+              height={hemY - (rig.chestY + rig.waistY) * 0.52 + 8}
+              fill={bp.secondaryColorHex}
+            />
+          )}
+          {bp.colorblockLayout === 'chest_band' && (
+            <rect
+              x={imgX}
+              y={rig.chestY - 7}
+              width={imgW}
+              height={22}
+              fill={bp.secondaryColorHex}
+            />
+          )}
+          {bp.colorblockLayout === 'side_panels' && (
+            <>
+              <rect x={cx - chHalf - 2} y={armpitY - 2} width={10} height={hemY - armpitY + 6} fill={bp.secondaryColorHex} />
+              <rect x={cx + chHalf - 8} y={armpitY - 2} width={10} height={hemY - armpitY + 6} fill={bp.secondaryColorHex} />
+            </>
+          )}
+        </g>
+      )}
+
+      {/* Patrón / textura del gemelo digital */}
+      {hasCustomPattern && !showHeatmap ? (
+        <path d={garmentPath} fill={`url(#${customPatternId})`} />
+      ) : (
+        patternId && !showHeatmap && <path d={garmentPath} fill={`url(#${patternId})`} opacity="0.82" />
       )}
 
       {/* Volumen 3D cilíndrico y drapeado */}

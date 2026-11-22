@@ -152,6 +152,22 @@ export function FrontAvatarSvg({
       <HeatmapPatternDefs prefix={patternPrefix} />
       <MannequinDefs prefix={patternPrefix} />
 
+      {/* Cabello trasero (solo avatar femenino: melena ondulada media hasta hombros) */}
+      {isFemale && (
+        <path
+          d={[
+            `M ${cx - rig.headRx * 1.15} ${rig.headCenterY - rig.headRy * 0.25}`,
+            `C ${cx - rig.headRx * 1.48} ${rig.chinY + 4}, ${cx - rig.headRx * 1.62} ${rig.shoulderY + 6}, ${cx - rig.headRx * 1.25} ${rig.shoulderY + 20}`,
+            `Q ${cx} ${rig.shoulderY + 28} ${cx + rig.headRx * 1.25} ${rig.shoulderY + 20}`,
+            `C ${cx + rig.headRx * 1.62} ${rig.shoulderY + 6}, ${cx + rig.headRx * 1.48} ${rig.chinY + 4}, ${cx + rig.headRx * 1.15} ${rig.headCenterY - rig.headRy * 0.25}`,
+            'Z',
+          ].join(' ')}
+          fill="var(--avatar-hair-dark)"
+          stroke="var(--avatar-hair-dark)"
+          strokeWidth="0.6"
+        />
+      )}
+
       {/* Brazos y manos anatómicas */}
       <g
         fill={`url(#${patternPrefix}-limb-grad)`}
@@ -188,63 +204,65 @@ export function FrontAvatarSvg({
         data-avatar-body="front"
       />
 
-      {/* Costuras de taller de moda y sombreado anatómico sutil (referencia atelier) */}
+      {/* Anatomía humana sutil y prenda base neutra de estudio */}
       <g pointerEvents="none">
-        {/* Línea central vertical + línea de cuello + cortes princesa */}
-        <g fill="none" stroke="var(--mannequin-detail)" strokeWidth="0.65">
-          <path d={`M ${cx - rig.neckHalf - 1} ${rig.shoulderY - 1} Q ${cx} ${rig.shoulderY + 5} ${cx + rig.neckHalf + 1} ${rig.shoulderY - 1}`} />
-          <line x1={cx} y1={rig.shoulderY + 2} x2={cx} y2={rig.crotchY + 1} />
+        {/* Clavículas y sombreado anatómico suave */}
+        <g fill="none" stroke="var(--mannequin-detail)" strokeWidth="0.85" strokeLinecap="round">
           <path
-            d={`M ${cx - rig.shoulderX * 0.55} ${rig.shoulderY + 1} C ${cx - rig.chestX * 0.56} ${rig.chestY}, ${cx - rig.waistX * 0.62} ${rig.waistY}, ${cx - rig.hipX * 0.64} ${rig.hipY - 4}`}
+            d={`M ${cx - rig.shoulderX * 0.62} ${rig.shoulderY + 6} Q ${cx - rig.neckHalf * 1.1} ${rig.shoulderY + 9.5} ${cx - 3} ${rig.shoulderY + 7.5}`}
           />
           <path
-            d={`M ${cx + rig.shoulderX * 0.55} ${rig.shoulderY + 1} C ${cx + rig.chestX * 0.56} ${rig.chestY}, ${cx + rig.waistX * 0.62} ${rig.waistY}, ${cx + rig.hipX * 0.64} ${rig.hipY - 4}`}
+            d={`M ${cx + 3} ${rig.shoulderY + 7.5} Q ${cx + rig.neckHalf * 1.1} ${rig.shoulderY + 9.5} ${cx + rig.shoulderX * 0.62} ${rig.shoulderY + 6}`}
           />
-          {/* Línea de sisa de hombro */}
-          <path d={`M ${cx - rig.shoulderX + 3} ${rig.shoulderY + 2} Q ${cx - rig.armpitX - 1} ${rig.chestY - 8} ${cx - rig.armpitX} ${rig.armpitY}`} />
-          <path d={`M ${cx + rig.shoulderX - 3} ${rig.shoulderY + 2} Q ${cx + rig.armpitX + 1} ${rig.chestY - 8} ${cx + rig.armpitX} ${rig.armpitY}`} />
-          {/* Línea pélvica de maniquí */}
-          <path
-            d={`M ${cx - rig.hipX + 1} ${rig.hipY - 8} Q ${cx - rig.hipX * 0.42} ${rig.crotchY - 14} ${cx} ${rig.crotchY + 2} Q ${cx + rig.hipX * 0.42} ${rig.crotchY - 14} ${cx + rig.hipX - 1} ${rig.hipY - 8}`}
-          />
+          {/* Ombligo sutil */}
+          <path d={`M ${cx - 1.2} ${rig.waistY + 5} Q ${cx} ${rig.waistY + 6.8} ${cx + 1.2} ${rig.waistY + 5}`} />
         </g>
 
-        {/* Contorno de busto femenino o pectoral masculino */}
-        {isFemale ? (
-          <>
-            <path
-              d={`M ${cx - rig.chestX + 2} ${rig.chestY + 2} Q ${cx - rig.chestX * 0.46} ${rig.bustUnderY + 4} ${cx - 2.5} ${rig.chestY + 3}`}
-              fill="none"
-              stroke="var(--mannequin-stroke)"
-              strokeWidth="0.85"
-              opacity="0.55"
-            />
-            <path
-              d={`M ${cx + 2.5} ${rig.chestY + 3} Q ${cx + rig.chestX * 0.46} ${rig.bustUnderY + 4} ${cx + rig.chestX - 2} ${rig.chestY + 2}`}
-              fill="none"
-              stroke="var(--mannequin-stroke)"
-              strokeWidth="0.85"
-              opacity="0.55"
-            />
-            <path
-              d={`M ${cx - rig.chestX + 3} ${rig.chestY + 3} Q ${cx - rig.chestX * 0.46} ${rig.bustUnderY + 7} ${cx - 2.5} ${rig.chestY + 4} Q ${cx - rig.chestX * 0.46} ${rig.bustUnderY + 2} ${cx - rig.chestX + 3} ${rig.chestY + 3} Z`}
-              fill="var(--mannequin-shade-deep)"
-            />
-            <path
-              d={`M ${cx + 2.5} ${rig.chestY + 4} Q ${cx + rig.chestX * 0.46} ${rig.bustUnderY + 7} ${cx + rig.chestX - 3} ${rig.chestY + 3} Q ${cx + rig.chestX * 0.46} ${rig.bustUnderY + 2} ${cx + 2.5} ${rig.chestY + 4} Z`}
-              fill="var(--mannequin-shade-deep)"
-            />
-          </>
-        ) : (
+        {/* Ropa base deportiva neutra (siempre limpia cuando solo se prueba una prenda) */}
+        {isFemale && (
+          <path
+            d={[
+              `M ${cx - rig.shoulderX * 0.48} ${rig.shoulderY + 1}`,
+              `L ${cx - rig.shoulderX * 0.34} ${rig.shoulderY + 1}`,
+              `Q ${cx} ${rig.chestY - 7} ${cx + rig.shoulderX * 0.34} ${rig.shoulderY + 1}`,
+              `L ${cx + rig.shoulderX * 0.48} ${rig.shoulderY + 1}`,
+              `C ${cx + rig.chestX - 1} ${rig.chestY - 4}, ${cx + rig.chestX} ${rig.bustUnderY}, ${cx + rig.chestX - 2} ${rig.bustUnderY + 7}`,
+              `Q ${cx} ${rig.bustUnderY + 9} ${cx - rig.chestX + 2} ${rig.bustUnderY + 7}`,
+              `C ${cx - rig.chestX} ${rig.bustUnderY}, ${cx - rig.chestX + 1} ${rig.chestY - 4}, ${cx - rig.shoulderX * 0.48} ${rig.shoulderY + 1}`,
+              'Z',
+            ].join(' ')}
+            fill="var(--avatar-basewear)"
+            opacity="0.88"
+          />
+        )}
+        {/* Short base neutro en zona pélvica */}
+        <path
+          d={[
+            `M ${cx - rig.waistX - 0.5} ${rig.hipY - 12}`,
+            `Q ${cx} ${rig.hipY - 9} ${cx + rig.waistX + 0.5} ${rig.hipY - 12}`,
+            `C ${cx + rig.hipX} ${rig.hipY - 3}, ${cx + rig.hipX} ${rig.crotchY + 3}, ${cx + rig.hipX * 0.88} ${rig.crotchY + 15}`,
+            `L ${cx + 5} ${rig.crotchY + 15}`,
+            `L ${cx} ${rig.crotchY + 4}`,
+            `L ${cx - 5} ${rig.crotchY + 15}`,
+            `L ${cx - rig.hipX * 0.88} ${rig.crotchY + 15}`,
+            `C ${cx - rig.hipX} ${rig.crotchY + 3}, ${cx - rig.hipX} ${rig.hipY - 3}, ${cx - rig.waistX - 0.5} ${rig.hipY - 12}`,
+            'Z',
+          ].join(' ')}
+          fill="var(--avatar-basewear)"
+          opacity="0.88"
+        />
+
+        {/* Contorno pectoral masculino suave */}
+        {!isFemale && (
           <path
             d={`M ${cx - rig.chestX + 4} ${rig.chestY + 4} Q ${cx - rig.chestX * 0.45} ${rig.chestY + 8} ${cx - 2} ${rig.chestY + 5} M ${cx + 2} ${rig.chestY + 5} Q ${cx + rig.chestX * 0.45} ${rig.chestY + 8} ${cx + rig.chestX - 4} ${rig.chestY + 4}`}
             fill="none"
             stroke="var(--mannequin-detail)"
-            strokeWidth="0.95"
+            strokeWidth="0.9"
           />
         )}
 
-        {/* Sombreado sutil de rótulas (rodillas) */}
+        {/* Sombreado sutil de rodillas */}
         <g fill="none" stroke="var(--mannequin-detail)" strokeWidth="0.8" strokeLinecap="round">
           <path
             d={`M ${cx - rig.kneeOuterX + 4} ${rig.kneeY - 1} Q ${cx - (rig.kneeOuterX + rig.kneeInnerX) * 0.5} ${rig.kneeY + 4.5} ${cx - rig.kneeInnerX - 3} ${rig.kneeY - 1}`}
@@ -255,32 +273,150 @@ export function FrontAvatarSvg({
         </g>
       </g>
 
-      {/* Orejas finas y cabeza esculpida */}
+      {/* Orejas, rostro humano 2D realista y cabello estilizado */}
       <ellipse
         cx={cx - rig.headRx * 0.96}
         cy={rig.headCenterY + 2}
         rx={2.1}
-        ry={5}
+        ry={4.8}
         fill={`url(#${patternPrefix}-limb-grad)`}
         stroke="var(--mannequin-stroke)"
-        strokeWidth="0.9"
+        strokeWidth="0.85"
       />
       <ellipse
         cx={cx + rig.headRx * 0.96}
         cy={rig.headCenterY + 2}
         rx={2.1}
-        ry={5}
+        ry={4.8}
         fill={`url(#${patternPrefix}-limb-grad)`}
         stroke="var(--mannequin-stroke)"
-        strokeWidth="0.9"
+        strokeWidth="0.85"
       />
       <path
         d={headPath}
         fill={`url(#${patternPrefix}-head-grad)`}
         stroke="var(--mannequin-stroke)"
-        strokeWidth="1.05"
+        strokeWidth="0.95"
         strokeLinejoin="round"
       />
+
+      {/* Rasgos faciales realistas 2D */}
+      <g pointerEvents="none">
+        {/* Rubor suave en mejillas */}
+        <ellipse
+          cx={cx - rig.headRx * 0.44}
+          cy={rig.headCenterY + 3.2}
+          rx={3.6}
+          ry={2.1}
+          fill={`url(#${patternPrefix}-cheek-blush)`}
+        />
+        <ellipse
+          cx={cx + rig.headRx * 0.44}
+          cy={rig.headCenterY + 3.2}
+          rx={3.6}
+          ry={2.1}
+          fill={`url(#${patternPrefix}-cheek-blush)`}
+        />
+
+        {/* Cejas */}
+        <path
+          d={`M ${cx - rig.headRx * 0.62} ${rig.headCenterY - 4.4} Q ${cx - rig.headRx * 0.36} ${rig.headCenterY - (isFemale ? 6.0 : 5.4)} ${cx - rig.headRx * 0.14} ${rig.headCenterY - 4.2}`}
+          fill="none"
+          stroke="var(--avatar-hair-dark)"
+          strokeWidth={isFemale ? '0.95' : '1.25'}
+          strokeLinecap="round"
+        />
+        <path
+          d={`M ${cx + rig.headRx * 0.14} ${rig.headCenterY - 4.2} Q ${cx + rig.headRx * 0.36} ${rig.headCenterY - (isFemale ? 6.0 : 5.4)} ${cx + rig.headRx * 0.62} ${rig.headCenterY - 4.4}`}
+          fill="none"
+          stroke="var(--avatar-hair-dark)"
+          strokeWidth={isFemale ? '0.95' : '1.25'}
+          strokeLinecap="round"
+        />
+
+        {/* Ojos con iris y brillo especular */}
+        {([-1, 1] as const).map((side) => {
+          const ex = cx + side * rig.headRx * 0.37;
+          const ey = rig.headCenterY - 1.4;
+          return (
+            <g key={side}>
+              <ellipse cx={ex} cy={ey} rx={2.5} ry={1.35} fill="#faf8f6" />
+              <circle cx={ex} cy={ey} r={1.2} fill="var(--avatar-iris)" />
+              <circle cx={ex} cy={ey} r={0.55} fill="#161210" />
+              <circle cx={ex - 0.4} cy={ey - 0.4} r={0.35} fill="#ffffff" />
+              <path
+                d={`M ${ex - 2.6} ${ey} Q ${ex} ${ey - 1.85} ${ex + 2.6} ${ey}`}
+                fill="none"
+                stroke="var(--avatar-hair-dark)"
+                strokeWidth={isFemale ? '0.85' : '0.7'}
+                strokeLinecap="round"
+              />
+            </g>
+          );
+        })}
+
+        {/* Nariz sutil */}
+        <path
+          d={`M ${cx} ${rig.headCenterY - 0.5} L ${cx - 0.5} ${rig.headCenterY + 3.6} Q ${cx} ${rig.headCenterY + 4.3} ${cx + 1.1} ${rig.headCenterY + 3.7}`}
+          fill="none"
+          stroke="var(--mannequin-stroke)"
+          strokeWidth="0.65"
+          strokeLinecap="round"
+          opacity="0.72"
+        />
+
+        {/* Labios naturales */}
+        <path
+          d={`M ${cx - 3.6} ${rig.headCenterY + 7.2} Q ${cx - 1.4} ${rig.headCenterY + 6.1} ${cx} ${rig.headCenterY + 6.7} Q ${cx + 1.4} ${rig.headCenterY + 6.1} ${cx + 3.6} ${rig.headCenterY + 7.2} Q ${cx} ${rig.headCenterY + 9.4} ${cx - 3.6} ${rig.headCenterY + 7.2} Z`}
+          fill="var(--avatar-lip)"
+          opacity={isFemale ? '0.88' : '0.68'}
+        />
+        <path
+          d={`M ${cx - 3.3} ${rig.headCenterY + 7.3} Q ${cx} ${rig.headCenterY + 7.9} ${cx + 3.3} ${rig.headCenterY + 7.3}`}
+          fill="none"
+          stroke="var(--mannequin-stroke)"
+          strokeWidth="0.45"
+          opacity="0.7"
+        />
+      </g>
+
+      {/* Cabello frontal estilizado */}
+      {isFemale ? (
+        <g pointerEvents="none">
+          <path
+            d={[
+              `M ${cx - rig.headRx * 1.14} ${rig.headCenterY + 1}`,
+              `C ${cx - rig.headRx * 1.24} ${rig.headTopY + 1}, ${cx - rig.headRx * 0.5} ${rig.headTopY - 4.5}, ${cx} ${rig.headTopY - 4}`,
+              `C ${cx + rig.headRx * 0.5} ${rig.headTopY - 4.5}, ${cx + rig.headRx * 1.24} ${rig.headTopY + 1}, ${cx + rig.headRx * 1.14} ${rig.headCenterY + 1}`,
+              `C ${cx + rig.headRx * 0.96} ${rig.headCenterY - 5}, ${cx + rig.headRx * 0.56} ${rig.headTopY + 5.5}, ${cx + 1.5} ${rig.headTopY + 6.5}`,
+              `C ${cx - rig.headRx * 0.56} ${rig.headTopY + 5.5}, ${cx - rig.headRx * 0.96} ${rig.headCenterY - 5}, ${cx - rig.headRx * 1.14} ${rig.headCenterY + 1}`,
+              'Z',
+            ].join(' ')}
+            fill={`url(#${patternPrefix}-hair-grad)`}
+          />
+          <path
+            d={`M ${cx - rig.headRx * 0.6} ${rig.headTopY + 2} Q ${cx} ${rig.headTopY - 1} ${cx + rig.headRx * 0.6} ${rig.headTopY + 2}`}
+            fill="none"
+            stroke="var(--avatar-hair-hi)"
+            strokeWidth="0.9"
+            opacity="0.65"
+          />
+        </g>
+      ) : (
+        <g pointerEvents="none">
+          <path
+            d={[
+              `M ${cx - rig.headRx * 1.04} ${rig.headCenterY - 2}`,
+              `C ${cx - rig.headRx * 1.14} ${rig.headTopY + 1}, ${cx - rig.headRx * 0.55} ${rig.headTopY - 4.5}, ${cx + 1} ${rig.headTopY - 4}`,
+              `C ${cx + rig.headRx * 0.68} ${rig.headTopY - 4}, ${cx + rig.headRx * 1.14} ${rig.headTopY + 1}, ${cx + rig.headRx * 1.04} ${rig.headCenterY - 2}`,
+              `C ${cx + rig.headRx * 0.92} ${rig.headCenterY - 7}, ${cx + rig.headRx * 0.45} ${rig.headTopY + 7.5}, ${cx - 2} ${rig.headTopY + 7}`,
+              `C ${cx - rig.headRx * 0.55} ${rig.headTopY + 7.5}, ${cx - rig.headRx * 0.92} ${rig.headCenterY - 7}, ${cx - rig.headRx * 1.04} ${rig.headCenterY - 2}`,
+              'Z',
+            ].join(' ')}
+            fill={`url(#${patternPrefix}-hair-grad)`}
+          />
+        </g>
+      )}
 
       {/* Prendas ajustadas exactamente al MannequinRig */}
       {outfitLayers ? (

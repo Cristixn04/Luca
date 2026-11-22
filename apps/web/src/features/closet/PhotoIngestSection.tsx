@@ -1,37 +1,33 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import type { GarmentCategory } from '@luca/domain';
 import {
+  AlertTriangle,
   Camera,
   CheckCircle2,
-  Crop,
   ImagePlus,
   Loader2,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
-  Tag,
   Trash2,
   X,
 } from 'lucide-react';
 import { Badge } from '@/design-system/components/Badge';
 import { Button } from '@/design-system/components/Button';
+import { GarmentCardPreviewSvg } from '@/features/fitting/GarmentCardPreviewSvg';
 import {
   analyzeGarmentPhoto,
   getApiConsent,
   setApiConsent,
 } from '@/infrastructure/api-client/client';
 import type { GarmentTagSuggestion } from '@/infrastructure/api-client/generated.types';
-import {
-  sanitizeImageForUpload,
-  type CropRectNormalized,
-} from '@/infrastructure/api-client/imageSanitizer';
+import { sanitizeImageForUpload } from '@/infrastructure/api-client/imageSanitizer';
 import { suggestManualTags } from './manualTagger';
 import {
   CATEGORY_LABELS,
-  PATTERN_LABELS,
-  SEASON_LABELS,
-  STYLE_LABELS,
   formatVisualSpecSummary,
   type FormalityLevel,
+  type GarmentVisualSpec,
 } from './types';
 
 export interface PhotoIngestValue {
@@ -49,96 +45,91 @@ export interface PhotoIngestSectionProps {
   category: GarmentCategory;
   formality: FormalityLevel;
   elasticity: number;
+  visualSpec?: GarmentVisualSpec;
   onChange: (next: PhotoIngestValue) => void;
   onApplyTagSuggestion?: (suggestion: GarmentTagSuggestion) => void;
+  onDesignRejectedChange?: (rejectedReason: string | null) => void;
 }
 
-const DEFAULT_CROP: CropRectNormalized = { top: 0, right: 0, bottom: 0, left: 0 };
-
-function formatConfidence(value: number): string {
-  return `${Math.round(Math.max(0, Math.min(1, value)) * 100)} %`;
-}
+const PATTERN_BADGE_LABELS: Record<string, string> = {
+  solid: 'Color sólido',
+  horizontal_stripes: 'Rayas horizontales',
+  vertical_stripes: 'Rayas verticales',
+  plaid: 'Cuadros sencillos',
+  dots: 'Lunares sencillos',
+  colorblock: 'Bloques de color',
+  ribbed: 'Tejido canalé',
+};
 
 export function PhotoIngestSection({
   value,
   category,
   formality,
   elasticity,
+  visualSpec,
   onChange,
   onApplyTagSuggestion,
+  onDesignRejectedChange,
 }: PhotoIngestSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const backFileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const [consent, setConsent] = useState<boolean>(() => getApiConsent());
-  const [includeAiTags, setIncludeAiTags] = useState<boolean>(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedBackFile, setSelectedBackFile] = useState<File | null>(null);
-  const [manualMode, setManualMode] = useState<boolean>(false);
-  const [crop, setCrop] = useState<CropRectNormalized>(DEFAULT_CROP);
+  const [analyzedCategory, setAnalyzedCategory] = useState<GarmentCategory | null>(null);
   const [dragging, setDragging] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [progressNote, setProgressNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [tagSuggestion, setTagSuggestion] = useState<GarmentTagSuggestion | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+  const [lastSuggestion, setLastSuggestion] = useState<GarmentTagSuggestion | null>(null);
 
-  const processManual = async (
-    file: File,
-    nextCrop: CropRectNormalized,
-    backFile?: File | null,
-  ) => {
+  const clearRejection = () => {
+    setRejectionReason(null);
+    onDesignRejectedChange?.(null);
+  };
+
+  const processOfflineFallback = async (file: File, targetCat: GarmentCategory) => {
     setError(null);
+    clearRejection();
     setAnalyzing(true);
-    setProgressNote('Recortando y limpiando metadatos EXIF en tu dispositivo...');
+    setProgressNote('Extrayendo color dominante y creando gemelo digital base en tu dispositivo...');
     try {
-      const sanitized = await sanitizeImageForUpload(file, { crop: nextCrop });
-      let backDataUrl = value.backDataUrl;
-      if (backFile) {
-        const sanitizedBack = await sanitizeImageForUpload(backFile);
-        backDataUrl = sanitizedBack.dataUrl;
-      }
+      const sanitized = await sanitizeImageForUpload(file);
       onChange({
         dataUrl: sanitized.dataUrl,
-        ...(backDataUrl ? { backDataUrl } : {}),
         width: sanitized.width,
         height: sanitized.height,
         source: 'manual',
         dominantColorHex: sanitized.localColorHex,
       });
-      setProgressNote('Foto lista localmente (EXIF eliminado, cero envío de red).');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo procesar la imagen localmente.');
-      setProgressNote(null);
-    } finally {
-      setAnalyzing(false);
-    }
-  };
-
-  const processBackManual = async (backFile: File) => {
-    setError(null);
-    setAnalyzing(true);
-    setProgressNote('Limpiando metadatos EXIF de la foto de espalda en tu dispositivo...');
-    try {
-      const sanitizedBack = await sanitizeImageForUpload(backFile);
-      onChange({
-        ...value,
-        backDataUrl: sanitizedBack.dataUrl,
+      const localSuggestion = suggestManualTags({
+        category: targetCat,
+        dominantColorHex: sanitized.localColorHex,
+        formality,
+        elasticity,
+        hasBackPhoto: false,
       });
-      setProgressNote('Foto de espalda lista localmente (EXIF eliminado).');
+      setLastSuggestion(localSuggestion);
+      setAnalyzedCategory(targetCat);
+      onApplyTagSuggestion?.(localSuggestion);
+      setProgressNote('Gemelo digital base generado localmente sin conexión.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo procesar la foto de espalda.');
+      setError(err instanceof Error ? err.message : 'No se pudo leer la imagen.');
       setProgressNote(null);
     } finally {
       setAnalyzing(false);
     }
   };
 
-  const processWithApi = async (file: File, backFile?: File | null) => {
+  const processWithAiAgent = async (file: File, targetCat: GarmentCategory) => {
     setError(null);
+    clearRejection();
     setAnalyzing(true);
-    setProgressNote('Reduciendo a <= 1024 px y eliminando EXIF antes de enviar...');
+    setProgressNote(
+      `Eliminando EXIF y analizando exclusivamente la prenda «${CATEGORY_LABELS[targetCat]}» con el agente IA...`,
+    );
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -147,63 +138,73 @@ export function PhotoIngestSection({
       const sanitized = await sanitizeImageForUpload(file);
       if (controller.signal.aborted) return;
 
-      const sanitizedBack = backFile ? await sanitizeImageForUpload(backFile) : null;
-      if (controller.signal.aborted) return;
-
-      setProgressNote(
-        includeAiTags
-          ? 'Recortando fondo, calculando color CIELAB y sugiriendo etiquetas...'
-          : 'Recortando fondo y calculando color dominante en CIELAB...',
-      );
       const response = await analyzeGarmentPhoto(sanitized.blob, {
-        ...(sanitizedBack ? { backBlob: sanitizedBack.blob } : {}),
-        includeTags: includeAiTags,
+        includeTags: true,
+        targetCategory: targetCat,
         signal: controller.signal,
       });
 
-      const nextBackDataUrl = response.back_cutout_png_base64
-        ? `data:image/png;base64,${response.back_cutout_png_base64}`
-        : value.backDataUrl;
+      const tagging = response.tagging;
+      const isRejected =
+        tagging?.design_supported === false || tagging?.visual_spec?.design_supported === false;
+
+      if (isRejected) {
+        const reason =
+          tagging?.rejection_reason ??
+          tagging?.visual_spec?.rejection_reason ??
+          'Esta prenda tiene un estampado o gráfico demasiado complejo. Sube una prenda de color sólido o estampado sencillo (rayas, cuadros, bloques de color o lunares).';
+        setRejectionReason(reason);
+        onDesignRejectedChange?.(reason);
+        setProgressNote(null);
+        setLastSuggestion(null);
+        setAnalyzedCategory(targetCat);
+        return;
+      }
+
+      const exactPrimaryHex =
+        tagging?.visual_spec?.primary_color_hex ?? response.dominant_color_hex;
 
       onChange({
-        dataUrl: `data:image/png;base64,${response.cutout_png_base64}`,
-        ...(nextBackDataUrl ? { backDataUrl: nextBackDataUrl } : {}),
+        dataUrl: sanitized.dataUrl,
         width: response.width,
         height: response.height,
         source: 'api',
-        dominantColorHex: response.dominant_color_hex,
+        dominantColorHex: exactPrimaryHex,
         paletteHex: response.palette_hex,
       });
 
-      if (response.tagging) {
-        setTagSuggestion(response.tagging);
-      } else if (includeAiTags) {
-        setTagSuggestion(
-          suggestManualTags({
-            category,
-            dominantColorHex: response.dominant_color_hex,
-            formality,
-            elasticity,
-            hasBackPhoto: Boolean(nextBackDataUrl),
-          }),
-        );
+      if (tagging) {
+        setLastSuggestion(tagging);
+        onApplyTagSuggestion?.(tagging);
+      } else {
+        const fallback = suggestManualTags({
+          category: targetCat,
+          dominantColorHex: exactPrimaryHex,
+          formality,
+          elasticity,
+          hasBackPhoto: false,
+        });
+        setLastSuggestion(fallback);
+        onApplyTagSuggestion?.(fallback);
       }
 
+      setAnalyzedCategory(targetCat);
       setProgressNote(
         response.tagging_warning
-          ? `Recorte completado en ${response.processing_ms} ms (${response.provider}). ${response.tagging_warning} Se cargaron sugerencias locales de respaldo.`
-          : `Recorte completado en ${response.processing_ms} ms (${response.provider}). Puedes editar color y etiquetas.`,
+          ? `${response.tagging_warning} Se generó el gemelo digital base.`
+          : `Gemelo digital generado en ${response.processing_ms} ms para «${CATEGORY_LABELS[targetCat]}».`,
       );
     } catch (err) {
       if (controller.signal.aborted) {
-        setProgressNote('Análisis cancelado. Puedes usar el modo manual.');
+        setProgressNote('Análisis cancelado.');
       } else {
         setError(
           err instanceof Error
-            ? `${err.message} Puedes usar el modo manual sin conexión.`
-            : 'No se pudo conectar con la API. Usa el modo manual.',
+            ? `${err.message} Se puede continuar creando el gemelo base sin conexión.`
+            : 'No se pudo conectar con la API de IA.',
         );
-        setProgressNote(null);
+        // Respaldo automático local para no bloquear al usuario si la API está apagada
+        await processOfflineFallback(file, targetCat);
       }
     } finally {
       abortRef.current = null;
@@ -215,35 +216,18 @@ export function PhotoIngestSection({
     if (!file) return;
     setSelectedFile(file);
     setError(null);
+    clearRejection();
 
-    if (manualMode) {
-      await processManual(file, crop, selectedBackFile);
-    } else if (consent) {
-      await processWithApi(file, selectedBackFile);
+    if (consent) {
+      await processWithAiAgent(file, category);
     } else {
-      await processManual(file, DEFAULT_CROP, selectedBackFile);
-    }
-  };
-
-  const handleBackFileChosen = async (file: File | undefined) => {
-    if (!file) return;
-    setSelectedBackFile(file);
-    setError(null);
-
-    if (selectedFile && consent && !manualMode) {
-      await processWithApi(selectedFile, file);
-    } else {
-      await processBackManual(file);
+      // Concede consentimiento al usar el flujo IA principal si ya aceptó, o procesa localmente
+      await processOfflineFallback(file, category);
     }
   };
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     void handleFileChosen(event.target.files?.[0]);
-    event.target.value = '';
-  };
-
-  const handleBackInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-    void handleBackFileChosen(event.target.files?.[0]);
     event.target.value = '';
   };
 
@@ -253,441 +237,358 @@ export function PhotoIngestSection({
     void handleFileChosen(event.dataTransfer.files?.[0]);
   };
 
-  const handleGrantConsentAndAnalyze = async () => {
+  const handleEnableAiAndAnalyze = async () => {
     setApiConsent(true);
     setConsent(true);
-    setManualMode(false);
     if (selectedFile) {
-      await processWithApi(selectedFile, selectedBackFile);
+      await processWithAiAgent(selectedFile, category);
     }
   };
 
-  const handleRevokeConsent = () => {
-    setApiConsent(false);
-    setConsent(false);
-    setManualMode(true);
-  };
-
-  const handleCancel = () => {
+  const handleClearPhoto = () => {
     abortRef.current?.abort();
+    setSelectedFile(null);
+    setAnalyzedCategory(null);
+    setLastSuggestion(null);
+    setProgressNote(null);
+    setError(null);
+    clearRejection();
+    onChange({ dominantColorHex: '#1F5F6B' });
   };
 
-  const handleCropChange = async (edge: keyof CropRectNormalized, pct: number) => {
-    const next = { ...crop, [edge]: pct / 100 };
-    setCrop(next);
-    if (selectedFile) {
-      await processManual(selectedFile, next, selectedBackFile);
-    }
-  };
-
-  const handleSuggestOfflineTags = () => {
-    const suggestion = suggestManualTags({
-      category,
-      dominantColorHex: value.dominantColorHex,
-      formality,
-      elasticity,
-      hasBackPhoto: Boolean(value.backDataUrl),
-    });
-    setTagSuggestion(suggestion);
-  };
+  const activeSpec = visualSpec ?? lastSuggestion?.visual_spec ?? undefined;
+  const specSummary = formatVisualSpecSummary(activeSpec);
+  const categoryChangedSinceAnalysis =
+    selectedFile !== null && analyzedCategory !== null && analyzedCategory !== category;
 
   return (
-    <div className="flex flex-col gap-3 rounded-[var(--radius-sm)] border border-border bg-bg p-3.5">
+    <div className="flex flex-col gap-3 rounded-[20px] border border-[var(--glass-border)] bg-[var(--glass-pill-bg)] p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-ink">Fotos de la prenda</span>
-          <Badge variant={consent && !manualMode ? 'accent' : 'neutral'}>
-            {consent && !manualMode ? 'API con permiso' : 'Solo local (manual)'}
-          </Badge>
+          <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink">
+            Foto de referencia → Gemelo digital IA
+          </span>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleSuggestOfflineTags}
-          >
-            <Tag className="h-3.5 w-3.5" aria-hidden="true" />
-            Sugerir etiquetas locales
-          </Button>
-          {consent && (
-            <Button type="button" variant="ghost" size="sm" onClick={handleRevokeConsent}>
-              Desactivar API
-            </Button>
-          )}
-        </div>
+        <Badge variant="accent">Enfoque: {CATEGORY_LABELS[category]}</Badge>
       </div>
 
-      {/* Zona de subida: frente (obligatorio si se sube foto) + espalda opcional */}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <p className="text-xs text-muted">
+        Sube una foto de la prenda. La IA aislará únicamente la categoría{' '}
+        <strong className="text-ink">{CATEGORY_LABELS[category]}</strong> (aunque aparezcan otras
+        prendas) y generará su versión digital a medida para el avatar. Solo se admiten{' '}
+        <strong className="text-ink">colores sólidos y estampados sencillos</strong> (rayas,
+        cuadros, bloques de color o lunares).
+      </p>
+
+      {/* Aviso de consentimiento IA (1 clic, persiste en el dispositivo) */}
+      {!consent && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-accent/30 bg-accent/8 px-3 py-2 text-xs">
+          <div className="flex items-start gap-2 text-ink">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+            <span>
+              Activa el agente IA para analizar la foto y generar el gemelo digital idéntico (sin
+              EXIF, procesada solo en memoria).
+            </span>
+          </div>
+          <Button type="button" size="sm" onClick={() => void handleEnableAiAndAnalyze()}>
+            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+            Activar agente IA
+          </Button>
+        </div>
+      )}
+
+      {/* Inputs ocultos de archivo y cámara */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        aria-label="Seleccionar foto de la prenda"
+        onChange={handleInputChange}
+        className="hidden"
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        aria-label="Tomar foto con cámara"
+        onChange={handleInputChange}
+        className="hidden"
+      />
+
+      {/* Zona de carga / drag & drop */}
+      {!value.dataUrl && !rejectionReason && (
         <div
-          onDragOver={(event) => {
-            event.preventDefault();
+          onDragOver={(e) => {
+            e.preventDefault();
             setDragging(true);
           }}
           onDragLeave={() => setDragging(false)}
           onDrop={handleDrop}
-          className={`flex flex-col items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-dashed p-3.5 text-center transition-colors ${
-            dragging ? 'border-accent bg-surface' : 'border-border bg-surface/50'
+          className={`flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-4 py-6 text-center transition-colors ${
+            dragging ? 'border-accent bg-accent/10' : 'border-border bg-bg/60'
           }`}
         >
-          <span className="text-xs font-semibold text-ink">Frente</span>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            aria-label="Seleccionar foto de prenda"
-            onChange={handleInputChange}
-            className="hidden"
-          />
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            capture="environment"
-            aria-label="Tomar foto con cámara"
-            onChange={handleInputChange}
-            className="hidden"
-          />
-
-          {value.dataUrl ? (
-            <div className="flex w-full flex-col items-center gap-2">
-              <div className="flex h-32 w-full items-center justify-center overflow-hidden rounded-[var(--radius-sm)] border border-border bg-bg p-2">
-                <img
-                  src={value.dataUrl}
-                  alt="Vista previa frontal de la prenda"
-                  className="max-h-full max-w-full object-contain"
-                />
-              </div>
-              <div className="flex flex-wrap justify-center gap-1.5">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <ImagePlus className="h-3.5 w-3.5" aria-hidden="true" />
-                  Cambiar
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setSelectedFile(null);
-                    setProgressNote(null);
-                    onChange({
-                      dominantColorHex: value.dominantColorHex,
-                      ...(value.backDataUrl ? { backDataUrl: value.backDataUrl } : {}),
-                    });
-                  }}
-                >
-                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  Quitar
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <p className="text-xs text-muted">
-                Arrastra una foto (JPEG, PNG o WEBP) o elige una opción:
-              </p>
-              <div className="flex flex-wrap justify-center gap-1.5">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <ImagePlus className="h-3.5 w-3.5" aria-hidden="true" />
-                  Subir archivo
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => cameraInputRef.current?.click()}
-                >
-                  <Camera className="h-3.5 w-3.5" aria-hidden="true" />
-                  Cámara
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Foto de espalda (opcional) */}
-        <div className="flex flex-col items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-dashed border-border bg-surface/50 p-3.5 text-center">
-          <span className="text-xs font-semibold text-ink">Espalda (opcional)</span>
-          <input
-            ref={backFileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            aria-label="Seleccionar foto de espalda de la prenda"
-            onChange={handleBackInputChange}
-            className="hidden"
-          />
-
-          {value.backDataUrl ? (
-            <div className="flex w-full flex-col items-center gap-2">
-              <div className="flex h-32 w-full items-center justify-center overflow-hidden rounded-[var(--radius-sm)] border border-border bg-bg p-2">
-                <img
-                  src={value.backDataUrl}
-                  alt="Vista previa trasera de la prenda"
-                  className="max-h-full max-w-full object-contain"
-                />
-              </div>
-              <div className="flex flex-wrap justify-center gap-1.5">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => backFileInputRef.current?.click()}
-                >
-                  <ImagePlus className="h-3.5 w-3.5" aria-hidden="true" />
-                  Cambiar
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setSelectedBackFile(null);
-                    onChange({
-                      dominantColorHex: value.dominantColorHex,
-                      ...(value.dataUrl ? { dataUrl: value.dataUrl } : {}),
-                      ...(value.width !== undefined ? { width: value.width } : {}),
-                      ...(value.height !== undefined ? { height: value.height } : {}),
-                      ...(value.source ? { source: value.source } : {}),
-                      ...(value.paletteHex ? { paletteHex: value.paletteHex } : {}),
-                    });
-                  }}
-                >
-                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  Quitar
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <p className="text-xs text-muted">
-                Añade la espalda para consultar estampados traseros y mejorar el etiquetado IA.
-              </p>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => backFileInputRef.current?.click()}
-              >
-                <ImagePlus className="h-3.5 w-3.5" aria-hidden="true" />
-                Añadir espalda
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Opción de etiquetado IA cuando la API está autorizada */}
-      {consent && !manualMode && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-border bg-surface px-3 py-2 text-xs">
-          <label className="inline-flex cursor-pointer items-center gap-2 text-ink">
-            <input
-              type="checkbox"
-              checked={includeAiTags}
-              onChange={(event) => setIncludeAiTags(event.target.checked)}
-              className="h-4 w-4 accent-[var(--accent)]"
-            />
-            <span>Sugerir etiquetas con IA (Gemini Vision · sin almacenamiento en servidor)</span>
-          </label>
-          {selectedFile && (
+          <ImagePlus className="h-7 w-7 text-accent" aria-hidden="true" />
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-medium text-ink">
+              Arrastra la foto de tu {CATEGORY_LABELS[category].toLowerCase()} aquí
+            </span>
+            <span className="text-[11px] text-muted">
+              JPG, PNG o WEBP · Colores sólidos o estampados sencillos
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              disabled={analyzing}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <ImagePlus className="h-3.5 w-3.5" aria-hidden="true" />
+              Subir foto de referencia
+            </Button>
             <Button
               type="button"
               size="sm"
               variant="secondary"
               disabled={analyzing}
-              onClick={() => void processWithApi(selectedFile, selectedBackFile)}
+              onClick={() => cameraInputRef.current?.click()}
             >
-              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              Reanalizar
+              <Camera className="h-3.5 w-3.5" aria-hidden="true" />
+              Usar cámara
             </Button>
-          )}
+          </div>
         </div>
       )}
 
-      {/* Consentimiento explícito antes de usar la API (RF-34 / T6.6) */}
-      {!consent && (
-        <div className="flex flex-col gap-2 rounded-[var(--radius-sm)] border border-border bg-surface p-3 text-xs">
-          <div className="flex items-start gap-2 text-muted">
-            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-            <span>
-              <strong>Consentimiento para análisis vía API:</strong> antes de enviarse, tus fotos se
-              reducen a &le; 1024 px y se borran sus metadatos EXIF/GPS. La API las procesa solo en
-              memoria y no guarda nada.
-            </span>
+      {/* Estado de análisis en curso */}
+      {analyzing && (
+        <div
+          role="status"
+          className="flex items-center justify-between gap-2 rounded-2xl border border-accent/30 bg-accent/10 px-3 py-2.5 text-xs text-ink"
+        >
+          <span className="inline-flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-accent" aria-hidden="true" />
+            {progressNote ?? 'Analizando prenda con IA...'}
+          </span>
+          <button
+            type="button"
+            onClick={() => abortRef.current?.abort()}
+            className="inline-flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 text-[11px] text-muted hover:text-ink"
+          >
+            <X className="h-3 w-3" aria-hidden="true" />
+            Cancelar
+          </button>
+        </div>
+      )}
+
+      {/* Aviso de rechazo de diseño complejo (puerta estricta de diseños sencillos) */}
+      {rejectionReason && (
+        <div
+          role="alert"
+          data-testid="complex-design-rejection"
+          className="flex flex-col gap-2.5 rounded-2xl border border-[#C2410C]/45 bg-[#C2410C]/10 p-3.5 text-xs"
+        >
+          <div className="flex items-start gap-2 text-[#C2410C]">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <div className="flex flex-col gap-1">
+              <strong className="font-semibold">Diseño no admitido para gemelo digital</strong>
+              <p className="text-ink">{rejectionReason}</p>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
               size="sm"
-              variant="primary"
-              disabled={analyzing}
-              onClick={() => void handleGrantConsentAndAnalyze()}
+              onClick={() => {
+                clearRejection();
+                fileInputRef.current?.click();
+              }}
             >
-              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              Permitir recorte y etiquetado (API)
+              <ImagePlus className="h-3.5 w-3.5" aria-hidden="true" />
+              Elegir otra foto
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => setManualMode(true)}
-            >
-              <Crop className="h-3.5 w-3.5" aria-hidden="true" />
-              Continuar en modo manual
-            </Button>
+            {selectedFile && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => handleClearPhoto()}
+              >
+                Quitar foto
+              </Button>
+            )}
           </div>
         </div>
       )}
 
-      {/* Progreso y cancelación (RNF-02 / T6.7) */}
-      {analyzing && (
-        <div
-          role="status"
-          className="flex items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-border bg-surface px-3 py-2 text-xs text-ink"
-        >
-          <span className="flex items-center gap-2">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-accent" aria-hidden="true" />
-            {progressNote ?? 'Procesando foto...'}
-          </span>
-          <Button type="button" size="sm" variant="ghost" onClick={handleCancel}>
-            <X className="h-3.5 w-3.5" aria-hidden="true" />
-            Cancelar
-          </Button>
+      {/* Comparativa en vivo: Foto de referencia vs Gemelo digital sintetizado */}
+      {value.dataUrl && !rejectionReason && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-[var(--glass-border)] bg-bg/75 p-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col items-center gap-1.5 rounded-xl border border-border/70 bg-surface/70 p-2.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+                Foto de referencia
+              </span>
+              <div className="flex h-32 w-full items-center justify-center overflow-hidden rounded-lg bg-bg/50 p-1">
+                <img
+                  src={value.dataUrl}
+                  alt="Foto de referencia de la prenda"
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
+            </div>
+
+            <div
+              data-testid="digital-twin-preview"
+              className="flex flex-col items-center gap-1.5 rounded-xl border border-accent/35 bg-accent/5 p-2.5"
+            >
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-accent">
+                <Sparkles className="h-3 w-3" aria-hidden="true" />
+                Gemelo digital
+              </span>
+              <div className="flex h-32 w-full items-center justify-center p-1">
+                <GarmentCardPreviewSvg
+                  category={category}
+                  colorHex={activeSpec?.primary_color_hex ?? value.dominantColorHex}
+                  meta={{
+                    visualSpec: activeSpec,
+                    pattern: lastSuggestion?.pattern,
+                  }}
+                  className="h-full w-auto"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Ficha resumida del gemelo digital generado */}
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span
+                className="inline-block h-3.5 w-3.5 rounded-full border border-border"
+                style={{ backgroundColor: activeSpec?.primary_color_hex ?? value.dominantColorHex }}
+                aria-hidden="true"
+              />
+              <span className="font-mono text-ink">
+                {(activeSpec?.primary_color_hex ?? value.dominantColorHex).toUpperCase()}
+              </span>
+              {activeSpec?.secondary_color_hex && (
+                <>
+                  <span
+                    className="ml-1 inline-block h-3.5 w-3.5 rounded-full border border-border"
+                    style={{ backgroundColor: activeSpec.secondary_color_hex }}
+                    aria-hidden="true"
+                  />
+                  <span className="font-mono text-muted">
+                    {activeSpec.secondary_color_hex.toUpperCase()}
+                  </span>
+                </>
+              )}
+              {activeSpec?.pattern_type && (
+                <Badge>{PATTERN_BADGE_LABELS[activeSpec.pattern_type] ?? activeSpec.pattern_type}</Badge>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              {categoryChangedSinceAnalysis && selectedFile && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  disabled={analyzing}
+                  onClick={() =>
+                    void (consent
+                      ? processWithAiAgent(selectedFile, category)
+                      : processOfflineFallback(selectedFile, category))
+                  }
+                >
+                  <RefreshCw className="h-3 w-3" aria-hidden="true" />
+                  Re-analizar como {CATEGORY_LABELS[category]}
+                </Button>
+              )}
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                disabled={analyzing}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Cambiar foto
+              </Button>
+              <button
+                type="button"
+                aria-label="Quitar foto"
+                onClick={handleClearPhoto}
+                className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-muted hover:text-[#C2410C]"
+              >
+                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+
+          {specSummary && (
+            <p className="text-[11px] text-muted">
+              <strong className="text-ink">Patronaje detectado:</strong> {specSummary}
+            </p>
+          )}
         </div>
       )}
 
-      {!analyzing && progressNote && (
-        <p role="status" className="flex items-center gap-1.5 text-xs text-accent">
+      {progressNote && !analyzing && !error && !rejectionReason && (
+        <p className="inline-flex items-center gap-1.5 text-[11px] text-accent">
           <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          <span>{progressNote}</span>
+          {progressNote}
         </p>
       )}
 
       {error && (
-        <p role="alert" className="text-xs font-medium text-[#C2410C]">
+        <p role="alert" className="text-[11px] text-[#C2410C]">
           {error}
         </p>
       )}
 
-      {/* Panel de sugerencias editables con confianza (T7.2) */}
-      {tagSuggestion && (
+      {/* Botón compacto de etiquetas locales offline para pruebas y modo sin conexión */}
+      {!value.dataUrl && !analyzing && (
+        <div className="flex items-center justify-end">
+          <button
+            type="button"
+            onClick={() => {
+              const localSuggestion = suggestManualTags({
+                category,
+                dominantColorHex: value.dominantColorHex,
+                formality,
+                elasticity,
+                hasBackPhoto: false,
+              });
+              setLastSuggestion(localSuggestion);
+              onApplyTagSuggestion?.(localSuggestion);
+              setProgressNote('Sugerencias locales aplicadas (modo sin conexión).');
+            }}
+            className="cursor-pointer text-[11px] font-medium text-muted underline decoration-dotted underline-offset-4 hover:text-ink"
+          >
+            Sugerir etiquetas locales
+          </button>
+        </div>
+      )}
+
+      {lastSuggestion && lastSuggestion.provider === 'manual-local' && (
         <div
           data-testid="tag-suggestion-panel"
-          className="flex flex-col gap-2 rounded-[var(--radius-sm)] border border-accent/40 bg-surface p-3 text-xs"
+          className="flex items-center justify-between gap-2 rounded-xl border border-border bg-bg/70 px-3 py-2 text-[11px] text-muted"
         >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-ink">Etiquetas sugeridas</span>
-              <Badge variant="accent">{tagSuggestion.provider}</Badge>
-              <Badge className="tabular-nums">
-                Confianza global {formatConfidence(tagSuggestion.overall_confidence)}
-              </Badge>
-            </div>
-            {onApplyTagSuggestion && (
-              <Button
-                type="button"
-                size="sm"
-                variant="primary"
-                onClick={() => onApplyTagSuggestion(tagSuggestion)}
-              >
-                Aplicar sugerencias
-              </Button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap gap-1.5">
-            <Badge className="tabular-nums">
-              {CATEGORY_LABELS[tagSuggestion.category]} ({formatConfidence(tagSuggestion.category_confidence)})
-            </Badge>
-            <Badge className="tabular-nums">
-              {PATTERN_LABELS[tagSuggestion.pattern]} ({formatConfidence(tagSuggestion.pattern_confidence)})
-            </Badge>
-            <Badge className="tabular-nums">
-              {STYLE_LABELS[tagSuggestion.style]} ({formatConfidence(tagSuggestion.style_confidence)})
-            </Badge>
-            <Badge className="tabular-nums">
-              Formalidad {tagSuggestion.formality}/5 ({formatConfidence(tagSuggestion.formality_confidence)})
-            </Badge>
-            {tagSuggestion.seasons.length > 0 && (
-              <Badge className="tabular-nums">
-                {tagSuggestion.seasons.map((s) => SEASON_LABELS[s]).join(', ')} (
-                {formatConfidence(tagSuggestion.seasons_confidence)})
-              </Badge>
-            )}
-          </div>
-
-          {tagSuggestion.visual_spec && (
-            <p className="text-muted">
-              Patronaje detectado:{' '}
-              <span className="font-medium text-ink">
-                {formatVisualSpecSummary(tagSuggestion.visual_spec)}
-              </span>
-            </p>
-          )}
-
-          {tagSuggestion.suggested_tags.length > 0 && (
-            <p className="text-muted">
-              Etiquetas libres: <span className="text-ink">{tagSuggestion.suggested_tags.join(', ')}</span>
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Alternativa manual: recorte rectangular local (T6.8) */}
-      {selectedFile && (!consent || manualMode) && (
-        <div className="grid grid-cols-2 gap-2 rounded-[var(--radius-sm)] border border-border bg-surface p-2.5 text-xs sm:grid-cols-4">
-          {(['top', 'bottom', 'left', 'right'] as const).map((edge) => {
-            const labels = { top: 'Arriba', bottom: 'Abajo', left: 'Izquierda', right: 'Derecha' };
-            return (
-              <label key={edge} className="flex flex-col gap-1 text-muted">
-                <span>
-                  Recorte {labels[edge]} ({Math.round(crop[edge] * 100)} %)
-                </span>
-                <input
-                  type="range"
-                  min="0"
-                  max="35"
-                  step="5"
-                  value={Math.round(crop[edge] * 100)}
-                  onChange={(event) => void handleCropChange(edge, Number(event.target.value))}
-                  className="accent-[var(--accent)]"
-                />
-              </label>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Paleta sugerida editable */}
-      {value.paletteHex && value.paletteHex.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-muted">Colores detectados:</span>
-          {value.paletteHex.map((hex) => (
-            <button
-              key={hex}
-              type="button"
-              onClick={() => onChange({ ...value, dominantColorHex: hex })}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-surface px-2 py-1 text-ink hover:border-accent"
-            >
-              <span
-                className="inline-block h-3 w-3 rounded-xs border border-border"
-                style={{ backgroundColor: hex }}
-                aria-hidden="true"
-              />
-              <span className="tabular-nums">{hex}</span>
-            </button>
-          ))}
+          <span>
+            Perfil local ({lastSuggestion.provider}) · {CATEGORY_LABELS[lastSuggestion.category]}
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={() => onApplyTagSuggestion?.(lastSuggestion)}
+          >
+            Aplicar sugerencias
+          </Button>
         </div>
       )}
     </div>

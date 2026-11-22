@@ -10,19 +10,12 @@ import { SizeTableEditor } from './SizeTableEditor';
 import {
   CATEGORY_LABELS,
   FORMALITY_LABELS,
-  GARMENT_PATTERNS,
-  GARMENT_SEASONS,
   GARMENT_STYLES,
-  PATTERN_LABELS,
-  SEASON_LABELS,
-  STATUS_LABELS,
   STYLE_LABELS,
-  formatVisualSpecSummary,
   type FormalityLevel,
   type GarmentDraft,
   type GarmentPattern,
   type GarmentSeason,
-  type GarmentStatus,
   type GarmentStyle,
   type GarmentVisualSpec,
   type GarmentWithSizes,
@@ -62,21 +55,22 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
-  const [category, setCategory] = useState<GarmentCategory>('tshirt');
+  // Campos visibles solicitados: nombre, categoría, formalidad, estilo, tallaje y foto de referencia
   const [name, setName] = useState('');
-  const [brand, setBrand] = useState('');
-  const [status, setStatus] = useState<GarmentStatus>('owned');
-  const [priceText, setPriceText] = useState('');
-  const [elasticityPct, setElasticityPct] = useState('5');
+  const [category, setCategory] = useState<GarmentCategory>('tshirt');
   const [formality, setFormality] = useState<FormalityLevel>(2);
-  const [pattern, setPattern] = useState<GarmentPattern | ''>('');
-  const [style, setStyle] = useState<GarmentStyle | ''>('');
-  const [seasons, setSeasons] = useState<GarmentSeason[]>([]);
-  const [tagsText, setTagsText] = useState('');
-  const [dominantColorHex, setDominantColorHex] = useState('#1F5F6B');
-  const [visualSpec, setVisualSpec] = useState<GarmentVisualSpec | undefined>(undefined);
-  const [photo, setPhoto] = useState<PhotoIngestValue>({ dominantColorHex: '#1F5F6B' });
+  const [style, setStyle] = useState<GarmentStyle | ''>('casual');
   const [sizes, setSizes] = useState<SizeOptionDraft[]>(() => defaultSizesForCategory('tshirt'));
+  const [photo, setPhoto] = useState<PhotoIngestValue>({ dominantColorHex: '#1F5F6B' });
+
+  // Metadatos derivados automáticamente por el agente IA (o preservados al editar)
+  const [dominantColorHex, setDominantColorHex] = useState('#1F5F6B');
+  const [elasticity, setElasticity] = useState(0.05);
+  const [pattern, setPattern] = useState<GarmentPattern | undefined>('solid');
+  const [seasons, setSeasons] = useState<GarmentSeason[]>(['spring', 'summer', 'autumn']);
+  const [tags, setTags] = useState<string[]>([]);
+  const [visualSpec, setVisualSpec] = useState<GarmentVisualSpec | undefined>(undefined);
+  const [designRejectedReason, setDesignRejectedReason] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -86,15 +80,12 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
     if (editing) {
       setCategory(editing.garment.category);
       setName(editing.garment.name);
-      setBrand(editing.garment.brand);
-      setStatus(editing.garment.status);
-      setPriceText(editing.garment.price !== undefined ? String(editing.garment.price) : '');
-      setElasticityPct(String(Math.round(editing.garment.elasticity * 100)));
       setFormality(editing.garment.formality);
-      setPattern(editing.garment.pattern ?? '');
-      setStyle(editing.garment.style ?? '');
-      setSeasons([...(editing.garment.seasons ?? [])]);
-      setTagsText(editing.garment.tags.join(', '));
+      setStyle(editing.garment.style ?? 'casual');
+      setElasticity(editing.garment.elasticity);
+      setPattern(editing.garment.pattern);
+      setSeasons([...(editing.garment.seasons ?? ['spring', 'summer', 'autumn'])]);
+      setTags([...editing.garment.tags]);
       const colorHex = editing.garment.dominantColorHex ?? '#1F5F6B';
       setDominantColorHex(colorHex);
       setVisualSpec(editing.garment.visualSpec);
@@ -120,20 +111,18 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
     } else {
       setCategory('tshirt');
       setName('');
-      setBrand('');
-      setStatus('owned');
-      setPriceText('');
-      setElasticityPct('5');
       setFormality(2);
-      setPattern('');
-      setStyle('');
-      setSeasons([]);
-      setTagsText('');
+      setStyle('casual');
+      setElasticity(0.05);
+      setPattern('solid');
+      setSeasons(['spring', 'summer', 'autumn']);
+      setTags([]);
       setDominantColorHex('#1F5F6B');
       setVisualSpec(undefined);
       setPhoto({ dominantColorHex: '#1F5F6B' });
       setSizes(defaultSizesForCategory('tshirt'));
     }
+    setDesignRejectedReason(null);
     setErrors([]);
   }, [editing, open]);
 
@@ -163,52 +152,47 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
     }
   };
 
-  const handleToggleSeason = (season: GarmentSeason) => {
-    setSeasons((prev) =>
-      prev.includes(season) ? prev.filter((item) => item !== season) : [...prev, season],
-    );
-  };
-
   const handleApplyTagSuggestion = (suggestion: GarmentTagSuggestion) => {
-    if (suggestion.category !== category) {
-      handleCategoryChange(suggestion.category);
-    }
+    // Nunca sobreescribe la categoría elegida explícitamente por el usuario
     setPattern(suggestion.pattern);
     setStyle(suggestion.style);
     setFormality(suggestion.formality);
     setSeasons([...suggestion.seasons]);
+    if (typeof suggestion.estimated_elasticity === 'number') {
+      setElasticity(suggestion.estimated_elasticity);
+    }
+    if (!name.trim() && suggestion.suggested_name) {
+      setName(suggestion.suggested_name);
+    }
     if (suggestion.visual_spec) {
       setVisualSpec(suggestion.visual_spec);
+      if (suggestion.visual_spec.primary_color_hex) {
+        setDominantColorHex(suggestion.visual_spec.primary_color_hex);
+      }
     }
-
-    const existing = tagsText
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean);
-    const merged = Array.from(new Set([...existing, ...suggestion.suggested_tags]));
-    setTagsText(merged.join(', '));
+    setTags(Array.from(new Set(suggestion.suggested_tags)));
   };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const parsedPrice = priceText.trim() === '' ? undefined : Number.parseFloat(priceText);
-    const parsedElasticity = Number.parseFloat(elasticityPct) / 100;
+
+    if (designRejectedReason) {
+      setErrors([designRejectedReason]);
+      return;
+    }
 
     const draft: GarmentDraft = {
       category,
       name,
-      brand,
-      status,
-      ...(parsedPrice !== undefined ? { price: parsedPrice } : {}),
-      elasticity: Number.isFinite(parsedElasticity) ? parsedElasticity : 0,
+      brand: editing?.garment.brand ?? '',
+      status: editing?.garment.status ?? 'owned',
+      ...(editing?.garment.price !== undefined ? { price: editing.garment.price } : {}),
+      elasticity,
       formality,
       ...(pattern ? { pattern } : {}),
       ...(style ? { style } : {}),
       ...(seasons.length > 0 ? { seasons } : {}),
-      tags: tagsText
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
+      tags,
       dominantColorHex,
       ...(visualSpec ? { visualSpec } : {}),
       image: photo.dataUrl
@@ -248,294 +232,142 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
       ref={dialogRef}
       aria-labelledby={titleId}
       onClose={() => {
-        if (dialogRef.current) dialogRef.current.returnValue = '';
-        onClose();
+        if (open) onClose();
       }}
-      {...({ closedby: 'any' } as Record<string, string>)}
-      className="w-full max-w-2xl"
+      className="vf-glass-drawer m-auto max-h-[90vh] w-[min(94vw,42rem)] overflow-y-auto rounded-[28px] p-0 text-ink"
     >
-      <div className="flex flex-col gap-4 p-5">
-        <div className="flex items-start justify-between gap-4 border-b border-border pb-3">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5 p-6">
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--glass-divider)] pb-4">
           <div>
-            <h2 id={titleId} className="text-lg font-semibold text-ink">
+            <h2 id={titleId} className="font-display text-lg font-semibold tracking-tight text-ink">
               {editing ? 'Editar prenda' : 'Añadir prenda al clóset'}
             </h2>
             <p className="text-xs text-muted">
-              Se guarda localmente en tu dispositivo (cifrada si tu bóveda está activa).
+              Selecciona la categoría y sube una foto de referencia: la IA generará su gemelo
+              digital a medida para el avatar 2D.
             </p>
           </div>
-          <form method="dialog">
-            <Button type="submit" variant="ghost" size="icon" aria-label="Cerrar formulario">
-              <X className="h-4 w-4" aria-hidden="true" />
-            </Button>
-          </form>
+          <Button type="button" variant="ghost" size="sm" onClick={onClose} aria-label="Cerrar">
+            <X className="h-4 w-4" aria-hidden="true" />
+          </Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="garment-form-name" className="text-xs font-medium text-muted">
-                Nombre *
-              </label>
-              <input
-                id="garment-form-name"
-                type="text"
-                required
-                maxLength={100}
-                placeholder="Ej. Camisa Oxford blanca"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                className="rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
-              />
-            </div>
+        {/* 1. Categoría (primero para que el agente IA aísle exactamente esa prenda en la foto) */}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="garment-category" className="text-xs font-medium text-muted">
+            Categoría *
+          </label>
+          <select
+            id="garment-category"
+            value={category}
+            onChange={(event) => handleCategoryChange(event.target.value as GarmentCategory)}
+            className="rounded-xl border border-[var(--glass-border)] bg-[var(--glass-pill-bg)] px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+          >
+            {GARMENT_CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {CATEGORY_LABELS[cat]}
+              </option>
+            ))}
+          </select>
+        </div>
 
-            <div className="flex flex-col gap-1">
-              <label htmlFor="garment-form-brand" className="text-xs font-medium text-muted">
-                Marca
-              </label>
-              <input
-                id="garment-form-brand"
-                type="text"
-                maxLength={60}
-                placeholder="Opcional"
-                value={brand}
-                onChange={(event) => setBrand(event.target.value)}
-                className="rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
-              />
-            </div>
+        {/* 2. Foto de referencia → Gemelo digital IA */}
+        <PhotoIngestSection
+          value={photo}
+          category={category}
+          formality={formality}
+          elasticity={elasticity}
+          visualSpec={visualSpec}
+          onChange={(nextPhoto) => {
+            setPhoto(nextPhoto);
+            setDominantColorHex(nextPhoto.dominantColorHex);
+          }}
+          onApplyTagSuggestion={handleApplyTagSuggestion}
+          onDesignRejectedChange={setDesignRejectedReason}
+        />
 
-            <div className="flex flex-col gap-1">
-              <label htmlFor="garment-form-category" className="text-xs font-medium text-muted">
-                Categoría
-              </label>
-              <select
-                id="garment-form-category"
-                value={category}
-                onChange={(event) => handleCategoryChange(event.target.value as GarmentCategory)}
-                className="rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
-              >
-                {GARMENT_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {CATEGORY_LABELS[cat]}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="garment-form-status" className="text-xs font-medium text-muted">
-                Estado
-              </label>
-              <select
-                id="garment-form-status"
-                value={status}
-                onChange={(event) => setStatus(event.target.value as GarmentStatus)}
-                className="rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
-              >
-                <option value="owned">{STATUS_LABELS.owned}</option>
-                <option value="wishlist">{STATUS_LABELS.wishlist}</option>
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="garment-form-price" className="text-xs font-medium text-muted">
-                Precio (opcional)
-              </label>
-              <input
-                id="garment-form-price"
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={priceText}
-                onChange={(event) => setPriceText(event.target.value)}
-                className="tabular-nums rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="garment-form-elasticity" className="text-xs font-medium text-muted">
-                Elasticidad (%)
-              </label>
-              <input
-                id="garment-form-elasticity"
-                type="number"
-                min="0"
-                max="35"
-                step="1"
-                value={elasticityPct}
-                onChange={(event) => setElasticityPct(event.target.value)}
-                className="tabular-nums rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="garment-form-formality" className="text-xs font-medium text-muted">
-                Formalidad
-              </label>
-              <select
-                id="garment-form-formality"
-                value={formality}
-                onChange={(event) =>
-                  setFormality(Number.parseInt(event.target.value, 10) as FormalityLevel)
-                }
-                className="rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
-              >
-                {([1, 2, 3, 4, 5] as const).map((level) => (
-                  <option key={level} value={level}>
-                    {FORMALITY_LABELS[level]}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="garment-form-color" className="text-xs font-medium text-muted">
-                Color de referencia
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  id="garment-form-color"
-                  type="color"
-                  value={dominantColorHex}
-                  onChange={(event) => setDominantColorHex(event.target.value)}
-                  className="h-9 w-12 cursor-pointer rounded-[var(--radius-sm)] border border-border bg-bg p-0.5"
-                />
-                <span className="tabular-nums text-xs text-muted">{dominantColorHex}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="garment-form-pattern" className="text-xs font-medium text-muted">
-                Patrón (opcional)
-              </label>
-              <select
-                id="garment-form-pattern"
-                value={pattern}
-                onChange={(event) => setPattern(event.target.value as GarmentPattern | '')}
-                className="rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
-              >
-                <option value="">Sin especificar</option>
-                {GARMENT_PATTERNS.map((item) => (
-                  <option key={item} value={item}>
-                    {PATTERN_LABELS[item]}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="garment-form-style" className="text-xs font-medium text-muted">
-                Estilo (opcional)
-              </label>
-              <select
-                id="garment-form-style"
-                value={style}
-                onChange={(event) => setStyle(event.target.value as GarmentStyle | '')}
-                className="rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
-              >
-                <option value="">Sin especificar</option>
-                {GARMENT_STYLES.map((item) => (
-                  <option key={item} value={item}>
-                    {STYLE_LABELS[item]}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <fieldset className="flex flex-col gap-1.5">
-            <legend className="text-xs font-medium text-muted">Temporadas (opcional)</legend>
-            <div className="flex flex-wrap gap-2">
-              {GARMENT_SEASONS.map((season) => {
-                const checked = seasons.includes(season);
-                return (
-                  <label
-                    key={season}
-                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-[var(--radius-sm)] border px-2.5 py-1 text-xs ${
-                      checked
-                        ? 'border-accent bg-surface font-medium text-accent'
-                        : 'border-border bg-bg text-muted'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => handleToggleSeason(season)}
-                      className="h-3.5 w-3.5 accent-[var(--accent)]"
-                    />
-                    {SEASON_LABELS[season]}
-                  </label>
-                );
-              })}
-            </div>
-          </fieldset>
-
-          <div className="flex flex-col gap-1">
-            <label htmlFor="garment-form-tags" className="text-xs font-medium text-muted">
-              Etiquetas (separadas por coma)
+        {/* 3. Nombre, Formalidad y Estilo */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <label htmlFor="garment-name" className="text-xs font-medium text-muted">
+              Nombre *
             </label>
             <input
-              id="garment-form-tags"
+              id="garment-name"
               type="text"
-              placeholder="verano, algodón, oficina"
-              value={tagsText}
-              onChange={(event) => setTagsText(event.target.value)}
-              className="rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-1.5 text-sm text-ink"
+              required
+              maxLength={120}
+              placeholder="Ej. Camiseta rayas azul marino"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              className="rounded-xl border border-[var(--glass-border)] bg-[var(--glass-pill-bg)] px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none"
             />
           </div>
 
-          <PhotoIngestSection
-            value={{ ...photo, dominantColorHex }}
-            category={category}
-            formality={formality}
-            elasticity={Number.isFinite(Number.parseFloat(elasticityPct)) ? Number.parseFloat(elasticityPct) / 100 : 0.05}
-            onChange={(next) => {
-              setPhoto(next);
-              setDominantColorHex(next.dominantColorHex);
-            }}
-            onApplyTagSuggestion={handleApplyTagSuggestion}
-          />
-
-          {visualSpec && (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-2 text-xs">
-              <span className="text-muted">
-                Patronaje IA activo:{' '}
-                <strong className="font-medium text-ink">{formatVisualSpecSummary(visualSpec)}</strong>
-              </span>
-              <button
-                type="button"
-                onClick={() => setVisualSpec(undefined)}
-                className="cursor-pointer text-[11px] font-medium text-muted hover:text-ink"
-              >
-                Limpiar
-              </button>
-            </div>
-          )}
-
-          <SizeTableEditor category={category} unit={unit} sizes={sizes} onChange={setSizes} />
-
-          {errors.length > 0 && (
-            <div role="alert" className="flex flex-col gap-1 text-xs font-medium text-[#C2410C]">
-              {errors.map((err) => (
-                <p key={err}>{err}</p>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="garment-formality" className="text-xs font-medium text-muted">
+              Formalidad
+            </label>
+            <select
+              id="garment-formality"
+              value={formality}
+              onChange={(event) =>
+                setFormality(Number.parseInt(event.target.value, 10) as FormalityLevel)
+              }
+              className="rounded-xl border border-[var(--glass-border)] bg-[var(--glass-pill-bg)] px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+            >
+              {([1, 2, 3, 4, 5] as const).map((level) => (
+                <option key={level} value={level}>
+                  {FORMALITY_LABELS[level]}
+                </option>
               ))}
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2 border-t border-border pt-3">
-            <Button type="button" variant="secondary" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? 'Guardando...' : editing ? 'Guardar cambios' : 'Guardar prenda'}
-            </Button>
+            </select>
           </div>
-        </form>
-      </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="garment-style" className="text-xs font-medium text-muted">
+              Estilo
+            </label>
+            <select
+              id="garment-style"
+              value={style}
+              onChange={(event) => setStyle(event.target.value as GarmentStyle | '')}
+              className="rounded-xl border border-[var(--glass-border)] bg-[var(--glass-pill-bg)] px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+            >
+              {GARMENT_STYLES.map((s) => (
+                <option key={s} value={s}>
+                  {STYLE_LABELS[s]}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* 4. Apartado de tallaje (medidas en plano para ajuste exacto al avatar 2D) */}
+        <SizeTableEditor category={category} unit={unit} sizes={sizes} onChange={setSizes} />
+
+        {errors.length > 0 && (
+          <div
+            role="alert"
+            className="rounded-2xl border border-[#C2410C]/40 bg-[#C2410C]/10 p-3 text-xs text-[#C2410C]"
+          >
+            <ul className="list-disc space-y-1 pl-4">
+              {errors.map((err) => (
+                <li key={err}>{err}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="flex items-center justify-end gap-2 border-t border-[var(--glass-divider)] pt-4">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={saving || Boolean(designRejectedReason)}>
+            {saving ? 'Guardando...' : editing ? 'Guardar cambios' : 'Guardar prenda'}
+          </Button>
+        </div>
+      </form>
     </dialog>
   );
 }

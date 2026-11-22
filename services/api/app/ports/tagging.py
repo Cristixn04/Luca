@@ -117,10 +117,49 @@ FabricTextureLiteral = Literal[
     "corduroy",
 ]
 
+DesignComplexityLiteral = Literal[
+    "solid",
+    "simple_pattern",
+    "complex_rejected",
+]
+
+SimplePatternTypeLiteral = Literal[
+    "solid",
+    "horizontal_stripes",
+    "vertical_stripes",
+    "plaid",
+    "dots",
+    "colorblock",
+    "ribbed",
+]
+
+ColorblockLayoutLiteral = Literal[
+    "none",
+    "raglan_sleeves",
+    "top_bottom_split",
+    "chest_band",
+    "side_panels",
+]
+
+StripeDensityLiteral = Literal["fine", "medium", "wide"]
+
+WaistRiseLiteral = Literal["low", "mid", "high", "none"]
+
 
 class GarmentVisualSpec(BaseModel):
-    """Ficha estructural quirúrgica de la prenda para reconstrucción fiel sobre el maniquí."""
+    """Ficha estructural quirúrgica del gemelo digital para reconstrucción fiel sobre el avatar."""
 
+    design_supported: bool = True
+    design_complexity: DesignComplexityLiteral = "solid"
+    rejection_reason: str | None = None
+    primary_color_hex: str | None = Field(default=None, pattern=r"^#[0-9A-Fa-f]{6}$")
+    pattern_type: SimplePatternTypeLiteral = "solid"
+    colorblock_layout: ColorblockLayoutLiteral = "none"
+    stripe_density: StripeDensityLiteral = "medium"
+    waist_rise: WaistRiseLiteral = "mid"
+    button_count: int = Field(default=0, ge=0, le=12)
+    collar_contrast: bool = False
+    cuff_contrast: bool = False
     neckline: NecklineLiteral = "crew"
     sleeve_length: SleeveLengthLiteral = "short"
     garment_length: GarmentLengthLiteral = "hip"
@@ -138,7 +177,7 @@ class GarmentVisualSpec(BaseModel):
 
 
 class GarmentTagSuggestion(BaseModel):
-    """Salida JSON estructurada del puerto Tagger (RF-11 / T7.1 + Blueprint visual híbrido)."""
+    """Salida JSON estructurada del agente de gemelo digital (RF-11 / T7.1 + Blueprint v2)."""
 
     category: GarmentCategoryLiteral
     category_confidence: float = Field(..., ge=0.0, le=1.0)
@@ -152,15 +191,28 @@ class GarmentTagSuggestion(BaseModel):
     seasons_confidence: float = Field(..., ge=0.0, le=1.0)
     suggested_tags: list[str] = Field(default_factory=list, max_length=10)
     overall_confidence: float = Field(..., ge=0.0, le=1.0)
+    suggested_name: str | None = Field(
+        default=None,
+        max_length=120,
+        description="Nombre sugerido en español para la prenda detectada",
+    )
+    estimated_elasticity: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=0.25,
+        description="Elasticidad estimada del tejido (0.0 plana a 0.25 elastano)",
+    )
+    design_supported: bool = True
+    rejection_reason: str | None = None
     visual_spec: GarmentVisualSpec | None = Field(
         default=None,
-        description="Especificación visual quirúrgica de patronaje para modelado sobre maniquí",
+        description="Especificación visual quirúrgica de patronaje para modelado sobre avatar 2D",
     )
     provider: str = "unknown"
 
 
 class Tagger(Protocol):
-    """Puerto hexagonal para etiquetado asistido de prendas desde 1 o 2 fotos (frente y espalda opcional)."""
+    """Puerto hexagonal para análisis quirúrgico y generación del gemelo digital desde 1 o 2 fotos."""
 
     @property
     def provider_name(self) -> str: ...
@@ -169,4 +221,5 @@ class Tagger(Protocol):
         self,
         front_image_bytes: bytes,
         back_image_bytes: bytes | None = None,
+        target_category: GarmentCategoryLiteral | None = None,
     ) -> GarmentTagSuggestion | None: ...

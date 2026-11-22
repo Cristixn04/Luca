@@ -140,65 +140,87 @@ export function BackAvatarSvg({
         data-avatar-body="back"
       />
 
-      {/* Costuras de taller, omóplatos y contorno glúteo (referencia atelier) */}
+      {/* Anatomía trasera sutil y prenda base neutra */}
       <g pointerEvents="none">
-        <g fill="none" stroke="var(--mannequin-detail)" strokeWidth="0.65">
-          <line x1={cx} y1={rig.shoulderY} x2={cx} y2={rig.crotchY + 2} />
-          <path d={`M ${cx - rig.shoulderX + 3} ${rig.shoulderY + 2} Q ${cx - rig.armpitX - 1} ${rig.chestY - 8} ${cx - rig.armpitX} ${rig.armpitY}`} />
-          <path d={`M ${cx + rig.shoulderX - 3} ${rig.shoulderY + 2} Q ${cx + rig.armpitX + 1} ${rig.chestY - 8} ${cx + rig.armpitX} ${rig.armpitY}`} />
-          <path d={`M ${cx - rig.hipX + 1} ${rig.hipY - 12} Q ${cx} ${rig.hipY - 6} ${cx + rig.hipX - 1} ${rig.hipY - 12}`} />
-        </g>
-
-        {/* Omóplatos y glúteos esculpidos */}
-        <g fill="none" stroke="var(--mannequin-detail)" strokeWidth="0.9" strokeLinecap="round">
+        {/* Omóplatos y pliegues de rodilla */}
+        <g fill="none" stroke="var(--mannequin-detail)" strokeWidth="0.85" strokeLinecap="round">
           <path
-            d={`M ${cx - rig.backChestX * 0.56} ${rig.shoulderY + 14} Q ${cx - rig.backChestX * 0.28} ${rig.chestY} ${cx - rig.backChestX * 0.22} ${rig.chestY + 10}`}
+            d={`M ${cx - rig.backChestX * 0.52} ${rig.shoulderY + 14} Q ${cx - rig.backChestX * 0.28} ${rig.chestY} ${cx - rig.backChestX * 0.22} ${rig.chestY + 10}`}
           />
           <path
-            d={`M ${cx + rig.backChestX * 0.56} ${rig.shoulderY + 14} Q ${cx + rig.backChestX * 0.28} ${rig.chestY} ${cx + rig.backChestX * 0.22} ${rig.chestY + 10}`}
+            d={`M ${cx + rig.backChestX * 0.52} ${rig.shoulderY + 14} Q ${cx + rig.backChestX * 0.28} ${rig.chestY} ${cx + rig.backChestX * 0.22} ${rig.chestY + 10}`}
           />
-          {/* Pliegue glúteo (más redondeado en mujer, más recto en hombre) */}
-          <path
-            d={`M ${cx - rig.hipX + 4} ${rig.crotchY - 4} Q ${cx - rig.hipX * 0.45} ${rig.crotchY + (isFemale ? 5 : 2)} ${cx - 1.5} ${rig.crotchY + 1}`}
-            stroke="var(--mannequin-stroke)"
-            opacity="0.45"
-          />
-          <path
-            d={`M ${cx + 1.5} ${rig.crotchY + 1} Q ${cx + rig.hipX * 0.45} ${rig.crotchY + (isFemale ? 5 : 2)} ${cx + rig.hipX - 4} ${rig.crotchY - 4}`}
-            stroke="var(--mannequin-stroke)"
-            opacity="0.45"
-          />
-          {/* Pliegues traseros de rodilla */}
           <path d={`M ${cx - rig.kneeOuterX + 5} ${rig.kneeY + 2} Q ${cx - (rig.kneeOuterX + rig.kneeInnerX) * 0.5} ${rig.kneeY - 1} ${cx - rig.kneeInnerX - 4} ${rig.kneeY + 2}`} />
           <path d={`M ${cx + rig.kneeInnerX + 4} ${rig.kneeY + 2} Q ${cx + (rig.kneeOuterX + rig.kneeInnerX) * 0.5} ${rig.kneeY - 1} ${cx + rig.kneeOuterX - 5} ${rig.kneeY + 2}`} />
         </g>
+
+        {/* Short base neutro trasero */}
+        <path
+          d={[
+            `M ${cx - rig.waistX - 0.5} ${rig.hipY - 12}`,
+            `Q ${cx} ${rig.hipY - 9} ${cx + rig.waistX + 0.5} ${rig.hipY - 12}`,
+            `C ${cx + rig.hipX} ${rig.hipY - 3}, ${cx + rig.hipX} ${rig.crotchY + 3}, ${cx + rig.hipX * 0.88} ${rig.crotchY + 15}`,
+            `L ${cx + 5} ${rig.crotchY + 15}`,
+            `L ${cx} ${rig.crotchY + 4}`,
+            `L ${cx - 5} ${rig.crotchY + 15}`,
+            `L ${cx - rig.hipX * 0.88} ${rig.crotchY + 15}`,
+            `C ${cx - rig.hipX} ${rig.crotchY + 3}, ${cx - rig.hipX} ${rig.hipY - 3}, ${cx - rig.waistX - 0.5} ${rig.hipY - 12}`,
+            'Z',
+          ].join(' ')}
+          fill="var(--avatar-basewear)"
+          opacity="0.88"
+        />
       </g>
 
-      {/* Orejas finas y parte trasera de la cabeza */}
+      {/* Orejas, nuca y cabello trasero realista */}
       <ellipse
         cx={cx - rig.headRx * 0.96}
         cy={rig.headCenterY + 2}
         rx={2.1}
-        ry={5}
+        ry={4.8}
         fill={`url(#${patternPrefix}-limb-grad)`}
         stroke="var(--mannequin-stroke)"
-        strokeWidth="0.9"
+        strokeWidth="0.85"
       />
       <ellipse
         cx={cx + rig.headRx * 0.96}
         cy={rig.headCenterY + 2}
         rx={2.1}
-        ry={5}
+        ry={4.8}
         fill={`url(#${patternPrefix}-limb-grad)`}
         stroke="var(--mannequin-stroke)"
-        strokeWidth="0.9"
+        strokeWidth="0.85"
       />
       <path
         d={backHeadPath}
         fill={`url(#${patternPrefix}-head-grad)`}
         stroke="var(--mannequin-stroke)"
-        strokeWidth="1.05"
+        strokeWidth="0.95"
         strokeLinejoin="round"
+      />
+      <path
+        d={
+          isFemale
+            ? [
+                `M ${cx - rig.headRx * 1.15} ${rig.headCenterY - 2}`,
+                `C ${cx - rig.headRx * 1.24} ${rig.headTopY + 1}, ${cx - rig.headRx * 0.55} ${rig.headTopY - 4.5}, ${cx} ${rig.headTopY - 4}`,
+                `C ${cx + rig.headRx * 0.55} ${rig.headTopY - 4.5}, ${cx + rig.headRx * 1.24} ${rig.headTopY + 1}, ${cx + rig.headRx * 1.15} ${rig.headCenterY - 2}`,
+                `C ${cx + rig.headRx * 1.54} ${rig.chinY + 8}, ${cx + rig.headRx * 1.55} ${rig.shoulderY + 8}, ${cx + rig.headRx * 1.2} ${rig.shoulderY + 22}`,
+                `Q ${cx} ${rig.shoulderY + 28} ${cx - rig.headRx * 1.2} ${rig.shoulderY + 22}`,
+                `C ${cx - rig.headRx * 1.55} ${rig.shoulderY + 8}, ${cx - rig.headRx * 1.54} ${rig.chinY + 8}, ${cx - rig.headRx * 1.15} ${rig.headCenterY - 2}`,
+                'Z',
+              ].join(' ')
+            : [
+                `M ${cx - rig.headRx * 1.04} ${rig.headCenterY + 1}`,
+                `C ${cx - rig.headRx * 1.12} ${rig.headTopY + 1}, ${cx - rig.headRx * 0.55} ${rig.headTopY - 4.5}, ${cx} ${rig.headTopY - 4}`,
+                `C ${cx + rig.headRx * 0.55} ${rig.headTopY - 4.5}, ${cx + rig.headRx * 1.12} ${rig.headTopY + 1}, ${cx + rig.headRx * 1.04} ${rig.headCenterY + 1}`,
+                `C ${cx + rig.headRx * 0.9} ${napeY - 3}, ${cx + rig.neckHalf + 1} ${napeY + 1}, ${cx} ${napeY + 1.5}`,
+                `C ${cx - rig.neckHalf - 1} ${napeY + 1}, ${cx - rig.headRx * 0.9} ${napeY - 3}, ${cx - rig.headRx * 1.04} ${rig.headCenterY + 1}`,
+                'Z',
+              ].join(' ')
+        }
+        fill={`url(#${patternPrefix}-hair-grad)`}
+        pointerEvents="none"
       />
 
       {outfitLayers ? (

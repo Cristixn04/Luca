@@ -27,7 +27,7 @@ from app.ports.render import (
     OutfitRenderer,
     OutfitRenderGarmentInput,
 )
-from app.ports.tagging import GarmentTagSuggestion, Tagger
+from app.ports.tagging import GarmentCategoryLiteral, GarmentTagSuggestion, Tagger
 from app.ports.vision import BackgroundRemover
 from app.security.controls import DailyBudgetGuard, InMemoryRateLimiter, validate_install_token
 
@@ -165,8 +165,12 @@ def create_vision_router(
         ] = None,
         include_tags: Annotated[
             bool,
-            Form(description="Si es true, sugiere etiquetas estructuradas vía puerto Tagger"),
+            Form(description="Si es true, sugiere etiquetas estructuradas y gemelo digital vía puerto Tagger"),
         ] = False,
+        target_category: Annotated[
+            GarmentCategoryLiteral | None,
+            Form(description="Categoría objetivo seleccionada por el usuario para aislar esa prenda en la foto"),
+        ] = None,
         x_luca_install_token: Annotated[
             str | None,
             Header(alias="X-Luca-Install-Token"),
@@ -253,21 +257,41 @@ def create_vision_router(
             tagging_timeout = float(
                 os.getenv("LUCA_LLM_TIMEOUT_SECONDS", str(DEFAULT_TAGGING_TIMEOUT_SECONDS))
             )
+
+            def _run_tagger() -> GarmentTagSuggestion | None:
+                # Si el usuario especificó categoría objetivo, pasamos la foto original íntegra para
+                # que la IA aísle exactamente esa prenda aunque aparezcan otras en la foto.
+                front_for_ai = raw_front if target_category is not None else cutout_front
+                back_for_ai = raw_back if (target_category is not None and raw_back is not None) else cutout_back
+                try:
+                    return tagger.tag_garment(front_for_ai, back_for_ai, target_category)
+                except TypeError:
+                    return tagger.tag_garment(front_for_ai, back_for_ai)
+
             try:
                 tagging_result = await asyncio.wait_for(
-                    asyncio.to_thread(tagger.tag_garment, cutout_front, cutout_back),
-                    timeout=min(effective_timeout, tagging_timeout),
+                    asyncio.to_thread(_run_tagger),
+                    timeout=max(effective_timeout, tagging_timeout),
                 )
             except TimeoutError:
                 tagging_warning = (
-                    "El etiquetado con IA superó el tiempo de espera; "
-                    "el recorte y el color dominante se completaron correctamente."
+                    "El análisis del gemelo digital IA superó el tiempo de espera; "
+                    "el color base se calculó localmente."
                 )
             except Exception:  # noqa: BLE001 - degradación elegante ante cualquier fallo del LLM externo
                 tagging_warning = (
                     "El servicio de IA no está disponible temporalmente; "
-                    "el recorte y el color dominante se completaron correctamente."
+                    "el color base se calculó localmente."
                 )
+
+        # Si el agente IA aisló con precisión el color real de la prenda objetivo, priorizarlo
+        effective_dominant_hex = dominant_hex
+        if (
+            tagging_result is not None
+            and tagging_result.visual_spec is not None
+            and tagging_result.visual_spec.primary_color_hex
+        ):
+            effective_dominant_hex = tagging_result.visual_spec.primary_color_hex
 
         elapsed_ms = int((time.perf_counter() - started) * 1000)
 
@@ -278,7 +302,7 @@ def create_vision_router(
             ),
             width=width,
             height=height,
-            dominant_color_hex=dominant_hex,
+            dominant_color_hex=effective_dominant_hex,
             dominant_color_lab=LabColorSchema(
                 l=lab_tuple[0],
                 a=lab_tuple[1],

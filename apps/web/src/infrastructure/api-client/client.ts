@@ -125,6 +125,7 @@ export async function analyzeGarmentPhoto(
   options?: {
     backBlob?: Blob;
     includeTags?: boolean;
+    targetCategory?: string;
     baseUrl?: string;
     signal?: AbortSignal;
     timeoutMs?: number;
@@ -152,6 +153,9 @@ export async function analyzeGarmentPhoto(
     }
     if (options?.includeTags) {
       form.append('include_tags', 'true');
+    }
+    if (options?.targetCategory) {
+      form.append('target_category', options.targetCategory);
     }
 
     const res = await fetch(`${baseUrl}/v1/vision/analyze`, {

@@ -18,8 +18,6 @@ test.describe('Flujo e2e M4: clóset local cifrado, tallas y talla recomendada (
 
     await page.getByRole('button', { name: 'Añadir prenda' }).click();
     await page.getByLabel('Nombre *').fill('Camisa Oxford Azul');
-    await page.getByLabel('Marca').fill('Norte');
-    await page.getByLabel('Precio (opcional)').fill('65');
     await page.getByRole('button', { name: 'Guardar prenda' }).click();
 
     await expect(page.getByText('Camisa Oxford Azul')).toBeVisible();
