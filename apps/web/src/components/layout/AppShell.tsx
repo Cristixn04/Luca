@@ -288,6 +288,7 @@ export function AppShell({
           isFullBleedSection
             ? 'px-4 py-3 sm:px-6 sm:py-4 lg:px-10'
             : 'mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8',
+          activeSection === 'color' && 'flex flex-col',
         )}
       >
         {children}
