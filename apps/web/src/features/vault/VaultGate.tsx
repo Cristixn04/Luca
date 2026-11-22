@@ -7,9 +7,9 @@ import {
   EyeOff,
   KeyRound,
   Lock,
-  ShieldCheck,
   Upload,
 } from 'lucide-react';
+import { LucaBrandLogo } from '@/components/layout/LucaBrandLogo';
 import { Badge } from '@/design-system/components/Badge';
 import { Button } from '@/design-system/components/Button';
 import {
@@ -149,9 +149,9 @@ export function VaultGate() {
       <div className="mx-auto flex min-h-dvh max-w-lg items-center px-4 py-10">
         <Card className="w-full">
           <CardHeader>
-            <div className="flex items-center justify-between gap-2">
-              <Badge variant="accent">Luca · Privacidad por diseño</Badge>
-              <ShieldCheck className="h-5 w-5 text-accent" aria-hidden="true" />
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <LucaBrandLogo className="h-9 w-auto text-ink" />
+              <Badge variant="accent">Privacidad por diseño</Badge>
             </div>
             <CardTitle>Crea tu bóveda cifrada</CardTitle>
             <CardDescription>
@@ -348,10 +348,10 @@ export function VaultGate() {
     <div className="mx-auto flex min-h-dvh max-w-md items-center px-4 py-10">
       <Card className="w-full">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-bg">
-            <Lock className="h-5 w-5 text-accent" aria-hidden="true" />
+          <div className="mx-auto mb-1 flex items-center justify-center">
+            <LucaBrandLogo className="h-10 w-auto text-ink" />
           </div>
-          <CardTitle>Luca</CardTitle>
+          <CardTitle className="sr-only">Luca</CardTitle>
           <CardDescription>Tus datos están cifrados en este dispositivo</CardDescription>
         </CardHeader>
 

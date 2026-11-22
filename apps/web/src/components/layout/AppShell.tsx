@@ -20,6 +20,7 @@ import { useFittingStore } from '@/features/fitting/store';
 import type { UiVaultStatus } from '@/features/vault/vaultStore';
 import { useI18nStore, useT } from '@/i18n/i18nStore';
 import { InteractiveStageBackground } from './InteractiveStageBackground';
+import { LucaBrandLogo } from './LucaBrandLogo';
 
 export type NavSection = 'fitting' | 'closet' | 'outfits' | 'color' | 'memory' | 'privacy';
 
@@ -116,18 +117,20 @@ export function AppShell({
 
       {/* Barra de navegación superior flotante en vidrio líquido (diseño de interfaz base) */}
       <header className="sticky top-0 z-30 w-full bg-transparent px-4 pb-2 pt-3 sm:px-6 lg:px-10">
-        <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3">
-          {/* Marca Luca en píldora minimalista flotante */}
-          <div className="flex items-center">
+        <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 md:grid-cols-[1fr_auto_1fr]">
+          {/* Logotipo oficial de Luca en píldora minimalista flotante */}
+          <div className="flex items-center justify-start">
             <a
               href="#probador"
+              aria-label="Luca"
               onClick={(event) => {
                 event.preventDefault();
                 handleSelect('fitting');
               }}
-              className="vf-glass inline-flex h-[46px] items-center rounded-full px-5 font-display text-base font-bold tracking-tight text-ink no-underline transition-transform duration-200 hover:scale-[1.02]"
+              className="vf-glass inline-flex h-[46px] items-center justify-center rounded-full px-4 text-ink no-underline transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
             >
-              Luca
+              <LucaBrandLogo className="h-[30px] w-auto shrink-0" />
+              <span className="sr-only">Luca</span>
             </a>
           </div>
 
@@ -180,7 +183,8 @@ export function AppShell({
           </div>
 
           {/* Controles utilitarios en cápsula flotante a la derecha */}
-          <div className="vf-glass inline-flex h-[46px] items-center gap-1 rounded-full px-1.5">
+          <div className="flex items-center justify-end">
+            <div className="vf-glass inline-flex h-[46px] items-center gap-1 rounded-full px-1.5">
             {vaultStatus === 'unlocked' && onLockVault && (
               <Button
                 type="button"
@@ -231,6 +235,7 @@ export function AppShell({
                 <Menu className="h-4 w-4" aria-hidden="true" />
               )}
             </Button>
+            </div>
           </div>
         </div>
 
