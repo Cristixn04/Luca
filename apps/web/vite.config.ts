@@ -159,8 +159,8 @@ export default defineConfig({
         description:
           'Probador de calce paramétrico, clóset local y asesor de color con privacidad por diseño.',
         lang: 'es',
-        theme_color: '#1F5F6B',
-        background_color: '#FFFFFF',
+        theme_color: '#141414',
+        background_color: '#141414',
         display: 'standalone',
         start_url: '/',
         icons: [
