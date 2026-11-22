@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import type { GarmentCategory } from '@luca/domain';
 import {
   AlertTriangle,
@@ -89,6 +89,11 @@ export function PhotoIngestSection({
     setRejectionReason(null);
     onDesignRejectedChange?.(null);
   };
+
+  // Cancelar análisis pendiente si la sección se desmonta al cerrar el diálogo
+  useEffect(() => () => {
+    abortRef.current?.abort();
+  }, []);
 
   const processOfflineFallback = async (file: File, targetCat: GarmentCategory) => {
     setError(null);

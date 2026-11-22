@@ -273,6 +273,7 @@ export function GarmentFormDialog({ open, editing, onClose, onSave }: GarmentFor
 
         {/* 2. Foto de referencia → Gemelo digital IA */}
         <PhotoIngestSection
+          key={open ? (editing?.garment.id ?? 'new') : 'closed'}
           value={photo}
           category={category}
           formality={formality}
