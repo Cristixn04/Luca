@@ -195,7 +195,7 @@ export const SpatialGarmentCarousel = memo(function SpatialGarmentCarousel({
                 }`}
               >
                 <div className="flex h-[76px] w-full items-center justify-center">
-                  {isSafeDataImageUrl(item.imageUrl) ? (
+                  {!item.meta?.visualSpec && isSafeDataImageUrl(item.imageUrl) ? (
                     <img
                       src={item.imageUrl}
                       alt=""
@@ -273,6 +273,12 @@ export const SpatialGarmentCarousel = memo(function SpatialGarmentCarousel({
     flankingEntries.push({ item, side: 1, slotPos: i + 1 });
   });
 
+  if (flankingEntries.length === 0) {
+    return null;
+  }
+
+  const showArrows = items.length > 1;
+
   return (
     <div
       role="region"
@@ -289,14 +295,16 @@ export const SpatialGarmentCarousel = memo(function SpatialGarmentCarousel({
       </span>
 
       {/* Botón circular anterior (estilo .arrow.glass) */}
-      <button
-        type="button"
-        onClick={() => stepTo(-1)}
-        aria-label={`Anterior en carrusel ${slot === 'upper' ? 'superior' : 'inferior'}`}
-        className="vf-glass absolute left-2 top-1/2 z-35 inline-flex h-[42px] w-[42px] -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-ink transition-transform duration-200 hover:scale-106 active:scale-94"
-      >
-        <ChevronLeft className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-      </button>
+      {showArrows && (
+        <button
+          type="button"
+          onClick={() => stepTo(-1)}
+          aria-label={`Anterior en carrusel ${slot === 'upper' ? 'superior' : 'inferior'}`}
+          className="vf-glass absolute left-2 top-1/2 z-35 inline-flex h-[42px] w-[42px] -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-ink transition-transform duration-200 hover:scale-106 active:scale-94"
+        >
+          <ChevronLeft className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+        </button>
+      )}
 
       {/* Tarjetas de vidrio en arco 3D flanqueando al maniquí central */}
       <div role="listbox" aria-label={label} className="contents">
@@ -322,7 +330,7 @@ export const SpatialGarmentCarousel = memo(function SpatialGarmentCarousel({
                 />
               )}
               <div className="flex h-[118px] w-full items-center justify-center p-1 transition-transform duration-300 group-hover:scale-[1.04] sm:h-[128px]">
-                {isSafeDataImageUrl(item.imageUrl) ? (
+                {!item.meta?.visualSpec && isSafeDataImageUrl(item.imageUrl) ? (
                   <img
                     src={item.imageUrl}
                     alt=""
@@ -356,14 +364,16 @@ export const SpatialGarmentCarousel = memo(function SpatialGarmentCarousel({
       </div>
 
       {/* Botón circular siguiente (estilo .arrow.glass) */}
-      <button
-        type="button"
-        onClick={() => stepTo(1)}
-        aria-label={`Siguiente en carrusel ${slot === 'upper' ? 'superior' : 'inferior'}`}
-        className="vf-glass absolute right-2 top-1/2 z-35 inline-flex h-[42px] w-[42px] -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-ink transition-transform duration-200 hover:scale-106 active:scale-94"
-      >
-        <ChevronRight className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-      </button>
+      {showArrows && (
+        <button
+          type="button"
+          onClick={() => stepTo(1)}
+          aria-label={`Siguiente en carrusel ${slot === 'upper' ? 'superior' : 'inferior'}`}
+          className="vf-glass absolute right-2 top-1/2 z-35 inline-flex h-[42px] w-[42px] -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-ink transition-transform duration-200 hover:scale-106 active:scale-94"
+        >
+          <ChevronRight className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+        </button>
+      )}
     </div>
   );
 });

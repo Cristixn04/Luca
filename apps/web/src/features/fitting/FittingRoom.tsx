@@ -39,40 +39,6 @@ const VIEW_TABS: readonly { id: AvatarView; label: string }[] = [
   { id: 'back', label: 'Espalda' },
 ];
 
-const QUICK_UPPER_PRESETS: readonly {
-  id: string;
-  category: GarmentCategory;
-  name: string;
-  colorHex: string;
-  tags?: readonly string[];
-}[] = [
-  { id: 'quick-tshirt', category: 'tshirt', name: 'Camiseta de lino', colorHex: '#1F5F6B' },
-  { id: 'quick-long_sleeve', category: 'long_sleeve', name: 'Camisa manga larga', colorHex: '#5C82A6' },
-  {
-    id: 'quick-hoodie',
-    category: 'long_sleeve',
-    name: 'Buzo con capucha',
-    colorHex: '#9A968F',
-    tags: ['hoodie', 'capucha'],
-  },
-  { id: 'quick-jacket', category: 'jacket', name: 'Chaqueta estructurada', colorHex: '#4B5724' },
-  { id: 'quick-dress', category: 'dress', name: 'Vestido midi', colorHex: '#8B3A4E' },
-];
-
-const QUICK_LOWER_PRESETS: readonly {
-  id: string;
-  category: GarmentCategory;
-  name: string;
-  colorHex: string;
-  tags?: readonly string[];
-}[] = [
-  { id: 'quick-pants', category: 'pants', name: 'Pantalón recto', colorHex: '#1F3A68', tags: ['denim'] },
-  { id: 'quick-chino', category: 'pants', name: 'Pantalón chino arena', colorHex: '#C9B99F', tags: ['chino'] },
-  { id: 'quick-shorts', category: 'shorts', name: 'Short de algodón', colorHex: '#B8A992' },
-  { id: 'quick-skirt', category: 'skirt', name: 'Falda midi recta', colorHex: '#3B3C3F' },
-  { id: 'quick-skirt-mini', category: 'skirt', name: 'Falda corta', colorHex: '#6F4E37', tags: ['mini'] },
-];
-
 const DOCK_COLOR_SWATCHES: readonly { name: string; hex: string }[] = [
   { name: 'Marfil', hex: '#F3EFE6' },
   { name: 'Piedra', hex: '#C9C4BA' },
@@ -91,6 +57,7 @@ const QUICK_SIZE_SCALE: readonly { label: string; factor: number }[] = [
 ];
 
 interface PairedGarmentLayer {
+  readonly closetGarmentId?: string;
   readonly category: GarmentCategory;
   readonly name: string;
   readonly colorHex: string;
@@ -100,7 +67,11 @@ interface PairedGarmentLayer {
   readonly meta?: GarmentVisualMeta;
 }
 
-export function FittingRoom() {
+export interface FittingRoomProps {
+  onOpenCloset?: () => void;
+}
+
+export function FittingRoom({ onOpenCloset }: FittingRoomProps = {}) {
   const t = useT();
   const bodyMeasurements = useFittingStore((s) => s.bodyMeasurements);
   const optionalMeasurements = useFittingStore((s) => s.optionalMeasurements);
@@ -137,12 +108,122 @@ export function FittingRoom() {
     return mq ? mq.matches : true;
   });
   const touchStartX = useRef<number | null>(null);
+  const userClearedRef = useRef(false);
+  const prevClosetCountRef = useRef(closetItems.length);
 
   useEffect(() => {
     if (!closetLoaded) {
       void loadCloset();
     }
   }, [closetLoaded, loadCloset]);
+
+  // Si el usuario añade nuevas prendas al clóset, vuelve a permitir selección automática
+  useEffect(() => {
+    if (closetItems.length > prevClosetCountRef.current) {
+      userClearedRef.current = false;
+    }
+    prevClosetCountRef.current = closetItems.length;
+  }, [closetItems.length]);
+
+  // Sincronización en vivo Clóset <-> Probador (añadir, editar, eliminar) sin afectar Prenda rápida
+  useEffect(() => {
+    if (!closetLoaded) return;
+
+    if (pairedLayer?.closetGarmentId) {
+      const freshPaired = closetItems.find((c) => c.garment.id === pairedLayer.closetGarmentId);
+      if (!freshPaired) {
+        setPairedLayer(null);
+      } else {
+        const freshColor =
+          freshPaired.garment.visualSpec?.primary_color_hex ??
+          freshPaired.garment.dominantColorHex ??
+          '#1F5F6B';
+        const freshSize =
+          freshPaired.sizes.find((s) => s.label === pairedLayer.sizeLabel) ?? freshPaired.sizes[0];
+        if (
+          freshPaired.garment.name !== pairedLayer.name ||
+          freshColor !== pairedLayer.colorHex ||
+          freshPaired.garment.category !== pairedLayer.category ||
+          freshPaired.garment.elasticity !== pairedLayer.elasticity ||
+          (freshSize && freshSize.label !== pairedLayer.sizeLabel) ||
+          freshPaired.garment.visualSpec !== pairedLayer.meta?.visualSpec
+        ) {
+          setPairedLayer({
+            closetGarmentId: freshPaired.garment.id,
+            category: freshPaired.garment.category,
+            name: freshPaired.garment.name,
+            colorHex: freshColor,
+            sizeLabel: freshSize?.label ?? pairedLayer.sizeLabel,
+            elasticity: freshPaired.garment.elasticity,
+            flatMeasuresCm: freshSize ? { ...freshSize.flatMeasuresCm } : pairedLayer.flatMeasuresCm,
+            meta: {
+              name: freshPaired.garment.name,
+              pattern: freshPaired.garment.pattern,
+              style: freshPaired.garment.style,
+              tags: freshPaired.garment.tags,
+              visualSpec: freshPaired.garment.visualSpec,
+              imageUrl: freshPaired.image?.dataUrl,
+              backImageUrl: freshPaired.image?.backDataUrl,
+            },
+          });
+        }
+      }
+    }
+
+    if (garmentSource === 'quick' && garmentEnabled) {
+      return;
+    }
+
+    if (closetItems.length === 0) {
+      if (garmentEnabled || selectedClosetGarmentId !== null) {
+        useFittingStore.getState().clearGarment();
+        setPairedLayer(null);
+      }
+      return;
+    }
+
+    if (selectedClosetGarmentId) {
+      const existing = closetItems.find((item) => item.garment.id === selectedClosetGarmentId);
+      if (existing) {
+        const freshColor =
+          existing.garment.visualSpec?.primary_color_hex ??
+          existing.garment.dominantColorHex ??
+          '#1F5F6B';
+        const matchedSize =
+          existing.sizes.find((s) => s.label === garmentSizeLabel) ?? existing.sizes[0];
+        const needsSync =
+          !garmentEnabled ||
+          existing.garment.name !== garmentName ||
+          existing.garment.category !== garmentCategory ||
+          existing.garment.elasticity !== garmentElasticity ||
+          freshColor !== garmentColorHex ||
+          (matchedSize && matchedSize.label !== garmentSizeLabel);
+        if (needsSync && !userClearedRef.current) {
+          applyClosetItemToFitting(existing, matchedSize?.label);
+        }
+        return;
+      }
+      userClearedRef.current = false;
+      applyClosetItemToFitting(closetItems[0]!);
+      return;
+    }
+
+    if (!garmentEnabled && !userClearedRef.current) {
+      applyClosetItemToFitting(closetItems[0]!);
+    }
+  }, [
+    closetItems,
+    closetLoaded,
+    garmentCategory,
+    garmentColorHex,
+    garmentElasticity,
+    garmentEnabled,
+    garmentName,
+    garmentSizeLabel,
+    garmentSource,
+    pairedLayer,
+    selectedClosetGarmentId,
+  ]);
 
   useEffect(() => {
     if (!activeDrawer) return;
@@ -185,18 +266,14 @@ export function FittingRoom() {
         backImageUrl: selectedClosetItem.image?.backDataUrl,
       };
     }
-    const quickMatch = [...QUICK_UPPER_PRESETS, ...QUICK_LOWER_PRESETS].find(
-      (q) => q.name === garmentName,
-    );
     return {
       name: garmentName,
-      ...(quickMatch?.tags ? { tags: quickMatch.tags } : {}),
     };
   }, [garmentName, selectedClosetItem]);
 
-  // Elementos del carrusel superior (camisas, manga larga, chaquetas y vestidos)
+  // Elementos del carrusel superior: exclusivamente prendas reales del clóset (camisas, manga larga, chaquetas y vestidos)
   const upperCarouselItems = useMemo<SpatialCarouselItem[]>(() => {
-    const closetUppers: SpatialCarouselItem[] = closetItems
+    return closetItems
       .filter((item) => !isLowerCategory(item.garment.category))
       .map((item) => ({
         id: `closet-${item.garment.id}`,
@@ -206,7 +283,10 @@ export function FittingRoom() {
         name: item.garment.name,
         brand: item.garment.brand,
         sizeLabel: item.sizes[0]?.label ?? 'M',
-        colorHex: item.garment.dominantColorHex ?? '#1F5F6B',
+        colorHex:
+          item.garment.visualSpec?.primary_color_hex ??
+          item.garment.dominantColorHex ??
+          '#1F5F6B',
         imageUrl: item.image?.dataUrl,
         meta: {
           name: item.garment.name,
@@ -218,33 +298,11 @@ export function FittingRoom() {
           backImageUrl: item.image?.backDataUrl,
         },
       }));
-
-    if (closetUppers.length >= 5) {
-      return closetUppers;
-    }
-
-    const existingNames = new Set(closetUppers.map((i) => i.name.toLowerCase()));
-    const quickFill: SpatialCarouselItem[] = QUICK_UPPER_PRESETS.filter(
-      (q) => !existingNames.has(q.name.toLowerCase()),
-    ).map((q) => {
-      const preset = DEFAULT_GARMENT_PRESETS[q.category];
-      return {
-        id: q.id,
-        source: 'quick',
-        category: q.category,
-        name: q.name,
-        sizeLabel: preset.sizeLabel,
-        colorHex: q.colorHex,
-        meta: { name: q.name, ...(q.tags ? { tags: q.tags } : {}) },
-      };
-    });
-
-    return [...closetUppers, ...quickFill];
   }, [closetItems]);
 
-  // Elementos del carrusel inferior (pantalones, shorts y faldas)
+  // Elementos del carrusel inferior: exclusivamente prendas reales del clóset (pantalones, shorts y faldas)
   const lowerCarouselItems = useMemo<SpatialCarouselItem[]>(() => {
-    const closetLowers: SpatialCarouselItem[] = closetItems
+    return closetItems
       .filter((item) => isLowerCategory(item.garment.category))
       .map((item) => ({
         id: `closet-${item.garment.id}`,
@@ -254,7 +312,10 @@ export function FittingRoom() {
         name: item.garment.name,
         brand: item.garment.brand,
         sizeLabel: item.sizes[0]?.label ?? '32',
-        colorHex: item.garment.dominantColorHex ?? '#1F3A68',
+        colorHex:
+          item.garment.visualSpec?.primary_color_hex ??
+          item.garment.dominantColorHex ??
+          '#1F3A68',
         imageUrl: item.image?.dataUrl,
         meta: {
           name: item.garment.name,
@@ -266,28 +327,6 @@ export function FittingRoom() {
           backImageUrl: item.image?.backDataUrl,
         },
       }));
-
-    if (closetLowers.length >= 5) {
-      return closetLowers;
-    }
-
-    const existingNames = new Set(closetLowers.map((i) => i.name.toLowerCase()));
-    const quickFill: SpatialCarouselItem[] = QUICK_LOWER_PRESETS.filter(
-      (q) => !existingNames.has(q.name.toLowerCase()),
-    ).map((q) => {
-      const preset = DEFAULT_GARMENT_PRESETS[q.category];
-      return {
-        id: q.id,
-        source: 'quick',
-        category: q.category,
-        name: q.name,
-        sizeLabel: preset.sizeLabel,
-        colorHex: q.colorHex,
-        meta: { name: q.name, ...(q.tags ? { tags: q.tags } : {}) },
-      };
-    });
-
-    return [...closetLowers, ...quickFill];
   }, [closetItems]);
 
   const activeCarouselItemId = useMemo(() => {
@@ -295,32 +334,30 @@ export function FittingRoom() {
     if (garmentSource === 'closet' && selectedClosetGarmentId) {
       return `closet-${selectedClosetGarmentId}`;
     }
-    const allQuick = [...QUICK_UPPER_PRESETS, ...QUICK_LOWER_PRESETS];
-    const matchedByName = allQuick.find((q) => q.name === garmentName);
-    return matchedByName?.id ?? `quick-${garmentCategory}`;
-  }, [garmentCategory, garmentEnabled, garmentName, garmentSource, selectedClosetGarmentId]);
+    return null;
+  }, [garmentEnabled, garmentSource, selectedClosetGarmentId]);
 
   const activeUpperId = useMemo(() => {
     if (!garmentEnabled) return null;
     if (!isLowerCategory(garmentCategory)) return activeCarouselItemId;
-    if (pairedLayer && !isLowerCategory(pairedLayer.category)) {
-      const match = upperCarouselItems.find((i) => i.name === pairedLayer.name);
-      return match?.id ?? `quick-${pairedLayer.category}`;
+    if (pairedLayer?.closetGarmentId && !isLowerCategory(pairedLayer.category)) {
+      return `closet-${pairedLayer.closetGarmentId}`;
     }
     return null;
-  }, [activeCarouselItemId, garmentCategory, garmentEnabled, pairedLayer, upperCarouselItems]);
+  }, [activeCarouselItemId, garmentCategory, garmentEnabled, pairedLayer]);
 
   const activeLowerId = useMemo(() => {
     if (!garmentEnabled) return null;
     if (isLowerCategory(garmentCategory)) return activeCarouselItemId;
-    if (pairedLayer && isLowerCategory(pairedLayer.category)) {
-      const match = lowerCarouselItems.find((i) => i.name === pairedLayer.name);
-      return match?.id ?? `quick-${pairedLayer.category}`;
+    if (pairedLayer?.closetGarmentId && isLowerCategory(pairedLayer.category)) {
+      return `closet-${pairedLayer.closetGarmentId}`;
     }
     return null;
-  }, [activeCarouselItemId, garmentCategory, garmentEnabled, lowerCarouselItems, pairedLayer]);
+  }, [activeCarouselItemId, garmentCategory, garmentEnabled, pairedLayer]);
 
   const handleSelectCarouselItem = (item: SpatialCarouselItem, slot: 'upper' | 'lower') => {
+    userClearedRef.current = false;
+
     // Si cambia de zona (superior <-> inferior) y no es vestido, conserva la prenda anterior como capa combinada
     if (garmentEnabled) {
       const currentIsLower = isLowerCategory(garmentCategory);
@@ -332,6 +369,9 @@ export function FittingRoom() {
           setPairedLayer(null);
         } else {
           setPairedLayer({
+            ...(garmentSource === 'closet' && selectedClosetGarmentId
+              ? { closetGarmentId: selectedClosetGarmentId }
+              : {}),
             category: garmentCategory,
             name: garmentName,
             colorHex: garmentColorHex,
@@ -349,19 +389,6 @@ export function FittingRoom() {
       if (full) {
         applyClosetItemToFitting(full);
       }
-    } else {
-      const preset = DEFAULT_GARMENT_PRESETS[item.category];
-      useFittingStore.setState({
-        garmentEnabled: true,
-        garmentSource: 'quick',
-        selectedClosetGarmentId: null,
-        garmentCategory: item.category,
-        garmentName: item.name,
-        garmentColorHex: item.colorHex,
-        garmentSizeLabel: preset.sizeLabel,
-        garmentElasticity: preset.elasticity,
-        garmentFlatMeasures: { ...preset.flatMeasuresCm },
-      });
     }
 
     setScanTick((n) => n + 1);
@@ -821,12 +848,12 @@ export function FittingRoom() {
             </div>
           )}
 
-          {/* Dock inferior flotante de vidrio (basado en section.buy.glass de la interfaz base) */}
-          {garmentEnabled && (
+          {/* Dock inferior flotante de vidrio (o barra de estado vacío cuando el clóset aún no tiene prendas) */}
+          {garmentEnabled ? (
             <div className="mx-auto mt-1 flex w-full max-w-[680px] flex-wrap items-center justify-between gap-4 rounded-[24px] px-4 py-3 vf-glass">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[14px] border border-[var(--vf-glass-border)] bg-bg/45 p-1.5">
-                  {isSafeDataImageUrl(garmentVisualMeta.imageUrl) ? (
+                  {!garmentVisualMeta.visualSpec && isSafeDataImageUrl(garmentVisualMeta.imageUrl) ? (
                     <img
                       src={garmentVisualMeta.imageUrl}
                       alt=""
@@ -845,6 +872,7 @@ export function FittingRoom() {
                   <p className="truncate text-sm font-semibold text-ink">{garmentName}</p>
                   <p className="truncate text-xs text-muted">
                     {CATEGORY_LABELS[garmentCategory]}
+                    {garmentSource === 'quick' ? ' · Prenda rápida' : ''}
                     {pairedLayer ? ` + ${pairedLayer.name}` : ''}
                   </p>
                 </div>
@@ -876,30 +904,91 @@ export function FittingRoom() {
                   </div>
                 </div>
 
-                {/* Selector circular de color */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-medium leading-none text-muted">
-                    Color · {activeColorName}
-                  </span>
-                  <div className="flex items-center gap-2" role="group" aria-label="Color de prenda">
-                    {DOCK_COLOR_SWATCHES.map((swatch) => {
-                      const active = garmentColorHex.toLowerCase() === swatch.hex.toLowerCase();
-                      return (
-                        <button
-                          key={swatch.hex}
-                          type="button"
-                          aria-label={`Color ${swatch.name}`}
-                          aria-pressed={active}
-                          onClick={() => setGarmentColorHex(swatch.hex)}
-                          style={{ backgroundColor: swatch.hex }}
-                          className={`h-[18px] w-[18px] cursor-pointer rounded-full border border-white/70 shadow-xs transition-transform hover:scale-115 ${
-                            active ? 'ring-2 ring-[var(--vf-chip-active-bg)] ring-offset-2 ring-offset-transparent' : ''
-                          }`}
-                        />
-                      );
-                    })}
+                {/* Color: editable en prenda rápida; muestra el color real del clóset en prendas guardadas */}
+                {garmentSource === 'quick' ? (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[11px] font-medium leading-none text-muted">
+                      Color · {activeColorName}
+                    </span>
+                    <div className="flex items-center gap-2" role="group" aria-label="Color de prenda">
+                      {DOCK_COLOR_SWATCHES.map((swatch) => {
+                        const active = garmentColorHex.toLowerCase() === swatch.hex.toLowerCase();
+                        return (
+                          <button
+                            key={swatch.hex}
+                            type="button"
+                            aria-label={`Color ${swatch.name}`}
+                            aria-pressed={active}
+                            onClick={() => setGarmentColorHex(swatch.hex)}
+                            style={{ backgroundColor: swatch.hex }}
+                            className={`h-[18px] w-[18px] cursor-pointer rounded-full border border-white/70 shadow-xs transition-transform hover:scale-115 ${
+                              active ? 'ring-2 ring-[var(--vf-chip-active-bg)] ring-offset-2 ring-offset-transparent' : ''
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[11px] font-medium leading-none text-muted">Color</span>
+                    <div className="inline-flex items-center gap-1.5 text-xs font-medium text-ink">
+                      <span
+                        className="inline-block h-[16px] w-[16px] rounded-full border border-white/70 shadow-xs"
+                        style={{ backgroundColor: garmentColorHex }}
+                        aria-hidden="true"
+                      />
+                      <span className="tabular-nums">{activeColorName}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="mx-auto mt-1 flex w-full max-w-[640px] flex-wrap items-center justify-between gap-3 rounded-[24px] px-5 py-3 vf-glass">
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <p className="text-xs font-semibold text-ink">
+                  {closetItems.length === 0
+                    ? 'Tu clóset aún no tiene prendas'
+                    : 'Sin prenda puesta en el probador'}
+                </p>
+                <p className="text-[11px] text-muted">
+                  {closetItems.length === 0
+                    ? 'Añade prendas en Clóset para verlas aquí o usa una prenda rápida temporal.'
+                    : 'Elige una prenda de tu clóset o prueba una prenda rápida en el panel derecho.'}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {closetItems.length === 0 && onOpenCloset && (
+                  <button
+                    type="button"
+                    onClick={onOpenCloset}
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-active-bg)] px-3.5 py-1.5 text-xs font-medium text-[var(--vf-chip-active-ink)] transition-opacity hover:opacity-90"
+                  >
+                    <Shirt className="h-3.5 w-3.5" aria-hidden="true" />
+                    Ir al Clóset
+                  </button>
+                )}
+                {closetItems.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      userClearedRef.current = false;
+                      applyClosetItemToFitting(closetItems[0]!);
+                    }}
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-active-bg)] px-3.5 py-1.5 text-xs font-medium text-[var(--vf-chip-active-ink)] transition-opacity hover:opacity-90"
+                  >
+                    <Shirt className="h-3.5 w-3.5" aria-hidden="true" />
+                    Probar prenda del clóset
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setActiveDrawer('garment')}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-bg)] px-3.5 py-1.5 text-xs font-medium text-ink transition-colors hover:opacity-85"
+                >
+                  Probar prenda rápida
+                </button>
               </div>
             </div>
           )}
@@ -995,8 +1084,15 @@ export function FittingRoom() {
           {activeDrawer === 'garment' ? (
             <GarmentPanel
               fitReport={fitReport}
-              onManualCategorySelect={() => setPairedLayer(null)}
-              onClearAllGarments={() => setPairedLayer(null)}
+              onManualCategorySelect={() => {
+                userClearedRef.current = false;
+                setPairedLayer(null);
+              }}
+              onClearAllGarments={() => {
+                userClearedRef.current = true;
+                setPairedLayer(null);
+              }}
+              onOpenCloset={onOpenCloset}
               onClose={() => setActiveDrawer(null)}
             />
           ) : (

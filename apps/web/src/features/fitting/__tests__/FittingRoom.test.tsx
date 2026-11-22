@@ -113,16 +113,42 @@ describe('Probador de calce M2 (T2.1 – T2.7)', () => {
     expect(screen.getByRole('button', { name: 'Holgado' })).toHaveAttribute('aria-pressed', 'true');
 
     await user.click(screen.getByRole('button', { name: 'Quitar prenda del probador' }));
-    expect(screen.getByText(/Sin prenda activa en el probador/i)).toBeInTheDocument();
+    expect(screen.getByText(/Tu clóset aún no tiene prendas\./i)).toBeInTheDocument();
     expect(container.querySelector('[data-garment]')).toBeNull();
 
-    await user.click(screen.getByRole('button', { name: /Probar camiseta/i }));
+    // Prenda rápida vuelve a vestir el avatar sin guardarse en el clóset
+    await user.click(screen.getByRole('button', { name: 'Camiseta' }));
     expect(container.querySelector('[data-garment="tshirt"]')).not.toBeNull();
+    expect(useClosetStore.getState().items).toHaveLength(0);
   });
 
-  it('muestra desplegable con prendas guardadas del clóset y opción aparte de prenda rápida editable', async () => {
+  it('sin prendas en el clóset no genera prendas falsas ni carruseles de prueba y permite ir al Clóset', async () => {
+    const user = userEvent.setup();
+    let openedCloset = false;
+    useFittingStore.setState({
+      garmentEnabled: false,
+      garmentSource: 'closet',
+      selectedClosetGarmentId: null,
+    });
+    const { container } = render(<FittingRoom onOpenCloset={() => { openedCloset = true; }} />);
+
+    expect(container.querySelector('[data-garment]')).toBeNull();
+    expect(container.querySelector('[data-spatial-carousel="upper"]')).toBeNull();
+    expect(container.querySelector('[data-spatial-carousel="lower"]')).toBeNull();
+    expect(screen.getByText('Tu clóset aún no tiene prendas')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Ir al Clóset/i }));
+    expect(openedCloset).toBe(true);
+  });
+
+  it('muestra desplegable con prendas guardadas del clóset y opción aparte de prenda rápida temporal sin guardar en clóset', async () => {
     const user = userEvent.setup();
     const now = '2026-11-20T10:00:00.000Z';
+    useFittingStore.setState({
+      garmentEnabled: false,
+      garmentSource: 'closet',
+      selectedClosetGarmentId: null,
+    });
     useClosetStore.setState({
       loaded: true,
       items: [
@@ -201,17 +227,105 @@ describe('Probador de calce M2 (T2.1 – T2.7)', () => {
     await user.selectOptions(garmentSelect, 'g-pants');
     expect(container.querySelector('[data-garment="pants"]')).not.toBeNull();
 
-    // Cambiar a Prenda rápida habilita edición libre del nombre
+    // Cambiar a Prenda rápida habilita edición libre del nombre y NO la añade al clóset
     await user.click(screen.getByRole('button', { name: /Prenda rápida/i }));
     const nameInput = screen.getByLabelText('Nombre');
     expect(nameInput).toBeInTheDocument();
     await user.clear(nameInput);
     await user.type(nameInput, 'Prueba tienda');
     expect((nameInput as HTMLInputElement).value).toBe('Prueba tienda');
+    expect(useClosetStore.getState().items).toHaveLength(2);
   });
 
-  it('muestra ambos carruseles espaciales (superior e inferior) y permite combinar prendas sobre el maniquí', async () => {
+  it('muestra exclusivamente las prendas reales del clóset en ambos carruseles y permite combinarlas sobre el avatar', async () => {
     const user = userEvent.setup();
+    const now = '2026-11-20T10:00:00.000Z';
+    useFittingStore.setState({
+      garmentEnabled: false,
+      garmentSource: 'closet',
+      selectedClosetGarmentId: null,
+    });
+    useClosetStore.setState({
+      loaded: true,
+      items: [
+        {
+          garment: {
+            id: 'g-top-1',
+            category: 'tshirt',
+            name: 'Camiseta Petróleo Real',
+            brand: 'Mi Marca',
+            status: 'owned',
+            elasticity: 0.05,
+            formality: 2,
+            tags: [],
+            dominantColorHex: '#1F5F6B',
+            createdAt: now,
+            updatedAt: now,
+          },
+          sizes: [
+            {
+              id: 's-top-1',
+              garmentId: 'g-top-1',
+              label: 'M',
+              flatMeasuresCm: { chestFlat: 50, shoulders: 45, backWidth: 42 },
+              createdAt: now,
+              updatedAt: now,
+            },
+          ],
+        },
+        {
+          garment: {
+            id: 'g-dress-1',
+            category: 'dress',
+            name: 'Vestido Borgoña Real',
+            brand: 'Mi Marca',
+            status: 'owned',
+            elasticity: 0.04,
+            formality: 4,
+            tags: [],
+            dominantColorHex: '#8B3A4E',
+            createdAt: now,
+            updatedAt: now,
+          },
+          sizes: [
+            {
+              id: 's-dress-1',
+              garmentId: 'g-dress-1',
+              label: 'M',
+              flatMeasuresCm: { chestFlat: 49, waistFlat: 40, hipFlat: 51 },
+              createdAt: now,
+              updatedAt: now,
+            },
+          ],
+        },
+        {
+          garment: {
+            id: 'g-pants-1',
+            category: 'pants',
+            name: 'Pantalón Azul Real',
+            brand: 'Mi Marca',
+            status: 'owned',
+            elasticity: 0.02,
+            formality: 3,
+            tags: [],
+            dominantColorHex: '#1F3A68',
+            createdAt: now,
+            updatedAt: now,
+          },
+          sizes: [
+            {
+              id: 's-pants-1',
+              garmentId: 'g-pants-1',
+              label: '32',
+              flatMeasuresCm: { waistFlat: 41, hipFlat: 52, inseam: 79 },
+              createdAt: now,
+              updatedAt: now,
+            },
+          ],
+        },
+      ],
+    });
+
     const { container } = render(<FittingRoom />);
 
     const upperCarousel = container.querySelector('[data-spatial-carousel="upper"]');
@@ -219,18 +333,18 @@ describe('Probador de calce M2 (T2.1 – T2.7)', () => {
     expect(upperCarousel).not.toBeNull();
     expect(lowerCarousel).not.toBeNull();
 
-    // Seleccionar un pantalón desde el carrusel inferior mientras la camiseta está activa combina ambas capas
+    // Seleccionar el pantalón real desde el carrusel inferior mientras la camiseta real está activa combina ambas capas
     const pantsCard = within(lowerCarousel as HTMLElement).getByRole('option', {
-      name: /Seleccionar Pantalón recto \(inferior\)/i,
+      name: /Seleccionar Pantalón Azul Real \(inferior\)/i,
     });
     await user.click(pantsCard);
 
     expect(container.querySelector('[data-garment="tshirt"]')).not.toBeNull();
     expect(container.querySelector('[data-garment="pants"]')).not.toBeNull();
 
-    // Seleccionar un vestido desde el carrusel superior reemplaza la capa inferior
+    // Seleccionar el vestido real desde el carrusel superior reemplaza la capa inferior
     const dressCard = within(upperCarousel as HTMLElement).getByRole('option', {
-      name: /Seleccionar Vestido midi \(superior\)/i,
+      name: /Seleccionar Vestido Borgoña Real \(superior\)/i,
     });
     await user.click(dressCard);
 

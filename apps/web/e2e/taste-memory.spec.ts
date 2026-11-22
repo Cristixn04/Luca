@@ -22,9 +22,20 @@ test.describe('Flujo e2e M10: gustos, panel Memoria, olvido y privacidad de red 
     await page.goto('/');
     await page.getByRole('button', { name: 'Continuar sin cifrado' }).click();
 
-    // 1. Cargar prendas de ejemplo en Outfits y dar feedback "Me gusta"
+    // 1. Añadir prendas reales en Clóset y dar feedback "Me gusta" en Outfits
+    await page.getByRole('link', { name: 'Clóset' }).click();
+    for (const [category, name] of [
+      ['tshirt', 'Camiseta clásica'],
+      ['pants', 'Pantalón recto marino'],
+    ] as const) {
+      await page.getByRole('button', { name: 'Añadir prenda' }).click();
+      await page.getByLabel('Categoría *').selectOption(category);
+      await page.getByLabel('Nombre *').fill(name);
+      await page.getByRole('button', { name: 'Guardar prenda' }).click();
+      await expect(page.getByText(name)).toBeVisible();
+    }
+
     await page.getByRole('link', { name: 'Outfits' }).click();
-    await page.getByRole('button', { name: /Cargar 6 prendas de ejemplo/i }).click();
     await expect(page.getByTestId('outfit-breakdown-card')).toBeVisible();
 
     await page.getByRole('button', { name: 'Me gusta', exact: true }).click();

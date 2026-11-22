@@ -50,8 +50,6 @@ export function OnboardingDialog({ open, onClose, onFinishToSection }: Onboardin
   const setBodyMeasure = useFittingStore((s) => s.setBodyMeasure);
 
   const saveColorProfile = useColorStore((s) => s.saveProfile);
-  const closetItems = useClosetStore((s) => s.items);
-  const seedSamples = useClosetStore((s) => s.seedSamples);
   const addGarment = useClosetStore((s) => s.addGarment);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -97,7 +95,7 @@ export function OnboardingDialog({ open, onClose, onFinishToSection }: Onboardin
     }
   };
 
-  const handleFinish = async (mode: 'custom' | 'sample' | 'skip') => {
+  const handleFinish = async (mode: 'custom' | 'skip') => {
     setBusy(true);
     try {
       if (mode === 'custom' && firstName.trim()) {
@@ -112,8 +110,6 @@ export function OnboardingDialog({ open, onClose, onFinishToSection }: Onboardin
           dominantColorHex: '#1F5F6B',
           sizes: [{ label: 'M', flatMeasuresCm: { chestFlat: 50, shoulders: 45, backWidth: 42 } }],
         });
-      } else if (mode === 'sample' && closetItems.length === 0) {
-        await seedSamples();
       }
       markOnboardingCompleted();
       onClose();
@@ -352,17 +348,6 @@ export function OnboardingDialog({ open, onClose, onFinishToSection }: Onboardin
                 {isEn ? 'Back' : 'Atrás'}
               </Button>
               <div className="flex flex-wrap gap-2">
-                {closetItems.length === 0 && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    disabled={busy}
-                    onClick={() => void handleFinish('sample')}
-                  >
-                    {isEn ? 'Load sample garments' : 'Cargar prendas de ejemplo'}
-                  </Button>
-                )}
                 <Button
                   type="button"
                   size="sm"

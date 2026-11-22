@@ -23,9 +23,11 @@ test.describe('Flujo e2e M8: colorimetría estacional, afinidad de prendas y opc
     await page.getByRole('button', { name: /Guardar perfil de color/i }).click();
     await expect(page.getByText(/Perfil de color guardado/i)).toBeVisible();
 
-    // 2. Ir al Clóset, cargar prendas de ejemplo, seleccionar en perchero y ver afinidad en spotlight y ficha
+    // 2. Ir al Clóset, añadir una prenda real del usuario, seleccionar en perchero y ver afinidad en spotlight y ficha
     await page.getByRole('link', { name: 'Clóset' }).click();
-    await page.getByRole('button', { name: /Cargar 2 prendas de ejemplo/i }).click();
+    await page.getByRole('button', { name: 'Añadir prenda' }).click();
+    await page.getByLabel('Nombre *').fill('Camisa petróleo de algodón');
+    await page.getByRole('button', { name: 'Guardar prenda' }).click();
     await page.locator('[data-closet-rack-item]').first().click();
     await expect(page.getByTestId('closet-spotlight')).toContainText('Afinidad paleta');
 

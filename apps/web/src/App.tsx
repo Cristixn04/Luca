@@ -80,12 +80,17 @@ export function App() {
       onLockVault={lock}
       onOpenOnboarding={() => setOnboardingOpen(true)}
     >
-      {activeSection === 'fitting' && <FittingRoom />}
+      {activeSection === 'fitting' && (
+        <FittingRoom onOpenCloset={() => setActiveSection('closet')} />
+      )}
       {activeSection === 'closet' && (
         <ClosetView onOpenInFitting={() => setActiveSection('fitting')} />
       )}
       {activeSection === 'outfits' && (
-        <OutfitsView onOpenGarmentInCloset={openGarmentInCloset} />
+        <OutfitsView
+          onOpenGarmentInCloset={openGarmentInCloset}
+          onOpenCloset={() => setActiveSection('closet')}
+        />
       )}
       {activeSection === 'color' && (
         <ColorView onOpenGarmentInCloset={openGarmentInCloset} />

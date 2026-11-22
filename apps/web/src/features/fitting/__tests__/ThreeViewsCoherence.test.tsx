@@ -15,6 +15,8 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
       optionalMeasurements: {},
       viewMode: 'front',
       garmentEnabled: true,
+      garmentSource: 'quick',
+      selectedClosetGarmentId: null,
       garmentCategory: 'tshirt',
       garmentName: DEFAULT_GARMENT_PRESETS.tshirt.name,
       garmentSizeLabel: DEFAULT_GARMENT_PRESETS.tshirt.sizeLabel,

@@ -9,7 +9,7 @@ import {
   validateBodyMeasurements,
   type GarmentCategory,
 } from '@luca/domain';
-import { Plus, RotateCcw, Search, Sparkles } from 'lucide-react';
+import { Plus, RotateCcw, Search } from 'lucide-react';
 import { Button } from '@/design-system/components/Button';
 import { getActiveSeasonId, useColorStore } from '@/features/color/colorStore';
 import { applyClosetItemToFitting } from '@/features/fitting/GarmentPanel';
@@ -38,7 +38,6 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
   const t = useT();
   const items = useClosetStore((s) => s.items);
   const loaded = useClosetStore((s) => s.loaded);
-  const busy = useClosetStore((s) => s.busy);
   const selectedId = useClosetStore((s) => s.selectedId);
 
   const search = useClosetStore((s) => s.search);
@@ -51,7 +50,6 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
   const addGarment = useClosetStore((s) => s.addGarment);
   const editGarment = useClosetStore((s) => s.editGarment);
   const removeGarment = useClosetStore((s) => s.removeGarment);
-  const seedSamples = useClosetStore((s) => s.seedSamples);
   const selectGarment = useClosetStore((s) => s.selectGarment);
   const setSearch = useClosetStore((s) => s.setSearch);
   const setCategoryFilter = useClosetStore((s) => s.setCategoryFilter);
@@ -328,15 +326,6 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
               >
                 <Plus className="h-4 w-4" aria-hidden="true" />
                 Añadir primera prenda
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={busy}
-                onClick={() => void seedSamples()}
-              >
-                <Sparkles className="h-4 w-4" aria-hidden="true" />
-                Cargar 2 prendas de ejemplo
               </Button>
             </div>
           </div>

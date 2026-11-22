@@ -103,9 +103,18 @@ function buildOutfitLayers(
     });
   };
 
+  const resolveColor = (
+    item: OutfitProposal['items'][number] | undefined,
+    fallback: string,
+  ): string => {
+    if (!item) return fallback;
+    const full = itemsById.get(item.id);
+    return full?.garment.visualSpec?.primary_color_hex ?? item.dominantColorHex ?? fallback;
+  };
+
   return {
     topFitReport: evaluateUpper(primaryTopItem),
-    topColorHex: primaryTopItem?.dominantColorHex ?? '#1F5F6B',
+    topColorHex: resolveColor(primaryTopItem, '#1F5F6B'),
     topVariant:
       primaryTopItem &&
       (primaryTopItem.category === 'tshirt' ||
@@ -116,10 +125,10 @@ function buildOutfitLayers(
         : 'tshirt',
     topMeta: extractVisualMeta(primaryTopItem, itemsById),
     outerwearFitReport: evaluateUpper(separateOuterwear),
-    outerwearColorHex: separateOuterwear?.dominantColorHex ?? '#4B5724',
+    outerwearColorHex: resolveColor(separateOuterwear, '#4B5724'),
     outerwearMeta: extractVisualMeta(separateOuterwear, itemsById),
     bottomFitReport: evaluateLower(bottomItem),
-    bottomColorHex: bottomItem?.dominantColorHex ?? '#2B4263',
+    bottomColorHex: resolveColor(bottomItem, '#2B4263'),
     bottomVariant:
       bottomItem &&
       (bottomItem.category === 'pants' ||

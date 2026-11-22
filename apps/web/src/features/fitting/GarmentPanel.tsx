@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import {
   GARMENT_CATEGORIES,
   fromCm,
@@ -84,7 +84,8 @@ export function applyClosetItemToFitting(item: GarmentWithSizes, preferredSizeLa
     selectedClosetGarmentId: item.garment.id,
     garmentCategory: item.garment.category,
     garmentName: item.garment.name,
-    garmentColorHex: item.garment.dominantColorHex ?? '#1F5F6B',
+    garmentColorHex:
+      item.garment.visualSpec?.primary_color_hex ?? item.garment.dominantColorHex ?? '#1F5F6B',
     garmentSizeLabel: size?.label ?? 'M',
     garmentElasticity: item.garment.elasticity,
     garmentFlatMeasures: size ? { ...size.flatMeasuresCm } : {},
@@ -95,6 +96,7 @@ export interface GarmentPanelProps {
   fitReport: FitReport | null;
   onManualCategorySelect?: () => void;
   onClearAllGarments?: () => void;
+  onOpenCloset?: () => void;
   onClose?: () => void;
 }
 
@@ -102,6 +104,7 @@ export function GarmentPanel({
   fitReport,
   onManualCategorySelect,
   onClearAllGarments,
+  onOpenCloset,
   onClose,
 }: GarmentPanelProps) {
   const unit = useFittingStore((s) => s.unit);
@@ -128,7 +131,6 @@ export function GarmentPanel({
   const closetItems = useClosetStore((s) => s.items);
   const closetLoaded = useClosetStore((s) => s.loaded);
   const loadCloset = useClosetStore((s) => s.loadCloset);
-  const autoSelectedRef = useRef(false);
 
   useEffect(() => {
     if (!closetLoaded) {
@@ -136,26 +138,10 @@ export function GarmentPanel({
     }
   }, [closetLoaded, loadCloset]);
 
-  useEffect(() => {
-    if (autoSelectedRef.current) return;
-    if (closetItems.length === 0) return;
-
-    autoSelectedRef.current = true;
-    if (selectedClosetGarmentId) {
-      const existing = closetItems.find((item) => item.garment.id === selectedClosetGarmentId);
-      if (existing) {
-        applyClosetItemToFitting(existing, garmentSizeLabel);
-        return;
-      }
-    }
-    applyClosetItemToFitting(closetItems[0]!);
-  }, [closetItems, garmentSizeLabel, selectedClosetGarmentId]);
-
   const selectedClosetItem =
     closetItems.find((item) => item.garment.id === selectedClosetGarmentId) ?? null;
 
   const handleSwitchToCloset = () => {
-    autoSelectedRef.current = true;
     if (selectedClosetItem) {
       setGarmentSource('closet');
       return;
@@ -167,9 +153,9 @@ export function GarmentPanel({
     }
   };
 
-  const handleSwitchToQuick = () => {
-    autoSelectedRef.current = true;
-    restoreDefaultGarment(garmentCategory);
+  const handleSwitchToQuick = (category: GarmentCategory = garmentCategory) => {
+    onManualCategorySelect?.();
+    restoreDefaultGarment(category);
     useFittingStore.setState({
       garmentSource: 'quick',
       selectedClosetGarmentId: null,
@@ -200,42 +186,59 @@ export function GarmentPanel({
             </button>
           )}
         </div>
-        <div className="vf-drawer-scroll flex flex-1 min-h-0 flex-col items-start gap-3 overflow-y-auto overscroll-contain px-5 py-4 text-xs text-muted">
-          <p>Sin prenda activa en el probador.</p>
+        <div className="vf-drawer-scroll flex flex-1 min-h-0 flex-col items-start gap-3.5 overflow-y-auto overscroll-contain px-5 py-4 text-xs text-muted">
+          <p>
+            {closetItems.length > 0
+              ? 'Sin prenda activa en el probador. Elige una de tu clóset o prueba una prenda rápida.'
+              : 'Tu clóset aún no tiene prendas. Añade prendas reales en Clóset o prueba una prenda rápida temporal.'}
+          </p>
+
           <div className="flex flex-wrap gap-2">
-            {closetItems.length > 0 && (
+            {closetItems.length > 0 ? (
               <button
                 type="button"
-                onClick={() => applyClosetItemToFitting(closetItems[0]!)}
+                onClick={() => {
+                  onManualCategorySelect?.();
+                  applyClosetItemToFitting(closetItems[0]!);
+                }}
                 className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-active-bg)] px-3.5 py-1.5 text-xs font-medium text-[var(--vf-chip-active-ink)] transition-opacity hover:opacity-90"
               >
                 <Shirt className="h-3.5 w-3.5" aria-hidden="true" />
-                Elegir de mi clóset
+                Elegir de mi clóset ({closetItems.length})
               </button>
+            ) : (
+              onOpenCloset && (
+                <button
+                  type="button"
+                  onClick={onOpenCloset}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-active-bg)] px-3.5 py-1.5 text-xs font-medium text-[var(--vf-chip-active-ink)] transition-opacity hover:opacity-90"
+                >
+                  <Shirt className="h-3.5 w-3.5" aria-hidden="true" />
+                  Ir al Clóset
+                </button>
+              )
             )}
-            <button
-              type="button"
-              onClick={() => {
-                onManualCategorySelect?.();
-                restoreDefaultGarment('tshirt');
-                useFittingStore.setState({ garmentSource: 'quick', selectedClosetGarmentId: null });
-              }}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-active-bg)] px-3.5 py-1.5 text-xs font-medium text-[var(--vf-chip-active-ink)] transition-opacity hover:opacity-90"
-            >
-              <Shirt className="h-3.5 w-3.5" aria-hidden="true" />
-              Probar camiseta
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onManualCategorySelect?.();
-                restoreDefaultGarment('pants');
-                useFittingStore.setState({ garmentSource: 'quick', selectedClosetGarmentId: null });
-              }}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-bg)] px-3.5 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-[var(--vf-chip-bg)]/80"
-            >
-              Probar pantalón
-            </button>
+          </div>
+
+          <div className="flex w-full flex-col gap-2 border-t border-[var(--glass-divider)] pt-3">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[11px] font-semibold text-ink">Prenda rápida</span>
+              <span className="text-[11px] text-muted">
+                Solo para probar medidas aquí · no se guarda en tu clóset.
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Tipo de prenda rápida">
+              {GARMENT_CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => handleSwitchToQuick(cat)}
+                  className="cursor-pointer rounded-full bg-[var(--vf-chip-bg)] px-3 py-1 text-[11px] font-medium text-ink transition-colors hover:bg-[var(--vf-chip-active-bg)] hover:text-[var(--vf-chip-active-ink)]"
+                >
+                  {CATEGORY_LABELS[cat]}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -302,7 +305,7 @@ export function GarmentPanel({
           <button
             type="button"
             aria-pressed={garmentSource === 'quick'}
-            onClick={handleSwitchToQuick}
+            onClick={() => handleSwitchToQuick()}
             className={`inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
               garmentSource === 'quick'
                 ? 'bg-[var(--vf-nav-indicator-bg)] text-[var(--vf-nav-active-ink)] shadow-xs'
@@ -318,11 +321,20 @@ export function GarmentPanel({
           closetItems.length === 0 ? (
             <div className="flex flex-col gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--vf-chip-bg)] p-3 text-xs text-muted">
               <p>Aún no tienes prendas guardadas en tu clóset.</p>
-              <div>
+              <div className="flex flex-wrap gap-2">
+                {onOpenCloset && (
+                  <button
+                    type="button"
+                    onClick={onOpenCloset}
+                    className="inline-flex cursor-pointer items-center rounded-full bg-[var(--vf-chip-active-bg)] px-3 py-1.5 text-xs font-medium text-[var(--vf-chip-active-ink)]"
+                  >
+                    Ir al Clóset
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={handleSwitchToQuick}
-                  className="inline-flex cursor-pointer items-center rounded-full bg-[var(--vf-chip-active-bg)] px-3 py-1.5 text-xs font-medium text-[var(--vf-chip-active-ink)]"
+                  onClick={() => handleSwitchToQuick()}
+                  className="inline-flex cursor-pointer items-center rounded-full bg-[var(--vf-chip-bg)] px-3 py-1.5 text-xs font-medium text-ink"
                 >
                   Ajustar prenda rápida
                 </button>
@@ -379,6 +391,9 @@ export function GarmentPanel({
           )
         ) : (
           <>
+            <p className="text-[11px] text-muted">
+              Prueba rápida temporal · no se guarda en tu clóset.
+            </p>
             {/* Selector de categoría (las 7 categorías completas en modo prenda rápida) */}
             <div className="flex flex-wrap gap-1.5" role="group" aria-label="Tipo de prenda">
               {GARMENT_CATEGORIES.map((cat) => {

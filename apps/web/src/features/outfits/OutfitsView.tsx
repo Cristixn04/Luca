@@ -15,8 +15,6 @@ import {
   Heart,
   LocateFixed,
   Plus,
-  Shirt,
-  Sparkles,
   ThumbsDown,
   ThumbsUp,
   Trash2,
@@ -26,10 +24,10 @@ import { useClosetStore } from '@/features/closet/closetStore';
 import {
   CATEGORY_LABELS,
   formatVisualSpecSummary,
-  type GarmentDraft,
   type GarmentWithSizes,
 } from '@/features/closet/types';
 import { getActiveSeasonId, useColorStore } from '@/features/color/colorStore';
+import { GarmentCardPreviewSvg } from '@/features/fitting/GarmentCardPreviewSvg';
 import { useFittingStore, type ViewerMode } from '@/features/fitting/store';
 import { useTasteStore } from '@/features/taste/tasteStore';
 import {
@@ -51,109 +49,9 @@ const CITY_PRESETS: readonly { label: string; tempC: number }[] = [
   { label: 'Frío · 8 °C', tempC: 8 },
 ];
 
-const DEMO_WARDROBE_DRAFTS: readonly GarmentDraft[] = [
-  {
-    category: 'tshirt',
-    name: 'Camiseta blanca de algodón',
-    brand: 'Taller Norte',
-    status: 'owned',
-    price: 32,
-    elasticity: 0.05,
-    formality: 2,
-    pattern: 'solid',
-    style: 'minimalist',
-    seasons: ['spring', 'summer'],
-    tags: ['básico', 'algodón'],
-    dominantColorHex: '#F3EFE6',
-    sizes: [{ label: 'M', flatMeasuresCm: { chestFlat: 50, shoulders: 45, backWidth: 42 } }],
-  },
-  {
-    category: 'long_sleeve',
-    name: 'Camisa azul cielo Oxford',
-    brand: 'Estudio Sur',
-    status: 'owned',
-    price: 58,
-    elasticity: 0.02,
-    formality: 3,
-    pattern: 'solid',
-    style: 'classic',
-    seasons: ['spring', 'autumn', 'winter'],
-    tags: ['oficina', 'oxford'],
-    dominantColorHex: '#5C82A6',
-    sizes: [{ label: 'M', flatMeasuresCm: { chestFlat: 51, shoulders: 45.5, backWidth: 42.5 } }],
-  },
-  {
-    category: 'tshirt',
-    name: 'Polo terracota suave',
-    brand: 'Taller Norte',
-    status: 'owned',
-    price: 44,
-    elasticity: 0.06,
-    formality: 2,
-    pattern: 'solid',
-    style: 'casual',
-    seasons: ['spring', 'summer', 'autumn'],
-    tags: ['polo', 'diario'],
-    dominantColorHex: '#C45733',
-    sizes: [{ label: 'M', flatMeasuresCm: { chestFlat: 50, shoulders: 45, backWidth: 42 } }],
-  },
-  {
-    category: 'pants',
-    name: 'Pantalón chino arena',
-    brand: 'Estudio Sur',
-    status: 'owned',
-    price: 68,
-    elasticity: 0.04,
-    formality: 3,
-    pattern: 'solid',
-    style: 'classic',
-    seasons: ['spring', 'summer', 'autumn'],
-    tags: ['chino', 'oficina'],
-    dominantColorHex: '#C9B99F',
-    sizes: [{ label: '32', flatMeasuresCm: { waistFlat: 41, hipFlat: 52, inseam: 79 } }],
-  },
-  {
-    category: 'pants',
-    name: 'Jean azul oscuro recto',
-    brand: 'Taller Norte',
-    status: 'owned',
-    price: 75,
-    elasticity: 0.03,
-    formality: 2,
-    pattern: 'solid',
-    style: 'casual',
-    seasons: ['spring', 'autumn', 'winter'],
-    tags: ['denim', 'recto'],
-    dominantColorHex: '#1F3A68',
-    sizes: [{ label: '32', flatMeasuresCm: { waistFlat: 41, hipFlat: 52, inseam: 80 } }],
-  },
-  {
-    category: 'jacket',
-    name: 'Chaqueta verde oliva',
-    brand: 'Estudio Sur',
-    status: 'owned',
-    price: 115,
-    elasticity: 0.02,
-    formality: 3,
-    pattern: 'solid',
-    style: 'classic',
-    seasons: ['autumn', 'winter'],
-    tags: ['abrigo', 'entretiempo'],
-    dominantColorHex: '#4B5724',
-    sizes: [{ label: 'M', flatMeasuresCm: { chestFlat: 54, shoulders: 46, backWidth: 43 } }],
-  },
-];
-
 export interface OutfitsViewProps {
   onOpenGarmentInCloset?: (garmentId: string) => void;
-}
-
-function isLightHex(hex: string | undefined): boolean {
-  if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) return false;
-  const r = Number.parseInt(hex.slice(1, 3), 16);
-  const g = Number.parseInt(hex.slice(3, 5), 16);
-  const b = Number.parseInt(hex.slice(5, 7), 16);
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.68;
+  onOpenCloset?: () => void;
 }
 
 function EditorialScoreBar({ label, value }: { label: string; value: number }) {
@@ -174,11 +72,10 @@ function EditorialScoreBar({ label, value }: { label: string; value: number }) {
   );
 }
 
-export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
+export function OutfitsView({ onOpenGarmentInCloset, onOpenCloset }: OutfitsViewProps) {
   const closetItems = useClosetStore((s) => s.items);
   const closetLoaded = useClosetStore((s) => s.loaded);
   const loadCloset = useClosetStore((s) => s.loadCloset);
-  const addGarment = useClosetStore((s) => s.addGarment);
 
   const colorProfile = useColorStore((s) => s.profile);
   const colorLoaded = useColorStore((s) => s.loaded);
@@ -217,7 +114,6 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
-  const [seedingDemo, setSeedingDemo] = useState(false);
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<'parametric' | 'ai'>('ai');
   const [aiRenderBusy, setAiRenderBusy] = useState(false);
@@ -325,18 +221,6 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
       },
       { enableHighAccuracy: false, timeout: 10_000, maximumAge: 600_000 },
     );
-  };
-
-  const handleSeedDemoCloset = async () => {
-    setSeedingDemo(true);
-    try {
-      for (const draft of DEMO_WARDROBE_DRAFTS) {
-        await addGarment(draft);
-      }
-      setSelectedIndex(0);
-    } finally {
-      setSeedingDemo(false);
-    }
   };
 
   const handleSave = async (favorite = false) => {
@@ -462,7 +346,16 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
     }
   };
 
-  const displayedSaved = favoritesOnly ? savedOutfits.filter((o) => o.favorite) : savedOutfits;
+  const validSavedOutfits = useMemo(
+    () =>
+      savedOutfits.filter(
+        (outfit) => outfit.garmentIds.length > 0 && outfit.garmentIds.every((id) => itemsById.has(id)),
+      ),
+    [itemsById, savedOutfits],
+  );
+  const displayedSaved = favoritesOnly
+    ? validSavedOutfits.filter((o) => o.favorite)
+    : validSavedOutfits;
 
   return (
     <div className="flex w-full flex-col gap-5">
@@ -571,19 +464,21 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
               Outfits
             </h1>
             <p className="max-w-md text-sm text-[var(--rw-muted)]">
-              Necesitas al menos una prenda superior e inferior propias para armar combinaciones en
-              el carrusel.
+              {closetItems.length === 0
+                ? 'Tu clóset aún no tiene prendas. Añade al menos una prenda superior y una inferior (o un vestido) en Clóset para armar combinaciones reales con tu ropa.'
+                : `Tienes ${closetItems.length} prenda(s) en tu clóset. Añade al menos una prenda superior y una inferior (o un vestido) para generar outfits automáticamente.`}
             </p>
           </div>
-          <button
-            type="button"
-            disabled={seedingDemo}
-            onClick={() => void handleSeedDemoCloset()}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[var(--rw-cta)] px-5 py-3 text-sm font-medium text-[var(--rw-cta-ink)] transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
-            <Sparkles className="h-4 w-4" aria-hidden="true" />
-            {seedingDemo ? 'Cargando prendas...' : 'Cargar 6 prendas de ejemplo'}
-          </button>
+          {onOpenCloset && (
+            <button
+              type="button"
+              onClick={onOpenCloset}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[var(--rw-cta)] px-5 py-3 text-sm font-medium text-[var(--rw-cta-ink)] transition-opacity hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Ir al Clóset a añadir prendas
+            </button>
+          )}
         </section>
       ) : (
         <section
@@ -647,7 +542,8 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                 {activeProposal.items.map((item, idx) => {
                   const full = itemsById.get(item.id);
                   const isHighlighted = highlightedItemId === item.id;
-                  const swatchIsLight = isLightHex(item.dominantColorHex);
+                  const resolvedColor =
+                    full?.garment.visualSpec?.primary_color_hex ?? item.dominantColorHex ?? '#1F5F6B';
 
                   return (
                     <li
@@ -660,7 +556,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                     >
                       <div className="flex items-center gap-3.5">
                         <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[var(--glass-border)] bg-[var(--rw-card)] sm:h-[76px] sm:w-[76px]">
-                          {full?.image?.dataUrl ? (
+                          {!full?.garment.visualSpec && full?.image?.dataUrl ? (
                             <div className="flex h-full w-full items-center justify-center p-1.5">
                               <img
                                 src={full.image.dataUrl}
@@ -672,15 +568,18 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                               />
                             </div>
                           ) : (
-                            <div
-                              className="flex h-full w-full items-center justify-center"
-                              style={{ backgroundColor: item.dominantColorHex ?? '#1F5F6B' }}
-                              aria-hidden="true"
-                            >
-                              <Shirt
-                                className={`h-6 w-6 ${
-                                  swatchIsLight ? 'text-[#151413]/80' : 'text-white/90'
-                                }`}
+                            <div className="flex h-full w-full items-center justify-center p-1">
+                              <GarmentCardPreviewSvg
+                                category={item.category}
+                                colorHex={resolvedColor}
+                                meta={{
+                                  name: full?.garment.name ?? item.name,
+                                  pattern: full?.garment.pattern,
+                                  style: full?.garment.style,
+                                  tags: full?.garment.tags,
+                                  visualSpec: full?.garment.visualSpec,
+                                }}
+                                className="h-full w-full"
                               />
                             </div>
                           )}
@@ -702,7 +601,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
                           <p className="mt-1 flex items-center gap-1.5 text-xs text-[var(--rw-muted)]">
                             <span
                               className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-[var(--glass-border)]"
-                              style={{ backgroundColor: item.dominantColorHex ?? '#1F5F6B' }}
+                              style={{ backgroundColor: resolvedColor }}
                               aria-hidden="true"
                             />
                             <span className="truncate">
@@ -828,7 +727,7 @@ export function OutfitsView({ onOpenGarmentInCloset }: OutfitsViewProps) {
       )}
 
       {/* Outfits guardados y favoritos en tarjetas de vidrio flotantes */}
-      {savedOutfits.length > 0 && (
+      {validSavedOutfits.length > 0 && (
         <section data-testid="saved-outfits-card" className="flex flex-col gap-4 pt-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-display text-lg font-normal text-[var(--rw-ink)]">

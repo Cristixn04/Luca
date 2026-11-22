@@ -176,7 +176,8 @@ export function GarmentDetailView({
       selectedClosetGarmentId: garment.id,
       garmentCategory: garment.category,
       garmentName: garment.name,
-      garmentColorHex: garment.dominantColorHex ?? '#1F5F6B',
+      garmentColorHex:
+        garment.visualSpec?.primary_color_hex ?? garment.dominantColorHex ?? '#1F5F6B',
       garmentSizeLabel: selectedSize.label,
       garmentElasticity: garment.elasticity,
       garmentFlatMeasures: { ...selectedSize.flatMeasuresCm },

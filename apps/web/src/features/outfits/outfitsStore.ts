@@ -103,6 +103,7 @@ export function toOutfitGarmentInputs(
       bestFlat = matched?.flatMeasuresCm ?? bestFlat;
     }
 
+    const effectiveColorHex = garment.visualSpec?.primary_color_hex ?? garment.dominantColorHex;
     const stat = wearStats.get(garment.id);
     return {
       id: garment.id,
@@ -111,7 +112,7 @@ export function toOutfitGarmentInputs(
       status: garment.status,
       formality: garment.formality,
       elasticity: garment.elasticity,
-      ...(garment.dominantColorHex ? { dominantColorHex: garment.dominantColorHex } : {}),
+      ...(effectiveColorHex ? { dominantColorHex: effectiveColorHex } : {}),
       ...(garment.style ? { style: garment.style } : {}),
       ...(garment.pattern ? { pattern: garment.pattern } : {}),
       ...(garment.seasons ? { seasons: garment.seasons } : {}),

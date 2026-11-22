@@ -16,8 +16,9 @@ test.describe('Flujo e2e M2: medidas → prenda → mapa de calor (T2.9)', () =>
     const chestBody = page.getByLabel('Pecho', { exact: true });
     await chestBody.fill('92');
 
-    // 2. Abrir panel de prenda y ajustar pecho en plano de la camiseta a 52 cm (+12.0 cm -> Holgado)
+    // 2. Abrir panel de prenda, activar prenda rápida (Camiseta) y ajustar pecho en plano a 52 cm (+12.0 cm -> Holgado)
     await page.getByRole('button', { name: 'Panel de prenda' }).click();
+    await page.getByRole('button', { name: 'Camiseta' }).click();
     const chestFlat = page.getByLabel('Pecho en plano');
     await chestFlat.fill('52');
 

@@ -166,10 +166,16 @@ export function ColorView({ onOpenGarmentInCloset }: ColorViewProps) {
   const closetHarmony = useMemo(() => {
     if (isIgnored || closetItems.length === 0) return [];
     return closetItems
-      .filter((item) => Boolean(item.garment.dominantColorHex))
       .map((item) => ({
         item,
-        harmony: evaluateGarmentColorHarmony(item.garment.dominantColorHex!, activeSeasonId),
+        colorHex: item.garment.visualSpec?.primary_color_hex ?? item.garment.dominantColorHex,
+      }))
+      .filter((entry): entry is { item: (typeof closetItems)[number]; colorHex: string } =>
+        Boolean(entry.colorHex),
+      )
+      .map(({ item, colorHex }) => ({
+        item,
+        harmony: evaluateGarmentColorHarmony(colorHex, activeSeasonId),
       }))
       .sort((a, b) => b.harmony.harmonyScore - a.harmony.harmonyScore);
   }, [activeSeasonId, closetItems, isIgnored]);

@@ -34,13 +34,14 @@ test.describe('Flujo e2e M11 (v1.0): onboarding, 7 plantillas 3 vistas, i18n ES/
     await expect(page.getByTestId('privacy-view')).toBeVisible();
     await expect(page.getByText('Qué nunca sale de tu dispositivo')).toBeVisible();
 
-    // 4. Completar Guía de inicio rápido (Paso 1 -> Paso 2 -> Paso 3)
+    // 4. Completar Guía de inicio rápido (Paso 1 -> Paso 2 -> Paso 3 con prenda real del usuario)
     await page.getByRole('button', { name: 'Guía de inicio rápido' }).click();
     await page.getByRole('button', { name: 'Siguiente: Color' }).click();
     await page.getByRole('button', { name: 'Guardar y seguir' }).click();
-    await page.getByRole('button', { name: 'Cargar prendas de ejemplo' }).click();
+    await page.getByLabel('Nombre de tu prenda (opcional)').fill('Camisa blanca de lino');
+    await page.getByRole('button', { name: 'Guardar prenda y terminar' }).click();
 
     await expect(page.getByRole('heading', { level: 1, name: 'Clóset local' })).toBeVisible();
-    await expect(page.getByText('Camiseta básica de lino')).toBeVisible();
+    await expect(page.getByText('Camisa blanca de lino')).toBeVisible();
   });
 });

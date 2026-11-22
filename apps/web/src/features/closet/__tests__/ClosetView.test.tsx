@@ -33,17 +33,46 @@ describe('ClosetView y GarmentDetailView (T4.3 – T4.5)', () => {
     }
   });
 
-  it('muestra estado vacío, carga ejemplos, filtra, muestra talla recomendada y navega al detalle', async () => {
+  it('muestra estado vacío sin prendas de prueba, filtra prendas reales del usuario, muestra talla recomendada y navega al probador y detalle', async () => {
     const user = userEvent.setup();
     const onOpenInFitting = vi.fn();
 
     render(<ClosetView onOpenInFitting={onOpenInFitting} />);
 
-    // 1. Estado vacío inicial
+    // 1. Estado vacío inicial (sin botones de prendas de ejemplo)
     expect(await screen.findByText('Tu clóset está vacío')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ejemplo/i })).not.toBeInTheDocument();
 
-    // 2. Cargar prendas de ejemplo
-    await user.click(screen.getByRole('button', { name: /Cargar 2 prendas de ejemplo/i }));
+    // 2. Añadir prendas reales del usuario al clóset
+    await useClosetStore.getState().addGarment({
+      category: 'tshirt',
+      name: 'Camiseta básica de lino',
+      brand: 'Norte',
+      status: 'owned',
+      elasticity: 0.05,
+      formality: 2,
+      tags: ['básico'],
+      dominantColorHex: '#1F5F6B',
+      sizes: [
+        { label: 'S', flatMeasuresCm: { chestFlat: 46, shoulders: 42, backWidth: 39 } },
+        { label: 'M', flatMeasuresCm: { chestFlat: 50, shoulders: 45, backWidth: 42 } },
+        { label: 'L', flatMeasuresCm: { chestFlat: 54, shoulders: 48, backWidth: 45 } },
+      ],
+    });
+    await useClosetStore.getState().addGarment({
+      category: 'pants',
+      name: 'Pantalón chino recto',
+      brand: 'Sur',
+      status: 'wishlist',
+      elasticity: 0.02,
+      formality: 3,
+      tags: ['oficina'],
+      dominantColorHex: '#2B4263',
+      sizes: [
+        { label: '32', flatMeasuresCm: { waistFlat: 41, hipFlat: 52, inseam: 79 } },
+      ],
+    });
+
     expect(await screen.findByText('Camiseta básica de lino')).toBeInTheDocument();
     expect(screen.getByText('Pantalón chino recto')).toBeInTheDocument();
 
