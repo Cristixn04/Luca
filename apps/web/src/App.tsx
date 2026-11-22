@@ -73,18 +73,14 @@ export function App() {
 
   if (vaultStatus === 'loading') {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-bg text-sm text-muted">
+      <div className="flex min-h-dvh items-center justify-center bg-[#05070B] text-sm text-white/60">
         Inicializando almacenamiento local...
       </div>
     );
   }
 
   if (vaultStatus === 'uninitialized' || vaultStatus === 'locked' || pendingRecoveryKey !== null) {
-    return (
-      <div className="min-h-dvh bg-bg text-ink">
-        <VaultGate />
-      </div>
-    );
+    return <VaultGate />;
   }
 
   const openGarmentInCloset = (garmentId: string) => {

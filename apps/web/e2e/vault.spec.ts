@@ -7,9 +7,9 @@ test.describe('Flujo e2e M3: bóveda cifrada, persistencia, bloqueo y recuperaci
     await page.goto('/');
 
     // 1. Crear bóveda cifrada con PBKDF2 600.000 iteraciones
-    await expect(page.getByRole('heading', { name: 'Crea tu bóveda cifrada' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Crea tu bóveda cifrada' })).toBeAttached();
     await page.getByLabel('Contraseña de la bóveda').fill('MiClaveReal2026!');
-    await page.getByRole('button', { name: /Crear bóveda cifrada/i }).click();
+    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
 
     // 2. Capturar clave de recuperación única y confirmar guardado
     const recoveryCode = page.getByTestId('recovery-key-value');
@@ -29,11 +29,11 @@ test.describe('Flujo e2e M3: bóveda cifrada, persistencia, bloqueo y recuperaci
 
     // 4. Recargar la página -> debe aparecer la pantalla de desbloqueo
     await page.reload();
-    await expect(page.getByText('Tus datos están cifrados en este dispositivo')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Iniciar sesión en Luca' })).toBeAttached();
 
     // 5. Desbloquear con contraseña y verificar que 99 cm se restauró desde IndexedDB cifrado
     await page.getByLabel('Contraseña', { exact: true }).fill('MiClaveReal2026!');
-    await page.getByRole('button', { name: 'Desbloquear' }).click();
+    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
 
     await expect(page.getByRole('heading', { level: 1, name: 'Probador de calce' })).toBeVisible();
     await page.getByRole('button', { name: 'Panel de medidas' }).click();
@@ -41,7 +41,7 @@ test.describe('Flujo e2e M3: bóveda cifrada, persistencia, bloqueo y recuperaci
 
     // 6. Bloquear y recuperar con la clave de recuperación + nueva contraseña
     await page.getByRole('button', { name: 'Bloquear bóveda' }).click();
-    await page.getByRole('button', { name: /Usar clave de recuperación/i }).click();
+    await page.getByRole('button', { name: '¿Olvidaste tu contraseña?' }).click();
     await page.getByLabel('Clave de recuperación').fill(recoveryKey);
     await page.getByLabel('Nueva contraseña').fill('NuevaClave2026!');
     await page.getByRole('button', { name: /Recuperar y desbloquear/i }).click();

@@ -43,7 +43,7 @@ describe('Flujo UI de bóveda cifrada y Memoria (T3.3 – T3.8)', () => {
     // 1. Pantalla inicial de creación de bóveda
     const passwordInput = await screen.findByLabelText('Contraseña de la bóveda');
     await user.type(passwordInput, 'MiBovedaSegura99');
-    await user.click(screen.getByRole('button', { name: /Crear bóveda cifrada/i }));
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
     // 2. Clave de recuperación única
     const recoveryEl = await screen.findByTestId('recovery-key-value');
@@ -70,7 +70,7 @@ describe('Flujo UI de bóveda cifrada y Memoria (T3.3 – T3.8)', () => {
     await user.click(screen.getByRole('button', { name: 'Bloquear bóveda' }));
     const unlockInput = await screen.findByLabelText('Contraseña');
     await user.type(unlockInput, 'MiBovedaSegura99');
-    await user.click(screen.getByRole('button', { name: 'Desbloquear' }));
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
     await waitFor(() => {
       expect(

@@ -8,7 +8,7 @@ test.describe('Flujo e2e M4: clóset local cifrado, tallas y talla recomendada (
 
     // 1. Crear bóveda cifrada
     await page.getByLabel('Contraseña de la bóveda').fill('ClosetE2E2026!');
-    await page.getByRole('button', { name: /Crear bóveda cifrada/i }).click();
+    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
     await page.getByRole('checkbox').check();
     await page.getByRole('button', { name: 'Entrar a Luca' }).click();
 
@@ -25,7 +25,7 @@ test.describe('Flujo e2e M4: clóset local cifrado, tallas y talla recomendada (
     // 3. Recargar página y desbloquear para probar persistencia cifrada en IndexedDB
     await page.reload();
     await page.getByLabel('Contraseña', { exact: true }).fill('ClosetE2E2026!');
-    await page.getByRole('button', { name: 'Desbloquear' }).click();
+    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
 
     await page.getByRole('link', { name: 'Clóset' }).click();
     await expect(page.getByText('Camisa Oxford Azul')).toBeVisible();

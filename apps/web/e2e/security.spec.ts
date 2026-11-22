@@ -28,7 +28,7 @@ test.describe('Auditoría e2e de seguridad, privacidad y modo offline (RNF-06, R
 
     // 1. Crear bóveda cifrada
     await page.getByLabel('Contraseña de la bóveda').fill('ClavePrivada999!');
-    await page.getByRole('button', { name: /Crear bóveda cifrada/i }).click();
+    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
     await page.getByRole('checkbox').check();
     await page.getByRole('button', { name: 'Entrar a Luca' }).click();
 
