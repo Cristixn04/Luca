@@ -13,16 +13,7 @@ import {
   type HarmonyBand,
   type PaletteColorRole,
 } from '@luca/domain';
-import { CheckCircle2, EyeOff, Info, Palette, RotateCcw, Shirt, Sun } from 'lucide-react';
-import { Badge } from '@/design-system/components/Badge';
-import { Button } from '@/design-system/components/Button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/design-system/components/Card';
+import { Check, CheckCircle2, EyeOff, Palette, Pipette, RotateCcw, Shirt, Sun } from 'lucide-react';
 import { useClosetStore } from '@/features/closet/closetStore';
 import { useT } from '@/i18n/i18nStore';
 import { DEFAULT_COLOR_SWATCHES, useColorStore } from './colorStore';
@@ -40,75 +31,109 @@ const HARMONY_BAND_COLORS: Readonly<Record<HarmonyBand, string>> = {
   clashing: '#C2410C',
 };
 
+function isLightHex(hex: string | undefined): boolean {
+  if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) return false;
+  const r = Number.parseInt(hex.slice(1, 3), 16);
+  const g = Number.parseInt(hex.slice(3, 5), 16);
+  const b = Number.parseInt(hex.slice(5, 7), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.66;
+}
+
 export interface ColorViewProps {
   onOpenGarmentInCloset?: (garmentId: string) => void;
 }
 
-interface SwatchPickerProps {
+interface CircularSwatchRowProps {
   title: string;
-  description: string;
   inputId: string;
   valueHex: string;
   options: readonly GuidedSwatchOption[];
   onChange: (hex: string) => void;
 }
 
-function SwatchPicker({
+function CircularSwatchRow({
   title,
-  description,
   inputId,
   valueHex,
   options,
   onChange,
-}: SwatchPickerProps) {
+}: CircularSwatchRowProps) {
+  const matchedOption = options.find((opt) => opt.hex.toUpperCase() === valueHex.toUpperCase());
+  const isCustom = !matchedOption;
+  const lightCustom = isLightHex(valueHex);
+
   return (
-    <div className="flex flex-col gap-2.5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-ink">{title}</h3>
-          <p className="text-xs text-muted">{description}</p>
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+            {title}
+          </h3>
+          <span className="truncate text-xs font-medium text-ink">
+            {matchedOption ? matchedOption.label : 'Personalizado'}
+          </span>
         </div>
-        <label
-          htmlFor={inputId}
-          className="inline-flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-bg px-2 py-1 text-xs text-muted"
-        >
-          <span>Ajuste fino</span>
-          <input
-            id={inputId}
-            type="color"
-            value={valueHex}
-            onChange={(event) => onChange(event.target.value.toUpperCase())}
-            className="h-5 w-7 cursor-pointer rounded-xs border border-border bg-transparent p-0"
-          />
-          <span className="tabular-nums font-medium text-ink">{valueHex}</span>
-        </label>
+        <span className="shrink-0 tabular-nums text-[11px] font-medium text-muted">
+          {valueHex.toUpperCase()}
+        </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+      <div className="flex flex-wrap items-center gap-2">
         {options.map((opt) => {
           const selected = opt.hex.toUpperCase() === valueHex.toUpperCase();
+          const lightSwatch = isLightHex(opt.hex);
           return (
             <button
               key={opt.id}
               type="button"
+              aria-label={opt.label}
               aria-pressed={selected}
+              title={`${opt.label} · ${opt.hint}`}
               onClick={() => onChange(opt.hex)}
-              className={`flex cursor-pointer flex-col items-start gap-1.5 rounded-[var(--radius-sm)] border p-2 text-left transition-colors ${
+              style={{ backgroundColor: opt.hex }}
+              className={`group relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border transition-all duration-200 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--vf-chip-active-bg)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent xl:h-9 xl:w-9 ${
                 selected
-                  ? 'border-accent bg-surface ring-1 ring-accent'
-                  : 'border-border bg-bg hover:border-accent/60'
+                  ? 'scale-105 border-white/90 shadow-md ring-2 ring-[var(--vf-chip-active-bg)] ring-offset-2 ring-offset-transparent'
+                  : 'border-black/15 shadow-xs dark:border-white/25'
               }`}
             >
-              <span
-                className="block h-7 w-full rounded-xs border border-border"
-                style={{ backgroundColor: opt.hex }}
-                aria-hidden="true"
-              />
-              <span className="line-clamp-1 text-xs font-medium text-ink">{opt.label}</span>
-              <span className="line-clamp-1 text-[11px] text-muted">{opt.hint}</span>
+              {selected && (
+                <Check
+                  className={`h-3.5 w-3.5 ${lightSwatch ? 'text-[#151413]' : 'text-white'}`}
+                  strokeWidth={2.5}
+                  aria-hidden="true"
+                />
+              )}
             </button>
           );
         })}
+
+        {/* Selector circular de ajuste fino */}
+        <label
+          htmlFor={inputId}
+          title="Ajuste fino de color"
+          className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border transition-all duration-200 hover:scale-110 focus-within:ring-2 focus-within:ring-[var(--vf-chip-active-bg)] focus-within:ring-offset-2 xl:h-9 xl:w-9 ${
+            isCustom
+              ? 'scale-105 border-white/90 shadow-md ring-2 ring-[var(--vf-chip-active-bg)] ring-offset-2 ring-offset-transparent'
+              : 'border-dashed border-[var(--glass-border)] bg-[var(--vf-chip-bg)] text-muted hover:text-ink'
+          }`}
+          style={isCustom ? { backgroundColor: valueHex } : undefined}
+        >
+          <Pipette
+            className={`h-3.5 w-3.5 ${
+              isCustom ? (lightCustom ? 'text-[#151413]' : 'text-white') : 'text-current'
+            }`}
+            aria-hidden="true"
+          />
+          <input
+            id={inputId}
+            type="color"
+            aria-label={`Ajuste fino ${title}`}
+            value={valueHex}
+            onChange={(event) => onChange(event.target.value.toUpperCase())}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
+        </label>
       </div>
     </div>
   );
@@ -189,7 +214,7 @@ export function ColorView({ onOpenGarmentInCloset }: ColorViewProps) {
       overrideSeasonId: profile?.overrideSeasonId,
       ignored: false,
     });
-    setSavedNotice('Perfil de color guardado cifrado en tu dispositivo.');
+    setSavedNotice('Perfil de color guardado.');
   };
 
   const handleSelectSeason = async (seasonId: ColorSeasonId) => {
@@ -205,37 +230,62 @@ export function ColorView({ onOpenGarmentInCloset }: ColorViewProps) {
         ignored: false,
       });
     }
-    setSavedNotice(`Estación activa actualizada a ${SEASON_PALETTES[seasonId].label}.`);
+    setSavedNotice(`Estación: ${SEASON_PALETTES[seasonId].label}.`);
   };
 
+  const undertoneLabel =
+    analysis.dimensions.undertone === 'warm'
+      ? 'Cálido'
+      : analysis.dimensions.undertone === 'cool'
+        ? 'Frío'
+        : 'Neutro';
+
   return (
-    <div className="flex flex-col gap-6">
-      <section aria-labelledby="color-heading" className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 id="color-heading" className="text-2xl font-bold tracking-tight sm:text-3xl">
-              {t.headings.color}
-            </h1>
-            {isIgnored && <Badge>Pausada</Badge>}
-          </div>
+    <div className="flex w-full flex-col gap-4">
+      {/* Encabezado compacto a ancho completo */}
+      <section
+        aria-labelledby="color-heading"
+        className="flex flex-wrap items-center justify-between gap-3 px-1"
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          <h1
+            id="color-heading"
+            className="font-display text-2xl font-normal tracking-[-0.025em] text-[var(--rw-ink)] sm:text-3xl"
+          >
+            {t.headings.color}
+          </h1>
+          <span
+            title="Usa luz natural indirecta frente a una ventana para comparar mejor tus tonos."
+            className="vf-glass hidden items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium text-muted sm:inline-flex"
+          >
+            <Sun className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+            Luz natural indirecta
+          </span>
+          {isIgnored && (
+            <span className="vf-glass rounded-full px-3 py-1 text-[11px] font-semibold text-ink">
+              Pausada
+            </span>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button
+          <button
             type="button"
-            variant={isIgnored ? 'primary' : 'outline'}
-            size="sm"
             disabled={busy}
             onClick={() => void setIgnored(!isIgnored)}
+            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all disabled:opacity-50 ${
+              isIgnored
+                ? 'bg-[var(--vf-chip-active-bg)] text-[var(--vf-chip-active-ink)] shadow-xs'
+                : 'vf-glass text-ink hover:opacity-90'
+            }`}
           >
-            <EyeOff className="h-4 w-4" aria-hidden="true" />
+            <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
             {isIgnored ? 'Volver a activar colorimetría' : 'Ignorar colorimetría'}
-          </Button>
+          </button>
+
           {profile && (
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
               disabled={busy}
               onClick={() => {
                 setSkinHex(DEFAULT_COLOR_SWATCHES.skinHex);
@@ -244,286 +294,314 @@ export function ColorView({ onOpenGarmentInCloset }: ColorViewProps) {
                 setSavedNotice(null);
                 void deleteProfile();
               }}
+              className="vf-glass inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:text-ink disabled:opacity-50"
             >
               <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
               Restablecer
-            </Button>
+            </button>
           )}
         </div>
       </section>
 
-      {/* Consejos de luz natural (T8.2) */}
-      <div className="flex items-start gap-3 rounded-[var(--radius-md)] border border-border bg-surface p-4 text-xs text-muted">
-        <Sun className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-        <div className="flex flex-col gap-1">
-          <p className="font-semibold text-ink">Consejos de luz para elegir tus muestras</p>
-          <p>
-            Observa tu rostro frente a una ventana con <strong>luz natural indirecta</strong> (sin
-            sol directo ni bombillas amarillas) y con el brillo de pantalla en modo neutro. La
-            colorimetría es una guía de estilo orientativa, nunca una regla rígida: puedes elegir tu
-            estación manualmente o ignorarla por completo.
-          </p>
-        </div>
-      </div>
-
       {isIgnored ? (
-        <Card data-testid="color-ignored-banner">
-          <CardHeader>
-            <CardTitle>Colorimetría pausada por tu decisión</CardTitle>
-            <CardDescription>
-              Luca no aplicará filtros ni etiquetas de estación en tu clóset mientras esta opción
-              esté activa.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button type="button" onClick={() => void setIgnored(false)}>
-              Reactivar análisis de color
-            </Button>
-          </CardContent>
-        </Card>
+        <section
+          data-testid="color-ignored-banner"
+          className="vf-glass-drawer flex flex-col items-start gap-4 rounded-[26px] p-6 sm:p-8"
+        >
+          <div className="flex flex-col gap-1">
+            <h2 className="font-display text-xl font-semibold text-ink">Colorimetría pausada</h2>
+            <p className="text-sm text-muted">
+              No se mostrarán etiquetas de estación en tu clóset ni en outfits.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void setIgnored(false)}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[var(--vf-chip-active-bg)] px-4 py-2 text-xs font-medium text-[var(--vf-chip-active-ink)] transition-opacity hover:opacity-90"
+          >
+            Reactivar análisis de color
+          </button>
+        </section>
       ) : (
-        <div className="grid items-start gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-          {/* Selector guiado de piel, cabello y ojos */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Tus rasgos</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-6">
-              <SwatchPicker
-                title="1. Tono de piel (rostro / cuello)"
-                description="Elige la muestra más cercana a la zona interior de tu muñeca o mandíbula."
+        /* Grid bento a ancho completo (sin scroll vertical en escritorio) */
+        <div className="grid w-full items-stretch gap-4 lg:grid-cols-12">
+          {/* COLUMNA 1: Rasgos en círculos (Piel · Cabello · Ojos) */}
+          <section
+            aria-label="Tus rasgos de color"
+            className="vf-glass-drawer flex flex-col justify-between gap-4 rounded-[26px] p-4 xl:p-5 lg:col-span-4"
+          >
+            <div className="flex flex-col gap-3.5 xl:gap-4">
+              <div className="flex items-center justify-between gap-2 border-b border-[var(--glass-divider)] pb-2.5">
+                <h2 className="font-display text-base font-semibold tracking-tight text-ink">
+                  Tus rasgos
+                </h2>
+                <div className="flex items-center -space-x-1.5" aria-hidden="true">
+                  {[skinHex, hairHex, eyeHex].map((hex, i) => (
+                    <span
+                      key={i}
+                      className="h-5 w-5 rounded-full border-2 border-[var(--vf-glass-bg)] shadow-xs"
+                      style={{ backgroundColor: hex }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <CircularSwatchRow
+                title="Piel"
                 inputId="color-skin-custom"
                 valueHex={skinHex}
                 options={SKIN_SWATCHES}
                 onChange={setSkinHex}
               />
 
-              <SwatchPicker
-                title="2. Color natural de cabello"
-                description="Usa tu tono en la raíz bajo luz natural."
-                inputId="color-hair-custom"
-                valueHex={hairHex}
-                options={HAIR_SWATCHES}
-                onChange={setHairHex}
-              />
-
-              <SwatchPicker
-                title="3. Color de ojos"
-                description="Selecciona el matiz dominante del iris."
-                inputId="color-eye-custom"
-                valueHex={eyeHex}
-                options={EYE_SWATCHES}
-                onChange={setEyeHex}
-              />
-
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-                <div className="flex items-center gap-2 text-xs text-muted">
-                  <Info className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-                  <span>{analysis.explanation}</span>
-                </div>
-                <Button type="button" disabled={busy} onClick={() => void handleSave()}>
-                  <Palette className="h-4 w-4" aria-hidden="true" />
-                  {busy ? 'Guardando...' : 'Guardar perfil de color'}
-                </Button>
+              <div className="border-t border-[var(--glass-divider)] pt-3">
+                <CircularSwatchRow
+                  title="Cabello"
+                  inputId="color-hair-custom"
+                  valueHex={hairHex}
+                  options={HAIR_SWATCHES}
+                  onChange={setHairHex}
+                />
               </div>
 
-              {savedNotice && (
-                <p role="status" className="flex items-center gap-1.5 text-xs font-medium text-accent">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <div className="border-t border-[var(--glass-divider)] pt-3">
+                <CircularSwatchRow
+                  title="Ojos"
+                  inputId="color-eye-custom"
+                  valueHex={eyeHex}
+                  options={EYE_SWATCHES}
+                  onChange={setEyeHex}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--glass-divider)] pt-3">
+              {savedNotice ? (
+                <p
+                  role="status"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-accent"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   <span>{savedNotice}</span>
                 </p>
+              ) : (
+                <span className="text-[11px] text-muted">Cifrado en este dispositivo</span>
               )}
-            </CardContent>
-          </Card>
 
-          {/* Resultado: Top 2, confianza, paleta y afinidad del clóset */}
-          <div className="flex flex-col gap-5">
-            <Card data-testid="color-result-card">
-              <CardHeader className="pb-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <CardTitle>Resultado: {activePalette.label}</CardTitle>
-                  <Badge variant="accent" className="tabular-nums">
-                    Confianza {Math.round(analysis.confidence * 100)} %
-                  </Badge>
-                </div>
-                <CardDescription>{activePalette.summary}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                {/* Top 2 de estaciones */}
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {[
-                    { rank: '1ª opción sugerida', candidate: analysis.primary },
-                    { rank: '2ª opción probable', candidate: analysis.secondary },
-                  ].map(({ rank, candidate }) => {
-                    const isActive = activeSeasonId === candidate.seasonId;
-                    return (
-                      <button
-                        key={candidate.seasonId}
-                        type="button"
-                        onClick={() => void handleSelectSeason(candidate.seasonId)}
-                        className={`flex cursor-pointer flex-col gap-1 rounded-[var(--radius-sm)] border p-3 text-left transition-colors ${
-                          isActive
-                            ? 'border-accent bg-bg ring-1 ring-accent'
-                            : 'border-border bg-bg hover:border-accent/60'
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handleSave()}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--vf-chip-active-bg)] px-4 py-1.5 text-xs font-medium text-[var(--vf-chip-active-ink)] shadow-xs transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                <Palette className="h-3.5 w-3.5" aria-hidden="true" />
+                {busy ? 'Guardando...' : 'Guardar perfil de color'}
+              </button>
+            </div>
+          </section>
+
+          {/* COLUMNA 2: Estación activa + Top 2 + Métricas + Paleta circular de 14 tonos */}
+          <section
+            data-testid="color-result-card"
+            aria-label="Estación y paleta sugerida"
+            className="vf-glass-drawer flex flex-col gap-4 rounded-[26px] p-4 xl:p-5 lg:col-span-5"
+          >
+            {/* Título de estación + confianza + selector manual */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-[var(--glass-divider)] pb-2.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="font-display text-xl font-semibold tracking-tight text-ink">
+                  {activePalette.label}
+                </h2>
+                <span className="rounded-full bg-[var(--vf-chip-bg)] px-2.5 py-0.5 tabular-nums text-[11px] font-semibold text-ink">
+                  Confianza {Math.round(analysis.confidence * 100)} %
+                </span>
+              </div>
+
+              <label htmlFor="color-season-override" className="sr-only">
+                Elegir estación manualmente
+              </label>
+              <select
+                id="color-season-override"
+                aria-label="Elegir estación manualmente"
+                value={activeSeasonId}
+                onChange={(event) => void handleSelectSeason(event.target.value as ColorSeasonId)}
+                className="cursor-pointer rounded-full border border-[var(--glass-border)] bg-[var(--vf-chip-bg)] px-3 py-1 text-xs font-medium text-ink focus:border-accent focus:outline-none"
+              >
+                {COLOR_SEASONS.map((seasonId) => (
+                  <option key={seasonId} value={seasonId}>
+                    {SEASON_PALETTES[seasonId].label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Top 2 opciones + métricas compactas */}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {[
+                { rank: '1ª opción', candidate: analysis.primary },
+                { rank: '2ª opción', candidate: analysis.secondary },
+              ].map(({ rank, candidate }) => {
+                const isActive = activeSeasonId === candidate.seasonId;
+                return (
+                  <button
+                    key={candidate.seasonId}
+                    type="button"
+                    onClick={() => void handleSelectSeason(candidate.seasonId)}
+                    className={`flex cursor-pointer items-center justify-between gap-2 rounded-2xl border px-3.5 py-2 text-left transition-all ${
+                      isActive
+                        ? 'border-[var(--vf-chip-active-bg)] bg-[var(--vf-chip-active-bg)] text-[var(--vf-chip-active-ink)] shadow-xs'
+                        : 'border-[var(--glass-border)] bg-[var(--vf-chip-bg)] text-ink hover:border-ink/35'
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <span
+                        className={`block text-[10px] font-medium uppercase tracking-[0.12em] ${
+                          isActive ? 'opacity-75' : 'text-muted'
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[11px] font-medium text-muted">{rank}</span>
-                          <Badge className="tabular-nums">
-                            {Math.round(candidate.score * 100)} %
-                          </Badge>
-                        </div>
-                        <span className="text-sm font-semibold text-ink">{candidate.label}</span>
-                        <span className="text-xs text-muted">{candidate.reason}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Selector manual de cualquiera de las 12 estaciones */}
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-2 text-xs">
-                  <label htmlFor="color-season-override" className="font-medium text-muted">
-                    Elegir otra estación manualmente:
-                  </label>
-                  <select
-                    id="color-season-override"
-                    value={activeSeasonId}
-                    onChange={(event) => void handleSelectSeason(event.target.value as ColorSeasonId)}
-                    className="rounded-[var(--radius-sm)] border border-border bg-surface px-2.5 py-1 text-xs text-ink"
-                  >
-                    {COLOR_SEASONS.map((seasonId) => (
-                      <option key={seasonId} value={seasonId}>
-                        {SEASON_PALETTES[seasonId].label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Desglose de dimensiones */}
-                <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-                  <div className="rounded-[var(--radius-sm)] border border-border bg-bg p-2">
-                    <p className="text-muted">Subtono</p>
-                    <p className="tabular-nums font-semibold text-ink">
-                      {analysis.dimensions.undertone === 'warm'
-                        ? 'Cálido'
-                        : analysis.dimensions.undertone === 'cool'
-                          ? 'Frío'
-                          : 'Neutro'}
-                    </p>
-                  </div>
-                  <div className="rounded-[var(--radius-sm)] border border-border bg-bg p-2">
-                    <p className="text-muted">Valor (L*)</p>
-                    <p className="tabular-nums font-semibold text-ink">
-                      {analysis.dimensions.valueScoreL.toFixed(0)}
-                    </p>
-                  </div>
-                  <div className="rounded-[var(--radius-sm)] border border-border bg-bg p-2">
-                    <p className="text-muted">Croma (C*)</p>
-                    <p className="tabular-nums font-semibold text-ink">
-                      {analysis.dimensions.chromaScoreC.toFixed(1)}
-                    </p>
-                  </div>
-                  <div className="rounded-[var(--radius-sm)] border border-border bg-bg p-2">
-                    <p className="text-muted">Contraste</p>
-                    <p className="tabular-nums font-semibold text-ink">
-                      {analysis.dimensions.contrastDeltaL.toFixed(0)} L*
-                    </p>
-                  </div>
-                </div>
-
-                {/* Paleta de 14 colores de la estación */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                    <span className="font-semibold text-ink">
-                      Paleta sugerida ({activePalette.colors.length} tonos)
+                        {rank}
+                      </span>
+                      <span className="block truncate text-xs font-semibold">
+                        {candidate.label}
+                      </span>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 tabular-nums text-[11px] font-semibold ${
+                        isActive ? 'bg-white/20' : 'bg-bg/70 text-ink'
+                      }`}
+                    >
+                      {Math.round(candidate.score * 100)} %
                     </span>
-                    <span className="text-muted">
-                      Metales: {activePalette.bestMetals.join(' · ')}
-                    </span>
-                  </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 4 dimensiones compactas */}
+            <div className="grid grid-cols-4 gap-2 text-center">
+              {[
+                { label: 'Subtono', value: undertoneLabel },
+                { label: 'Valor', value: `${analysis.dimensions.valueScoreL.toFixed(0)} L*` },
+                { label: 'Croma', value: analysis.dimensions.chromaScoreC.toFixed(1) },
+                { label: 'Contraste', value: `${analysis.dimensions.contrastDeltaL.toFixed(0)} L*` },
+              ].map((metric) => (
+                <div
+                  key={metric.label}
+                  className="rounded-2xl border border-[var(--glass-border)] bg-[var(--vf-chip-bg)]/65 px-2 py-1.5"
+                >
+                  <p className="text-[10px] font-medium text-muted">{metric.label}</p>
+                  <p className="tabular-nums text-xs font-semibold text-ink">{metric.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Paleta de 14 colores en círculos (protagonista central, sin huecos vacíos) */}
+            <div className="flex flex-1 flex-col justify-center gap-3 border-t border-[var(--glass-divider)] pt-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="font-semibold text-ink">
+                  Paleta ({activePalette.colors.length} tonos)
+                </span>
+                <span className="text-[11px] text-muted">
+                  Metales: {activePalette.bestMetals.join(' · ')}
+                </span>
+              </div>
+
+              <div
+                data-testid="season-palette-grid"
+                className="grid grid-cols-4 gap-x-2 gap-y-3.5 sm:grid-cols-7"
+              >
+                {activePalette.colors.map((swatch) => (
                   <div
-                    data-testid="season-palette-grid"
-                    className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+                    key={`${activePalette.id}-${swatch.hex}`}
+                    title={`${swatch.name} · ${ROLE_LABELS[swatch.role]} · ${swatch.hex}`}
+                    className="group flex flex-col items-center gap-1.5 text-center"
                   >
-                    {activePalette.colors.map((swatch) => (
-                      <div
-                        key={`${activePalette.id}-${swatch.hex}`}
-                        className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-bg p-1.5"
-                      >
-                        <span
-                          className="h-7 w-7 shrink-0 rounded-xs border border-border"
-                          style={{ backgroundColor: swatch.hex }}
-                          aria-hidden="true"
-                        />
-                        <div className="min-w-0">
-                          <p className="truncate text-xs font-medium text-ink">{swatch.name}</p>
-                          <p className="tabular-nums text-[10px] text-muted">
-                            {ROLE_LABELS[swatch.role]} · {swatch.hex}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                    <span
+                      className="h-11 w-11 rounded-full border border-black/15 shadow-sm transition-transform duration-200 group-hover:scale-110 dark:border-white/25 xl:h-12 xl:w-12"
+                      style={{ backgroundColor: swatch.hex }}
+                      aria-hidden="true"
+                    />
+                    <span className="line-clamp-2 w-full text-[10.5px] font-medium leading-[1.15] text-ink">
+                      {swatch.name}
+                    </span>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                ))}
+              </div>
+            </div>
+          </section>
 
-            {/* Afinidad con prendas del clóset */}
-            <Card data-testid="closet-harmony-card">
-              <CardHeader className="pb-3">
-                <CardTitle>Afinidad de tu clóset</CardTitle>
-                <CardDescription>Prendas más afines a {activePalette.label}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {closetHarmony.length === 0 ? (
-                  <p className="text-xs text-muted">
-                    Añade prendas con color de referencia en tu Clóset para ver aquí su afinidad
-                    con tu paleta estacional.
-                  </p>
-                ) : (
-                  <ul className="flex flex-col gap-2">
-                    {closetHarmony.slice(0, 6).map(({ item, harmony }) => (
-                      <li key={item.garment.id}>
-                        <button
-                          type="button"
-                          onClick={() => onOpenGarmentInCloset?.(item.garment.id)}
-                          className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-2 text-left transition-colors hover:border-accent"
-                        >
-                          <div className="flex min-w-0 items-center gap-2.5">
-                            <span
-                              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border"
-                              style={{ backgroundColor: harmony.garmentHex }}
-                              aria-hidden="true"
-                            >
-                              <Shirt className="h-3.5 w-3.5 text-white" />
-                            </span>
-                            <div className="min-w-0">
-                              <p className="truncate text-xs font-semibold text-ink">
-                                {item.garment.name}
-                              </p>
-                              <p className="truncate text-[11px] text-muted">
-                                Cercano a {harmony.closestColor.name} · ΔE₀₀{' '}
-                                {harmony.minDeltaE00.toFixed(1)}
-                              </p>
-                            </div>
-                          </div>
-                          <Badge
-                            className="shrink-0 tabular-nums"
-                            style={{
-                              borderColor: HARMONY_BAND_COLORS[harmony.band],
-                              color: HARMONY_BAND_COLORS[harmony.band],
-                            }}
+          {/* COLUMNA 3: Afinidad con prendas reales del clóset */}
+          <section
+            data-testid="closet-harmony-card"
+            aria-label="Afinidad de tu clóset"
+            className="vf-glass-drawer flex flex-col gap-3 rounded-[26px] p-4 xl:p-5 lg:col-span-3 lg:max-h-[560px]"
+          >
+            <div className="flex items-center justify-between gap-2 border-b border-[var(--glass-divider)] pb-2.5">
+              <h2 className="font-display text-base font-semibold tracking-tight text-ink">
+                Tu clóset
+              </h2>
+              <span className="rounded-full bg-[var(--vf-chip-bg)] px-2.5 py-0.5 tabular-nums text-[11px] font-semibold text-muted">
+                {closetHarmony.length}
+              </span>
+            </div>
+
+            {closetHarmony.length === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--vf-chip-bg)] text-muted">
+                  <Shirt className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <p className="max-w-[200px] text-xs text-muted">
+                  Añade prendas en Clóset para ver su afinidad con tu paleta.
+                </p>
+              </div>
+            ) : (
+              <ul className="vf-drawer-scroll flex flex-1 min-h-0 flex-col gap-2 overflow-y-auto pr-0.5">
+                {closetHarmony.map(({ item, harmony }) => {
+                  const lightGarment = isLightHex(harmony.garmentHex);
+                  return (
+                    <li key={item.garment.id}>
+                      <button
+                        type="button"
+                        onClick={() => onOpenGarmentInCloset?.(item.garment.id)}
+                        className="flex w-full cursor-pointer items-center justify-between gap-2.5 rounded-2xl border border-[var(--glass-border)] bg-[var(--vf-chip-bg)]/60 px-3 py-2 text-left transition-all hover:border-ink/35 hover:bg-[var(--vf-chip-bg)]"
+                      >
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <span
+                            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-black/15 shadow-xs dark:border-white/20"
+                            style={{ backgroundColor: harmony.garmentHex }}
+                            aria-hidden="true"
                           >
-                            {harmony.scorePercent} %
-                          </Badge>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                            <Shirt
+                              className={`h-3.5 w-3.5 ${
+                                lightGarment ? 'text-[#151413]/85' : 'text-white/95'
+                              }`}
+                            />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-semibold text-ink">
+                              {item.garment.name}
+                            </p>
+                            <p className="truncate text-[10.5px] text-muted">
+                              {harmony.closestColor.name} · ΔE₀₀ {harmony.minDeltaE00.toFixed(1)}
+                            </p>
+                          </div>
+                        </div>
+                        <span
+                          className="shrink-0 rounded-full border px-2 py-0.5 tabular-nums text-[11px] font-semibold"
+                          style={{
+                            borderColor: HARMONY_BAND_COLORS[harmony.band],
+                            color: HARMONY_BAND_COLORS[harmony.band],
+                          }}
+                        >
+                          {harmony.scorePercent} %
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
         </div>
       )}
     </div>

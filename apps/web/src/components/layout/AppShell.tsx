@@ -100,7 +100,8 @@ export function AppShell({
     setMobileMenuOpen(false);
   };
 
-  const isFullBleedSection = activeSection === 'outfits' || activeSection === 'fitting';
+  const isFullBleedSection =
+    activeSection === 'outfits' || activeSection === 'fitting' || activeSection === 'color';
 
   return (
     <div className="relative flex min-h-dvh flex-col bg-transparent text-ink">
