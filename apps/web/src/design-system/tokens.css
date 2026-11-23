@@ -85,20 +85,23 @@
   --vf-chip-active-bg: #111111;
   --vf-chip-active-ink: #ffffff;
 
-  /* Avatar humano 2D realista (piel natural con volumen, cabello y basewear de estudio) */
-  --mannequin-highlight: #f6dfd0;
-  --mannequin-mid: #e6c0aa;
-  --mannequin-shadow: #c39378;
-  --mannequin-rim: #f1d2be;
-  --mannequin-stroke: #7f5946;
-  --mannequin-detail: rgb(146 98 76 / 26%);
-  --mannequin-shade-deep: rgb(104 66 48 / 24%);
-  --avatar-hair-dark: #35251d;
-  --avatar-hair-mid: #5a3e30;
-  --avatar-hair-hi: #87614d;
-  --avatar-lip: #c57e76;
-  --avatar-iris: #3c2c22;
-  --avatar-basewear: #34373c;
+  /* Avatar humano 2D editorial (ilustración anatómica de taller con trazo nítido y sombreado cálido) */
+  --mannequin-highlight: #f6dac5;
+  --mannequin-mid: #e6ba9c;
+  --mannequin-shadow: #c58d70;
+  --mannequin-rim: #efc6a8;
+  --mannequin-stroke: #1f1713;
+  --mannequin-detail: rgb(92 54 38 / 58%);
+  --mannequin-shade-deep: rgb(156 94 66 / 36%);
+  --avatar-hair-dark: #2c1c14;
+  --avatar-hair-mid: #573a2a;
+  --avatar-hair-hi: #8a624a;
+  --avatar-lip: #c57e74;
+  --avatar-iris: #3d2a1f;
+  --avatar-basewear: #4d584f;
+  --avatar-basewear-shade: #364038;
+  --avatar-basewear-hi: #677469;
+  --avatar-basewear-stroke: #1c221e;
 
   --scrollbar-track: #f2f2f2;
   --scrollbar-thumb: #9e9b95;
@@ -168,19 +171,22 @@
     --vf-chip-active-bg: #f4f3f0;
     --vf-chip-active-ink: #111111;
 
-    --mannequin-highlight: #f0d4c2;
-    --mannequin-mid: #dcb29a;
-    --mannequin-shadow: #b4856b;
-    --mannequin-rim: #e8c4af;
-    --mannequin-stroke: rgb(235 198 176 / 52%);
-    --mannequin-detail: rgb(225 180 156 / 24%);
-    --mannequin-shade-deep: rgb(62 38 28 / 34%);
-    --avatar-hair-dark: #2c1f19;
-    --avatar-hair-mid: #4e362a;
-    --avatar-hair-hi: #7c5846;
-    --avatar-lip: #bd7870;
-    --avatar-iris: #33241b;
-    --avatar-basewear: #2a2d32;
+    --mannequin-highlight: #f6dac5;
+    --mannequin-mid: #e5b89a;
+    --mannequin-shadow: #c28a6d;
+    --mannequin-rim: #ecc3a5;
+    --mannequin-stroke: #1b1411;
+    --mannequin-detail: rgb(90 52 36 / 58%);
+    --mannequin-shade-deep: rgb(148 88 62 / 38%);
+    --avatar-hair-dark: #291a12;
+    --avatar-hair-mid: #543728;
+    --avatar-hair-hi: #865f48;
+    --avatar-lip: #c07a70;
+    --avatar-iris: #39271d;
+    --avatar-basewear: #4b564d;
+    --avatar-basewear-shade: #343e36;
+    --avatar-basewear-hi: #647166;
+    --avatar-basewear-stroke: #1a201c;
 
     --scrollbar-track: #181818;
     --scrollbar-thumb: #525252;
@@ -231,19 +237,22 @@
     --vf-chip-active-bg: light-dark(#111111, #f4f3f0);
     --vf-chip-active-ink: light-dark(#ffffff, #111111);
 
-    --mannequin-highlight: light-dark(#f6dfd0, #f0d4c2);
-    --mannequin-mid: light-dark(#e6c0aa, #dcb29a);
-    --mannequin-shadow: light-dark(#c39378, #b4856b);
-    --mannequin-rim: light-dark(#f1d2be, #e8c4af);
-    --mannequin-stroke: light-dark(#7f5946, rgb(235 198 176 / 52%));
-    --mannequin-detail: light-dark(rgb(146 98 76 / 26%), rgb(225 180 156 / 24%));
-    --mannequin-shade-deep: light-dark(rgb(104 66 48 / 24%), rgb(62 38 28 / 34%));
-    --avatar-hair-dark: light-dark(#35251d, #2c1f19);
-    --avatar-hair-mid: light-dark(#5a3e30, #4e362a);
-    --avatar-hair-hi: light-dark(#87614d, #7c5846);
-    --avatar-lip: light-dark(#c57e76, #bd7870);
-    --avatar-iris: light-dark(#3c2c22, #33241b);
-    --avatar-basewear: light-dark(#34373c, #2a2d32);
+    --mannequin-highlight: light-dark(#f6dac5, #f6dac5);
+    --mannequin-mid: light-dark(#e6ba9c, #e5b89a);
+    --mannequin-shadow: light-dark(#c58d70, #c28a6d);
+    --mannequin-rim: light-dark(#efc6a8, #ecc3a5);
+    --mannequin-stroke: light-dark(#1f1713, #1b1411);
+    --mannequin-detail: light-dark(rgb(92 54 38 / 58%), rgb(90 52 36 / 58%));
+    --mannequin-shade-deep: light-dark(rgb(156 94 66 / 36%), rgb(148 88 62 / 38%));
+    --avatar-hair-dark: light-dark(#2c1c14, #291a12);
+    --avatar-hair-mid: light-dark(#573a2a, #543728);
+    --avatar-hair-hi: light-dark(#8a624a, #865f48);
+    --avatar-lip: light-dark(#c57e74, #c07a70);
+    --avatar-iris: light-dark(#3d2a1f, #39271d);
+    --avatar-basewear: light-dark(#4d584f, #4b564d);
+    --avatar-basewear-shade: light-dark(#364038, #343e36);
+    --avatar-basewear-hi: light-dark(#677469, #647166);
+    --avatar-basewear-stroke: light-dark(#1c221e, #1a201c);
 
     --scrollbar-track: light-dark(#f2f2f2, #181818);
     --scrollbar-thumb: light-dark(#9e9b95, #525252);

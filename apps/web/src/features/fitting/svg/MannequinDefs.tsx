@@ -3,56 +3,108 @@ export interface MannequinDefsProps {
 }
 
 /**
- * Definiciones SVG compartidas para el avatar humano 2D realista (piel con volumen,
- * cabello estilizado, rubor sutil) y texturas/patrones de gemelo digital de prendas.
- * Cada ID se aísla con `prefix` para evitar colisiones entre vistas o tarjetas.
+ * Definiciones SVG de ilustración editorial anatómica para el avatar 2D (piel cálida
+ * con volumen esculpido, sombreados musculares suaves, cabello en capas, ropa base
+ * verde oliva mate y texturas/patrones de gemelo digital de prendas).
  */
 export function MannequinDefs({ prefix }: MannequinDefsProps) {
   return (
     <defs>
-      {/* Volumen corporal de piel humana natural con luz suave superior-izquierda */}
+      {/* Volumen corporal principal con iluminación de estudio suave */}
       <linearGradient id={`${prefix}-body-grad`} x1="0%" y1="0%" x2="100%" y2="0%">
         <stop offset="0%" stopColor="var(--mannequin-shadow)" />
-        <stop offset="26%" stopColor="var(--mannequin-highlight)" />
-        <stop offset="56%" stopColor="var(--mannequin-mid)" />
-        <stop offset="86%" stopColor="var(--mannequin-shadow)" />
+        <stop offset="16%" stopColor="var(--mannequin-mid)" />
+        <stop offset="44%" stopColor="var(--mannequin-highlight)" />
+        <stop offset="72%" stopColor="var(--mannequin-mid)" />
+        <stop offset="92%" stopColor="var(--mannequin-shadow)" />
         <stop offset="100%" stopColor="var(--mannequin-rim)" />
       </linearGradient>
 
-      {/* Volumen de extremidades (brazos y piernas con iluminación cilíndrica de piel) */}
+      {/* Volumen de perfil (espalda izquierda sombreada, frente derecha iluminada) */}
+      <linearGradient id={`${prefix}-side-body-grad`} x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="var(--mannequin-shadow)" />
+        <stop offset="28%" stopColor="var(--mannequin-mid)" />
+        <stop offset="68%" stopColor="var(--mannequin-highlight)" />
+        <stop offset="92%" stopColor="var(--mannequin-mid)" />
+        <stop offset="100%" stopColor="var(--mannequin-rim)" />
+      </linearGradient>
+
+      {/* Volumen cilíndrico cálido para brazos y piernas */}
       <linearGradient id={`${prefix}-limb-grad`} x1="0%" y1="0%" x2="100%" y2="0%">
         <stop offset="0%" stopColor="var(--mannequin-shadow)" />
-        <stop offset="35%" stopColor="var(--mannequin-highlight)" />
-        <stop offset="75%" stopColor="var(--mannequin-mid)" />
+        <stop offset="30%" stopColor="var(--mannequin-highlight)" />
+        <stop offset="68%" stopColor="var(--mannequin-mid)" />
         <stop offset="100%" stopColor="var(--mannequin-shadow)" />
       </linearGradient>
 
-      {/* Rostro con luz cálida suave y modelado sutil */}
-      <radialGradient id={`${prefix}-head-grad`} cx="40%" cy="34%" r="66%">
+      {/* Rostro modelado con luz frontal superior */}
+      <radialGradient id={`${prefix}-head-grad`} cx="46%" cy="32%" r="66%">
         <stop offset="0%" stopColor="var(--mannequin-highlight)" />
-        <stop offset="60%" stopColor="var(--mannequin-mid)" />
+        <stop offset="56%" stopColor="var(--mannequin-mid)" />
         <stop offset="100%" stopColor="var(--mannequin-shadow)" />
       </radialGradient>
 
-      {/* Cabello realista con reflejo superior */}
-      <linearGradient id={`${prefix}-hair-grad`} x1="0%" y1="0%" x2="100%" y2="100%">
+      {/* Cabello castaño en capas con brillo cálido */}
+      <linearGradient id={`${prefix}-hair-grad`} x1="15%" y1="0%" x2="85%" y2="100%">
         <stop offset="0%" stopColor="var(--avatar-hair-mid)" />
-        <stop offset="35%" stopColor="var(--avatar-hair-hi)" />
-        <stop offset="68%" stopColor="var(--avatar-hair-mid)" />
+        <stop offset="30%" stopColor="var(--avatar-hair-hi)" />
+        <stop offset="64%" stopColor="var(--avatar-hair-mid)" />
         <stop offset="100%" stopColor="var(--avatar-hair-dark)" />
       </linearGradient>
 
-      {/* Rubor sutil de mejillas */}
+      {/* Brillo de mechones superiores del cabello */}
+      <linearGradient id={`${prefix}-hair-highlight-grad`} x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="var(--avatar-hair-hi)" stopOpacity="0.92" />
+        <stop offset="55%" stopColor="var(--avatar-hair-mid)" stopOpacity="0.45" />
+        <stop offset="100%" stopColor="var(--avatar-hair-dark)" stopOpacity="0" />
+      </linearGradient>
+
+      {/* Ropa base verde oliva-carbón mate con relieve textil */}
+      <linearGradient id={`${prefix}-basewear-grad`} x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="var(--avatar-basewear-shade)" />
+        <stop offset="32%" stopColor="var(--avatar-basewear-hi)" />
+        <stop offset="64%" stopColor="var(--avatar-basewear)" />
+        <stop offset="100%" stopColor="var(--avatar-basewear-shade)" />
+      </linearGradient>
+
+      {/* Pretina elástica ligeramente más profunda para el bóxer/short base */}
+      <linearGradient id={`${prefix}-basewear-band-grad`} x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="var(--avatar-basewear-stroke)" />
+        <stop offset="34%" stopColor="var(--avatar-basewear)" />
+        <stop offset="70%" stopColor="var(--avatar-basewear-shade)" />
+        <stop offset="100%" stopColor="var(--avatar-basewear-stroke)" />
+      </linearGradient>
+
+      {/* Sombra anatómica cálida para planos musculares y contornos */}
+      <linearGradient id={`${prefix}-muscle-shade`} x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="rgb(154 90 62 / 34%)" />
+        <stop offset="100%" stopColor="rgb(154 90 62 / 10%)" />
+      </linearGradient>
+
+      {/* Sombra de núcleo más marcada para pectorales, omóplatos, glúteos y gemelos */}
+      <linearGradient id={`${prefix}-skin-core-shade`} x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="rgb(142 78 52 / 44%)" />
+        <stop offset="65%" stopColor="rgb(154 90 62 / 24%)" />
+        <stop offset="100%" stopColor="rgb(154 90 62 / 8%)" />
+      </linearGradient>
+
+      {/* Brillo de piel sutil para relieves de pecho, deltoides y muslos */}
+      <radialGradient id={`${prefix}-skin-sheen`} cx="50%" cy="40%" r="55%">
+        <stop offset="0%" stopColor="rgb(255 242 230 / 46%)" />
+        <stop offset="100%" stopColor="rgb(255 242 230 / 0%)" />
+      </radialGradient>
+
+      {/* Rubor sutil en mejillas */}
       <radialGradient id={`${prefix}-cheek-blush`} cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stopColor="rgb(214 128 118 / 28%)" />
-        <stop offset="100%" stopColor="rgb(214 128 118 / 0%)" />
+        <stop offset="0%" stopColor="rgb(208 118 102 / 24%)" />
+        <stop offset="100%" stopColor="rgb(208 118 102 / 0%)" />
       </radialGradient>
 
       {/* Sombra natural bajo mentón y cuello */}
       <linearGradient id={`${prefix}-neck-shadow`} x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="rgb(92 52 36 / 32%)" />
-        <stop offset="55%" stopColor="rgb(92 52 36 / 8%)" />
-        <stop offset="100%" stopColor="rgb(92 52 36 / 0%)" />
+        <stop offset="0%" stopColor="rgb(98 54 36 / 44%)" />
+        <stop offset="58%" stopColor="rgb(98 54 36 / 14%)" />
+        <stop offset="100%" stopColor="rgb(98 54 36 / 0%)" />
       </linearGradient>
 
       {/* Sombreado cilíndrico 3D para telas */}

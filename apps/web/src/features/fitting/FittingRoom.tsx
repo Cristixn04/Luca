@@ -713,7 +713,7 @@ export function FittingRoom({ onOpenCloset }: FittingRoomProps = {}) {
                 <div
                   data-avatar-view={activeView}
                   data-mannequin-silhouette={mannequinSilhouette}
-                  className="pointer-events-none relative z-30 flex h-[410px] w-[225px] flex-col items-center justify-end sm:h-[455px] sm:w-[250px] xl:h-[470px] xl:w-[260px]"
+                  className="pointer-events-none relative z-30 flex h-[430px] w-[300px] flex-col items-center justify-end sm:h-[475px] sm:w-[332px] xl:h-[515px] xl:w-[360px]"
                 >
                   {/* Etiqueta de estimado coherente si faltan medidas opcionales */}
                   {activeView === 'front' && isTorsoEstimated && (
