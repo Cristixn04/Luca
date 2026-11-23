@@ -349,7 +349,9 @@ export function VaultGate() {
                     ease: EASE_OUT_EXPO,
                   }}
                   whileTap={shouldReduceMotion ? undefined : { scale: 0.982 }}
-                  className="luca-login-cta mt-5 flex h-[58px] w-full items-center justify-center text-[17px] font-medium tracking-[-0.01em] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                  className={`luca-login-cta mt-5 flex h-[58px] w-full items-center justify-center text-[17px] font-medium tracking-[-0.01em] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white ${
+                    busy ? 'luca-login-cta-igniting' : ''
+                  }`}
                 >
                   {busy ? 'Creando bóveda...' : 'Continuar'}
                 </motion.button>
@@ -591,7 +593,9 @@ export function VaultGate() {
                     ease: EASE_OUT_EXPO,
                   }}
                   whileTap={shouldReduceMotion ? undefined : { scale: 0.982 }}
-                  className="luca-login-cta mt-5 flex h-[58px] w-full items-center justify-center text-[17px] font-medium tracking-[-0.01em] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                  className={`luca-login-cta mt-5 flex h-[58px] w-full items-center justify-center text-[17px] font-medium tracking-[-0.01em] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white ${
+                    busy ? 'luca-login-cta-igniting' : ''
+                  }`}
                 >
                   {busy ? 'Desbloqueando...' : 'Continuar'}
                 </motion.button>

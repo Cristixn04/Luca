@@ -56,6 +56,7 @@ export function resetVaultServiceForTests(
     snapshotCount: 0,
     busy: false,
     error: null,
+    entryTransitionActive: false,
   });
   return activeVault;
 }
@@ -97,10 +98,12 @@ export interface VaultStoreState {
   snapshotCount: number;
   busy: boolean;
   error: string | null;
+  entryTransitionActive: boolean;
 
   bootstrap: () => Promise<void>;
   createVault: (password: string) => Promise<void>;
   confirmRecoveryKeySaved: () => void;
+  consumeEntryTransition: () => void;
   continueWithoutVault: () => Promise<void>;
   unlock: (password: string) => Promise<void>;
   recover: (recoveryKey: string, newPassword: string) => Promise<void>;
@@ -132,6 +135,7 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
   snapshotCount: 0,
   busy: false,
   error: null,
+  entryTransitionActive: false,
 
   bootstrap: async () => {
     set({ busy: true, error: null });
@@ -203,7 +207,9 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
     }
   },
 
-  confirmRecoveryKeySaved: () => set({ pendingRecoveryKey: null }),
+  confirmRecoveryKeySaved: () => set({ pendingRecoveryKey: null, entryTransitionActive: true }),
+
+  consumeEntryTransition: () => set({ entryTransitionActive: false }),
 
   continueWithoutVault: async () => {
     set({ busy: true, error: null });
@@ -223,6 +229,7 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
         pendingRecoveryKey: null,
         persistence,
         busy: false,
+        entryTransitionActive: true,
       });
     } catch (err) {
       set({
@@ -247,6 +254,7 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
         snapshotCount,
         persistence,
         busy: false,
+        entryTransitionActive: true,
       });
     } catch (err) {
       set({
@@ -273,6 +281,7 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
         snapshotCount,
         persistence,
         busy: false,
+        entryTransitionActive: true,
       });
     } catch (err) {
       set({
@@ -300,6 +309,7 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
       status: activeVault.getStatus(),
       pendingRecoveryKey: null,
       error: null,
+      entryTransitionActive: false,
     });
   },
 
@@ -370,6 +380,7 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
         snapshotCount,
         persistence,
         busy: false,
+        entryTransitionActive: true,
       });
       return restoredRecords;
     } catch (err) {
@@ -424,6 +435,7 @@ export const useVaultStore = create<VaultStoreState>((set, get) => ({
       snapshotCount: 0,
       persistence,
       busy: false,
+      entryTransitionActive: false,
     });
   },
 

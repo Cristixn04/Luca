@@ -8,6 +8,7 @@ import { OnboardingDialog } from '@/features/onboarding/OnboardingDialog';
 import { OutfitsView } from '@/features/outfits/OutfitsView';
 import { PrivacyView } from '@/features/privacy/PrivacyView';
 import { MemoryVaultPanel } from '@/features/vault/MemoryVaultPanel';
+import { CosmicLoginTransition } from '@/features/vault/CosmicLoginTransition';
 import { VaultGate } from '@/features/vault/VaultGate';
 import { useVaultStore } from '@/features/vault/vaultStore';
 
@@ -38,8 +39,10 @@ export function App() {
   const vaultStatus = useVaultStore((s) => s.status);
   const vaultMeta = useVaultStore((s) => s.meta);
   const pendingRecoveryKey = useVaultStore((s) => s.pendingRecoveryKey);
+  const entryTransitionActive = useVaultStore((s) => s.entryTransitionActive);
   const bootstrap = useVaultStore((s) => s.bootstrap);
   const lock = useVaultStore((s) => s.lock);
+  const consumeEntryTransition = useVaultStore((s) => s.consumeEntryTransition);
 
   useEffect(() => {
     void bootstrap();
@@ -96,50 +99,58 @@ export function App() {
         : '';
 
   return (
-    <AppShell
-      activeSection={activeSection}
-      onSelectSection={navigateToSection}
-      vaultStatus={vaultStatus}
-      onLockVault={lock}
-      onOpenOnboarding={() => setOnboardingOpen(true)}
-    >
-      <div
-        key={activeSection}
-        data-section-transition={transitionDirection}
-        className={`w-full ${
-          activeSection === 'color' || activeSection === 'memory' ? 'flex flex-1 flex-col' : ''
-        } ${sectionAnimClass}`}
-      >
-        {activeSection === 'fitting' && (
-          <FittingRoom onOpenCloset={() => navigateToSection('closet')} />
-        )}
-        {activeSection === 'closet' && (
-          <ClosetView onOpenInFitting={() => navigateToSection('fitting')} />
-        )}
-        {activeSection === 'outfits' && (
-          <OutfitsView
-            onOpenGarmentInCloset={openGarmentInCloset}
-            onOpenCloset={() => navigateToSection('closet')}
+    <>
+      <div className={entryTransitionActive ? 'luca-app-celestial-reveal' : undefined}>
+        <AppShell
+          activeSection={activeSection}
+          onSelectSection={navigateToSection}
+          vaultStatus={vaultStatus}
+          onLockVault={lock}
+          onOpenOnboarding={() => setOnboardingOpen(true)}
+        >
+          <div
+            key={activeSection}
+            data-section-transition={transitionDirection}
+            className={`w-full ${
+              activeSection === 'color' || activeSection === 'memory' ? 'flex flex-1 flex-col' : ''
+            } ${sectionAnimClass}`}
+          >
+            {activeSection === 'fitting' && (
+              <FittingRoom onOpenCloset={() => navigateToSection('closet')} />
+            )}
+            {activeSection === 'closet' && (
+              <ClosetView onOpenInFitting={() => navigateToSection('fitting')} />
+            )}
+            {activeSection === 'outfits' && (
+              <OutfitsView
+                onOpenGarmentInCloset={openGarmentInCloset}
+                onOpenCloset={() => navigateToSection('closet')}
+              />
+            )}
+            {activeSection === 'color' && (
+              <ColorView onOpenGarmentInCloset={openGarmentInCloset} />
+            )}
+            {activeSection === 'memory' && <MemoryVaultPanel />}
+            {activeSection === 'privacy' && (
+              <PrivacyView
+                onBack={() => navigateToSection('fitting')}
+                onOpenMemory={() => navigateToSection('memory')}
+              />
+            )}
+          </div>
+
+          <OnboardingDialog
+            open={onboardingOpen}
+            onClose={() => setOnboardingOpen(false)}
+            onFinishToSection={(section) => navigateToSection(section)}
           />
-        )}
-        {activeSection === 'color' && (
-          <ColorView onOpenGarmentInCloset={openGarmentInCloset} />
-        )}
-        {activeSection === 'memory' && <MemoryVaultPanel />}
-        {activeSection === 'privacy' && (
-          <PrivacyView
-            onBack={() => navigateToSection('fitting')}
-            onOpenMemory={() => navigateToSection('memory')}
-          />
-        )}
+        </AppShell>
       </div>
 
-      <OnboardingDialog
-        open={onboardingOpen}
-        onClose={() => setOnboardingOpen(false)}
-        onFinishToSection={(section) => navigateToSection(section)}
-      />
-    </AppShell>
+      {entryTransitionActive && (
+        <CosmicLoginTransition onComplete={consumeEntryTransition} />
+      )}
+    </>
   );
 }
 
