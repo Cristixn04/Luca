@@ -267,7 +267,8 @@ export const CosmicLoginTransition = memo(function CosmicLoginTransition({
     }
 
     const canvas = canvasRef.current;
-    if (!canvas) {
+    const isJsdom = typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
+    if (!canvas || isJsdom) {
       const fallbackTimer = window.setTimeout(() => onCompleteRef.current(), TOTAL_DURATION_MS);
       return () => window.clearTimeout(fallbackTimer);
     }

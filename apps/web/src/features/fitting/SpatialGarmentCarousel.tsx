@@ -3,7 +3,7 @@ import type { GarmentCategory } from '@luca/domain';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { CATEGORY_LABELS } from '@/features/closet/types';
 import { GarmentCardPreviewSvg } from './GarmentCardPreviewSvg';
-import { isSafeDataImageUrl, type GarmentVisualMeta } from './svg/garmentVisuals';
+import type { GarmentVisualMeta } from './svg/garmentVisuals';
 
 export interface SpatialCarouselItem {
   readonly id: string;
@@ -195,21 +195,12 @@ export const SpatialGarmentCarousel = memo(function SpatialGarmentCarousel({
                 }`}
               >
                 <div className="flex h-[76px] w-full items-center justify-center">
-                  {!item.meta?.visualSpec && isSafeDataImageUrl(item.imageUrl) ? (
-                    <img
-                      src={item.imageUrl}
-                      alt=""
-                      className="max-h-full max-w-full object-contain"
-                      style={{ filter: 'drop-shadow(0 8px 10px rgba(40,30,20,0.22))' }}
-                    />
-                  ) : (
-                    <GarmentCardPreviewSvg
-                      category={item.category}
-                      colorHex={item.colorHex}
-                      meta={item.meta}
-                      className="h-full w-full"
-                    />
-                  )}
+                  <GarmentCardPreviewSvg
+                    category={item.category}
+                    colorHex={item.colorHex}
+                    meta={item.meta}
+                    className="h-full w-full"
+                  />
                 </div>
                 <div className="mt-1.5 flex flex-col gap-0.5">
                   <span className="truncate text-[11px] font-semibold text-ink">{item.name}</span>
@@ -330,21 +321,12 @@ export const SpatialGarmentCarousel = memo(function SpatialGarmentCarousel({
                 />
               )}
               <div className="flex h-[118px] w-full items-center justify-center p-1 transition-transform duration-300 group-hover:scale-[1.04] sm:h-[128px]">
-                {!item.meta?.visualSpec && isSafeDataImageUrl(item.imageUrl) ? (
-                  <img
-                    src={item.imageUrl}
-                    alt=""
-                    className="max-h-full max-w-full object-contain"
-                    style={{ filter: 'drop-shadow(0 12px 12px rgba(40,30,20,0.22))' }}
-                  />
-                ) : (
-                  <GarmentCardPreviewSvg
-                    category={item.category}
-                    colorHex={item.colorHex}
-                    meta={item.meta}
-                    className="h-full w-full"
-                  />
-                )}
+                <GarmentCardPreviewSvg
+                  category={item.category}
+                  colorHex={item.colorHex}
+                  meta={item.meta}
+                  className="h-full w-full"
+                />
               </div>
 
               <div className="flex flex-col gap-0.5 px-0.5">

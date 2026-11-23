@@ -182,52 +182,16 @@ describe('OutfitsView: sugerir, guardar, favoritos y registrar uso (T9.5–T9.7)
     ).not.toBeInTheDocument();
   });
 
-  it('pide consentimiento antes de generar el render realista IA, cachea el resultado y permite alternar con Paramétrico', async () => {
-    const user = userEvent.setup();
+  it('usa exclusivamente el maniquí paramétrico y los modelos digitales de prendas sin botón de render realista IA', async () => {
     await populateUserCloset();
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({
-          render_png_base64: 'iVBORw0KGgo=',
-          width: 240,
-          height: 360,
-          provider: 'gemini:gemini-nano-banana-2.1',
-          processing_ms: 310,
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ),
-    );
-
     const { container } = render(<OutfitsView />);
 
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: /Opción 1/i })).toBeInTheDocument();
     });
 
-    // Ninguna llamada de red automática al cargar
-    expect(fetchSpy).not.toHaveBeenCalled();
-
-    // Primer clic solicita consentimiento explícito
-    await user.click(screen.getByRole('button', { name: /Render realista IA/i }));
-    expect(screen.getByRole('dialog', { name: /Consentimiento para render realista IA/i })).toBeInTheDocument();
-    expect(fetchSpy).not.toHaveBeenCalled();
-
-    // Al autorizar, llama a /v1/vision/render-outfit, muestra el render RGBA y habilita el conmutador
-    await user.click(screen.getByRole('button', { name: /Permitir y renderizar/i }));
-
-    await waitFor(() => {
-      expect(container.querySelector('[data-outfit-ai-render="true"]')).toBeInTheDocument();
-    });
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(Object.keys(useOutfitsStore.getState().rendersByKey)).toHaveLength(1);
-
-    // Alternar a modo Paramétrico oculta el <img> y vuelve a mostrar el SVG
-    await user.click(screen.getByRole('button', { name: 'Paramétrico' }));
-    expect(container.querySelector('[data-outfit-ai-render="true"]')).not.toBeInTheDocument();
-
-    // Volver a Realista IA usa la caché local sin volver a llamar a la red
-    await user.click(screen.getByRole('button', { name: 'Realista IA' }));
-    expect(container.querySelector('[data-outfit-ai-render="true"]')).toBeInTheDocument();
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: /Render realista IA/i })).not.toBeInTheDocument();
+    expect(container.querySelector('[data-outfit-ai-render="true"]')).toBeNull();
+    expect(container.querySelector('[data-avatar-body="front"]')).not.toBeNull();
   });
 });

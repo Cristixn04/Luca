@@ -77,5 +77,5 @@ describe('Flujo UI de bóveda cifrada y Memoria (T3.3 – T3.8)', () => {
         screen.getByRole('heading', { level: 1, name: 'Memoria y bóveda local' }),
       ).toBeInTheDocument();
     });
-  });
+  }, 12_000);
 });

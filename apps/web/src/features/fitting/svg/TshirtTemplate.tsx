@@ -1,6 +1,5 @@
 import type { FitReport, ZoneFitResult } from '@luca/domain';
 import {
-  isSafeDataImageUrl,
   resolveGarmentAccentStroke,
   resolveGarmentButtonColor,
   resolveGarmentSeamColor,
@@ -290,19 +289,17 @@ export function TshirtTemplate({
   const strokeColor = resolveGarmentAccentStroke(resolvedPrimary);
   const seamColor = resolveGarmentSeamColor(resolvedPrimary);
   const buttonColor = bp.accentColorHex ?? resolveGarmentButtonColor(resolvedPrimary);
-  // Si existe gemelo digital (visualSpec), nunca pegamos la foto recortada: sintetizamos la prenda a medida
-  const hasPhoto = !garmentMeta?.visualSpec && isSafeDataImageUrl(garmentMeta?.imageUrl);
+  // Siempre sintetizamos el gemelo digital paramétrico a medida sobre el avatar (nunca pegamos fotos crudas)
   const clipId = `${patternPrefix}-${variant}-clip`;
   const customPatternId = `${patternPrefix}-${variant}-twin-pat`;
   const stripeStep = bp.stripeDensity === 'fine' ? 6 : bp.stripeDensity === 'wide' ? 14 : 9.5;
   const stripeColor = bp.secondaryColorHex ?? 'rgb(255 255 255 / 32%)';
   const hasCustomPattern =
-    !hasPhoto &&
-    (bp.patternType === 'horizontal_stripes' ||
-      bp.patternType === 'vertical_stripes' ||
-      bp.patternType === 'plaid' ||
-      bp.patternType === 'dots' ||
-      bp.patternType === 'ribbed');
+    bp.patternType === 'horizontal_stripes' ||
+    bp.patternType === 'vertical_stripes' ||
+    bp.patternType === 'plaid' ||
+    bp.patternType === 'dots' ||
+    bp.patternType === 'ribbed';
 
   const maxHalfX =
     Math.max(
@@ -320,13 +317,12 @@ export function TshirtTemplate({
   const imgH = hemY - neckTopY + 10;
 
   const patternId =
-    !hasPhoto &&
-    (garmentMeta?.pattern === 'striped' ||
-      garmentMeta?.pattern === 'plaid' ||
-      garmentMeta?.pattern === 'textured' ||
-      bp.fabricTexture === 'knit' ||
-      bp.fabricTexture === 'ribbed' ||
-      bp.fabricTexture === 'corduroy')
+    garmentMeta?.pattern === 'striped' ||
+    garmentMeta?.pattern === 'plaid' ||
+    garmentMeta?.pattern === 'textured' ||
+    bp.fabricTexture === 'knit' ||
+    bp.fabricTexture === 'ribbed' ||
+    bp.fabricTexture === 'corduroy'
       ? `${patternPrefix}-pat-${
           garmentMeta?.pattern === 'striped' || garmentMeta?.pattern === 'plaid'
             ? garmentMeta.pattern
@@ -430,23 +426,8 @@ export function TshirtTemplate({
       {/* Capa base de tela */}
       <path d={garmentPath} fill={baseFill} fillOpacity={showHeatmap ? 0.16 : 0.96} />
 
-      {/* Proyección real de foto frontal recortada */}
-      {hasPhoto && (
-        <image
-          href={garmentMeta.imageUrl}
-          x={imgX}
-          y={imgY}
-          width={imgW}
-          height={imgH}
-          preserveAspectRatio="xMidYMid slice"
-          clipPath={`url(#${clipId})`}
-          opacity={showHeatmap ? 0.28 : 0.96}
-          data-garment-photo="front"
-        />
-      )}
-
       {/* Bloques de color (colorblock) ajustados a las proporciones del avatar */}
-      {!showHeatmap && !hasPhoto && bp.secondaryColorHex && bp.colorblockLayout !== 'none' && (
+      {!showHeatmap && bp.secondaryColorHex && bp.colorblockLayout !== 'none' && (
         <g clipPath={`url(#${clipId})`} pointerEvents="none">
           {bp.colorblockLayout === 'raglan_sleeves' && (
             <>

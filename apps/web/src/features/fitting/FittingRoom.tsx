@@ -26,7 +26,7 @@ import {
   isLowerCategory,
   type OutfitLayerOverlay,
 } from './svg/FrontAvatarSvg';
-import { isSafeDataImageUrl, type GarmentVisualMeta } from './svg/garmentVisuals';
+import type { GarmentVisualMeta } from './svg/garmentVisuals';
 import { getHeatmapPatternId } from './svg/heatmapMeta';
 import { HeatmapPatternDefs } from './svg/heatmapPatterns';
 import { SideAvatarSvg } from './svg/SideAvatarSvg';
@@ -853,20 +853,12 @@ export function FittingRoom({ onOpenCloset }: FittingRoomProps = {}) {
             <div className="mx-auto mt-1 flex w-full max-w-[680px] flex-wrap items-center justify-between gap-4 rounded-[24px] px-4 py-3 vf-glass">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[14px] border border-[var(--vf-glass-border)] bg-bg/45 p-1.5">
-                  {!garmentVisualMeta.visualSpec && isSafeDataImageUrl(garmentVisualMeta.imageUrl) ? (
-                    <img
-                      src={garmentVisualMeta.imageUrl}
-                      alt=""
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  ) : (
-                    <GarmentCardPreviewSvg
-                      category={garmentCategory}
-                      colorHex={garmentColorHex}
-                      meta={garmentVisualMeta}
-                      className="h-full w-full"
-                    />
-                  )}
+                  <GarmentCardPreviewSvg
+                    category={garmentCategory}
+                    colorHex={garmentColorHex}
+                    meta={garmentVisualMeta}
+                    className="h-full w-full"
+                  />
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-ink">{garmentName}</p>

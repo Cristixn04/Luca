@@ -1,6 +1,5 @@
 import type { FitReport, ZoneFitResult } from '@luca/domain';
 import {
-  isSafeDataImageUrl,
   resolveGarmentAccentStroke,
   resolveGarmentButtonColor,
   resolveGarmentSeamColor,
@@ -153,34 +152,23 @@ export function PantsTemplate({
   const strokeColor = resolveGarmentAccentStroke(resolvedPrimary);
   const seamColor = resolveGarmentSeamColor(resolvedPrimary);
   const buttonColor = bp.accentColorHex ?? resolveGarmentButtonColor(resolvedPrimary);
-  // Si existe gemelo digital (visualSpec), nunca pegamos la foto recortada: sintetizamos la prenda a medida
-  const hasPhoto = !garmentMeta?.visualSpec && isSafeDataImageUrl(garmentMeta?.imageUrl);
-  const clipId = `${patternPrefix}-${variant}-clip`;
+  // Siempre sintetizamos el gemelo digital paramétrico a medida sobre el avatar (nunca pegamos fotos crudas)
   const customPatternId = `${patternPrefix}-${variant}-twin-pat`;
   const stripeStep = bp.stripeDensity === 'fine' ? 6 : bp.stripeDensity === 'wide' ? 14 : 9.5;
   const stripeColor = bp.secondaryColorHex ?? 'rgb(255 255 255 / 28%)';
   const hasCustomPattern =
-    !hasPhoto &&
-    (bp.patternType === 'horizontal_stripes' ||
-      bp.patternType === 'vertical_stripes' ||
-      bp.patternType === 'plaid' ||
-      bp.patternType === 'dots' ||
-      bp.patternType === 'ribbed');
-
-  const hemBottom = variant === 'skirt' ? skirtHemY : variant === 'shorts' ? shortHemY : pantsHemY;
-  const maxHalfX = Math.max(hHalf + skirtFlare, ankleOuter + 3, hHalf + 4);
-  const imgX = cx - maxHalfX;
-  const imgY = rig.waistY - 2;
-  const imgW = maxHalfX * 2;
-  const imgH = hemBottom - rig.waistY + 10;
+    bp.patternType === 'horizontal_stripes' ||
+    bp.patternType === 'vertical_stripes' ||
+    bp.patternType === 'plaid' ||
+    bp.patternType === 'dots' ||
+    bp.patternType === 'ribbed';
 
   const patternId =
-    !hasPhoto &&
-    (garmentMeta?.pattern === 'striped' ||
-      garmentMeta?.pattern === 'plaid' ||
-      garmentMeta?.pattern === 'textured' ||
-      bp.fabricTexture === 'corduroy' ||
-      bp.fabricTexture === 'knit')
+    garmentMeta?.pattern === 'striped' ||
+    garmentMeta?.pattern === 'plaid' ||
+    garmentMeta?.pattern === 'textured' ||
+    bp.fabricTexture === 'corduroy' ||
+    bp.fabricTexture === 'knit'
       ? `${patternPrefix}-pat-${
           garmentMeta?.pattern === 'striped' || garmentMeta?.pattern === 'plaid'
             ? garmentMeta.pattern
@@ -196,9 +184,6 @@ export function PantsTemplate({
       aria-label={`Plantilla de ${variant} sobre el avatar`}
     >
       <defs>
-        <clipPath id={clipId}>
-          <path d={garmentPath} />
-        </clipPath>
         {hasCustomPattern && bp.patternType === 'horizontal_stripes' && (
           <pattern id={customPatternId} width="16" height={stripeStep} patternUnits="userSpaceOnUse">
             <rect width="16" height={stripeStep * 0.36} fill={stripeColor} opacity="0.78" />
@@ -230,20 +215,6 @@ export function PantsTemplate({
       </defs>
 
       <path d={garmentPath} fill={baseFill} fillOpacity={showHeatmap ? 0.16 : 0.96} />
-
-      {hasPhoto && (
-        <image
-          href={garmentMeta.imageUrl}
-          x={imgX}
-          y={imgY}
-          width={imgW}
-          height={imgH}
-          preserveAspectRatio="xMidYMid slice"
-          clipPath={`url(#${clipId})`}
-          opacity={showHeatmap ? 0.28 : 0.96}
-          data-garment-photo="front"
-        />
-      )}
 
       {hasCustomPattern && !showHeatmap ? (
         <path d={garmentPath} fill={`url(#${customPatternId})`} />

@@ -47,8 +47,8 @@ const OPTIONAL_FIELDS: readonly OptionalFieldSpec[] = [
   { key: 'chestDepth', label: 'Fondo de pecho', hint: 'Perfil (frente a espalda)', stepCm: 0.5 },
   { key: 'waistDepth', label: 'Fondo de cintura', hint: 'Perfil (frente a espalda)', stepCm: 0.5 },
   { key: 'hipDepth', label: 'Fondo de cadera', hint: 'Perfil (frente a espalda)', stepCm: 0.5 },
-  { key: 'backWidth', label: 'Ancho de espalda', hint: 'Mejora vista espalda', stepCm: 0.5 },
-  { key: 'backLength', label: 'Largo de espalda', hint: 'Mejora vista espalda', stepCm: 0.5 },
+  { key: 'backWidth', label: 'Ancho de espalda', hint: 'Reflejado en frente y espalda', stepCm: 0.5 },
+  { key: 'backLength', label: 'Largo de espalda', hint: 'Ajusta el largo del torso', stepCm: 0.5 },
 ];
 
 export interface MeasurementsPanelProps {

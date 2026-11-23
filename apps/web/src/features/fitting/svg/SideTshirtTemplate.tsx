@@ -140,10 +140,11 @@ export function SideTshirtTemplate({
           'Z',
         ].join(' ');
 
-  const baseFill = garmentColorHex ?? 'var(--accent)';
+  const resolvedPrimary = bp.primaryColorHex ?? garmentColorHex;
+  const baseFill = resolvedPrimary ?? 'var(--accent)';
   const trimFill = bp.secondaryColorHex ?? baseFill;
-  const strokeColor = resolveGarmentAccentStroke(garmentColorHex);
-  const seamColor = resolveGarmentSeamColor(garmentColorHex);
+  const strokeColor = resolveGarmentAccentStroke(resolvedPrimary);
+  const seamColor = resolveGarmentSeamColor(resolvedPrimary);
   const patternId =
     garmentMeta?.pattern === 'striped' ||
     garmentMeta?.pattern === 'plaid' ||

@@ -87,8 +87,9 @@ export function FrontAvatarSvg({
     const wInX = cx + s * a.wrist.innerX;
     const wY = a.wrist.y;
     const handTipY = a.handTipY;
+    const handLen = Math.max(12, handTipY - wY);
     const thumbTipX = cx + s * (a.wrist.innerX - 3.2);
-    const thumbTipY = wY + 12.5;
+    const thumbTipY = wY + handLen * 0.44;
     const palmInX = cx + s * (a.wrist.innerX + 0.8);
     const fingerOutX = cx + s * (a.wrist.outerX + 2.2);
     const fingerTipX = cx + s * (a.wrist.innerX + 2.4);
@@ -98,10 +99,10 @@ export function FrontAvatarSvg({
       `C ${cx + s * (a.deltoid.outerX + 1.5)} ${a.deltoid.y + 4}, ${cx + s * (a.bicep.outerX + 0.5)} ${a.bicep.y - 4}, ${cx + s * a.bicep.outerX} ${a.bicep.y}`,
       `C ${cx + s * a.elbow.outerX} ${a.elbow.y - 6}, ${cx + s * a.elbow.outerX} ${a.elbow.y + 4}, ${cx + s * a.forearm.outerX} ${a.forearm.y}`,
       `C ${cx + s * (a.forearm.outerX + 1)} ${wY - 10}, ${wOutX + s * 0.8} ${wY - 4}, ${wOutX} ${wY}`,
-      `C ${fingerOutX} ${wY + 7}, ${fingerOutX - s * 0.5} ${handTipY - 7}, ${fingerTipX} ${handTipY}`,
-      `C ${palmInX + s * 1} ${handTipY - 1}, ${palmInX} ${wY + 13}, ${palmInX - s * 0.8} ${wY + 9}`,
+      `C ${fingerOutX} ${wY + handLen * 0.25}, ${fingerOutX - s * 0.5} ${handTipY - handLen * 0.25}, ${fingerTipX} ${handTipY}`,
+      `C ${palmInX + s * 1} ${handTipY - 1}, ${palmInX} ${wY + handLen * 0.48}, ${palmInX - s * 0.8} ${wY + handLen * 0.34}`,
       `L ${thumbTipX} ${thumbTipY}`,
-      `C ${thumbTipX - s * 1.4} ${wY + 10}, ${wInX - s * 1.2} ${wY + 5}, ${wInX} ${wY}`,
+      `C ${thumbTipX - s * 1.4} ${wY + handLen * 0.36}, ${wInX - s * 1.2} ${wY + handLen * 0.18}, ${wInX} ${wY}`,
       `C ${cx + s * a.forearm.innerX} ${a.forearm.y + 4}, ${cx + s * a.elbow.innerX} ${a.elbow.y + 3}, ${cx + s * a.elbow.innerX} ${a.elbow.y}`,
       `C ${cx + s * a.bicep.innerX} ${a.bicep.y + 2}, ${cx + s * (rig.armpitX + 1)} ${rig.armpitY + 4}, ${cx + s * rig.armpitX} ${rig.armpitY}`,
       `L ${cx + s * (rig.shoulderX - 3)} ${rig.shoulderY + 1}`,
@@ -226,8 +227,8 @@ export function FrontAvatarSvg({
               `L ${cx - rig.shoulderX * 0.34} ${rig.shoulderY + 1}`,
               `Q ${cx} ${rig.chestY - 7} ${cx + rig.shoulderX * 0.34} ${rig.shoulderY + 1}`,
               `L ${cx + rig.shoulderX * 0.48} ${rig.shoulderY + 1}`,
-              `C ${cx + rig.chestX - 1} ${rig.chestY - 4}, ${cx + rig.chestX} ${rig.bustUnderY}, ${cx + rig.chestX - 2} ${rig.bustUnderY + 7}`,
-              `Q ${cx} ${rig.bustUnderY + 9} ${cx - rig.chestX + 2} ${rig.bustUnderY + 7}`,
+              `C ${cx + rig.chestX - 1} ${rig.chestY - 4}, ${cx + rig.chestX} ${rig.bustUnderY}, ${cx + rig.chestX - 2} ${Math.min(rig.waistY - 3, rig.bustUnderY + 7)}`,
+              `Q ${cx} ${Math.min(rig.waistY - 1, rig.bustUnderY + 9)} ${cx - rig.chestX + 2} ${Math.min(rig.waistY - 3, rig.bustUnderY + 7)}`,
               `C ${cx - rig.chestX} ${rig.bustUnderY}, ${cx - rig.chestX + 1} ${rig.chestY - 4}, ${cx - rig.shoulderX * 0.48} ${rig.shoulderY + 1}`,
               'Z',
             ].join(' ')}
@@ -238,14 +239,14 @@ export function FrontAvatarSvg({
         {/* Short base neutro en zona pélvica */}
         <path
           d={[
-            `M ${cx - rig.waistX - 0.5} ${rig.hipY - 12}`,
-            `Q ${cx} ${rig.hipY - 9} ${cx + rig.waistX + 0.5} ${rig.hipY - 12}`,
+            `M ${cx - rig.waistX - 0.5} ${Math.max(rig.waistY + 2, rig.hipY - 12)}`,
+            `Q ${cx} ${Math.max(rig.waistY + 4, rig.hipY - 9)} ${cx + rig.waistX + 0.5} ${Math.max(rig.waistY + 2, rig.hipY - 12)}`,
             `C ${cx + rig.hipX} ${rig.hipY - 3}, ${cx + rig.hipX} ${rig.crotchY + 3}, ${cx + rig.hipX * 0.88} ${rig.crotchY + 15}`,
             `L ${cx + 5} ${rig.crotchY + 15}`,
             `L ${cx} ${rig.crotchY + 4}`,
             `L ${cx - 5} ${rig.crotchY + 15}`,
             `L ${cx - rig.hipX * 0.88} ${rig.crotchY + 15}`,
-            `C ${cx - rig.hipX} ${rig.crotchY + 3}, ${cx - rig.hipX} ${rig.hipY - 3}, ${cx - rig.waistX - 0.5} ${rig.hipY - 12}`,
+            `C ${cx - rig.hipX} ${rig.crotchY + 3}, ${cx - rig.hipX} ${rig.hipY - 3}, ${cx - rig.waistX - 0.5} ${Math.max(rig.waistY + 2, rig.hipY - 12)}`,
             'Z',
           ].join(' ')}
           fill="var(--avatar-basewear)"

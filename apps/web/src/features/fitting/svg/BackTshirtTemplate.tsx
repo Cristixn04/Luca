@@ -1,6 +1,5 @@
 import type { BodyModel, FitReport } from '@luca/domain';
 import {
-  isSafeDataImageUrl,
   resolveGarmentAccentStroke,
   resolveGarmentSeamColor,
   resolveUpperBlueprint,
@@ -228,36 +227,28 @@ export function BackTshirtTemplate({
     'Z',
   ].join(' ');
 
-  const baseFill = garmentColorHex ?? 'var(--accent)';
+  const resolvedPrimary = bp.primaryColorHex ?? garmentColorHex;
+  const baseFill = resolvedPrimary ?? 'var(--accent)';
   const trimFill = bp.secondaryColorHex ?? baseFill;
-  const strokeColor = resolveGarmentAccentStroke(garmentColorHex);
-  const seamColor = resolveGarmentSeamColor(garmentColorHex);
-  const hasBackPhoto = isSafeDataImageUrl(garmentMeta?.backImageUrl);
-  const clipId = `${patternPrefix}-${variant}-back-clip`;
-
-  const maxHalfX =
-    Math.max(
-      isLongSleeve
-        ? arm.wrist.outerX + cuffEase
-        : isThreeQuarter
-          ? midForearmOuterX + slEase
-          : arm.bicep.outerX + slEase,
-      hemHalf,
-      chHalf,
-    ) + 3;
-  const imgX = cx - maxHalfX;
-  const imgY = neckTopY - 3;
-  const imgW = maxHalfX * 2;
-  const imgH = hemY - neckTopY + 10;
+  const strokeColor = resolveGarmentAccentStroke(resolvedPrimary);
+  const seamColor = resolveGarmentSeamColor(resolvedPrimary);
+  const customPatternId = `${patternPrefix}-${variant}-back-twin-pat`;
+  const stripeStep = bp.stripeDensity === 'fine' ? 6 : bp.stripeDensity === 'wide' ? 14 : 9.5;
+  const stripeColor = bp.secondaryColorHex ?? 'rgb(255 255 255 / 32%)';
+  const hasCustomPattern =
+    bp.patternType === 'horizontal_stripes' ||
+    bp.patternType === 'vertical_stripes' ||
+    bp.patternType === 'plaid' ||
+    bp.patternType === 'dots' ||
+    bp.patternType === 'ribbed';
 
   const patternId =
-    !hasBackPhoto &&
-    (garmentMeta?.pattern === 'striped' ||
-      garmentMeta?.pattern === 'plaid' ||
-      garmentMeta?.pattern === 'textured' ||
-      bp.fabricTexture === 'knit' ||
-      bp.fabricTexture === 'ribbed' ||
-      bp.fabricTexture === 'corduroy')
+    garmentMeta?.pattern === 'striped' ||
+    garmentMeta?.pattern === 'plaid' ||
+    garmentMeta?.pattern === 'textured' ||
+    bp.fabricTexture === 'knit' ||
+    bp.fabricTexture === 'ribbed' ||
+    bp.fabricTexture === 'corduroy'
       ? `${patternPrefix}-pat-${
           garmentMeta?.pattern === 'striped' || garmentMeta?.pattern === 'plaid'
             ? garmentMeta.pattern
@@ -268,9 +259,34 @@ export function BackTshirtTemplate({
   return (
     <g data-garment={`${variant}-back`} aria-label={`Plantilla de ${variant} en vista de espalda`}>
       <defs>
-        <clipPath id={clipId}>
-          <path d={garmentPath} />
-        </clipPath>
+        {hasCustomPattern && bp.patternType === 'horizontal_stripes' && (
+          <pattern id={customPatternId} width="16" height={stripeStep} patternUnits="userSpaceOnUse">
+            <rect width="16" height={stripeStep * 0.38} fill={stripeColor} opacity="0.82" />
+          </pattern>
+        )}
+        {hasCustomPattern && bp.patternType === 'vertical_stripes' && (
+          <pattern id={customPatternId} width={stripeStep} height="16" patternUnits="userSpaceOnUse">
+            <rect width={stripeStep * 0.34} height="16" fill={stripeColor} opacity="0.8" />
+          </pattern>
+        )}
+        {hasCustomPattern && bp.patternType === 'plaid' && (
+          <pattern id={customPatternId} width={stripeStep * 1.5} height={stripeStep * 1.5} patternUnits="userSpaceOnUse">
+            <rect width={stripeStep * 1.5} height={stripeStep * 0.26} fill={stripeColor} opacity="0.62" />
+            <rect width={stripeStep * 0.26} height={stripeStep * 1.5} fill={stripeColor} opacity="0.62" />
+          </pattern>
+        )}
+        {hasCustomPattern && bp.patternType === 'dots' && (
+          <pattern id={customPatternId} width="11" height="11" patternUnits="userSpaceOnUse">
+            <circle cx="3" cy="3" r="1.45" fill={stripeColor} opacity="0.85" />
+            <circle cx="8.5" cy="8.5" r="1.45" fill={stripeColor} opacity="0.85" />
+          </pattern>
+        )}
+        {hasCustomPattern && bp.patternType === 'ribbed' && (
+          <pattern id={customPatternId} width="3.8" height="10" patternUnits="userSpaceOnUse">
+            <line x1="1" y1="0" x2="1" y2="10" stroke="rgb(255 255 255 / 16%)" strokeWidth="0.75" />
+            <line x1="2.7" y1="0" x2="2.7" y2="10" stroke="rgb(0 0 0 / 15%)" strokeWidth="0.75" />
+          </pattern>
+        )}
       </defs>
 
       {neckline === 'turtleneck' && (
@@ -285,22 +301,10 @@ export function BackTshirtTemplate({
 
       <path d={garmentPath} fill={baseFill} fillOpacity={showHeatmap ? 0.16 : 0.96} />
 
-      {hasBackPhoto && (
-        <image
-          href={garmentMeta.backImageUrl}
-          x={imgX}
-          y={imgY}
-          width={imgW}
-          height={imgH}
-          preserveAspectRatio="xMidYMid slice"
-          clipPath={`url(#${clipId})`}
-          opacity={showHeatmap ? 0.28 : 0.96}
-          data-garment-photo="back"
-        />
-      )}
-
-      {patternId && !showHeatmap && (
-        <path d={garmentPath} fill={`url(#${patternId})`} opacity="0.82" />
+      {hasCustomPattern && !showHeatmap ? (
+        <path d={garmentPath} fill={`url(#${customPatternId})`} />
+      ) : (
+        patternId && !showHeatmap && <path d={garmentPath} fill={`url(#${patternId})`} opacity="0.82" />
       )}
 
       {!showHeatmap && (

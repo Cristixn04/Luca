@@ -5,6 +5,7 @@ import { createBodyModel, evaluateGarmentFit } from '@luca/domain';
 import { FittingRoom } from '../FittingRoom';
 import { DEFAULT_BODY_MEASUREMENTS, DEFAULT_GARMENT_PRESETS, useFittingStore } from '../store';
 import { AvatarViewer } from '../svg/AvatarViewer';
+import { computeMannequinRig } from '../svg/mannequinRig';
 
 describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.7)', () => {
   beforeEach(() => {
@@ -177,7 +178,7 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
     expect(container.querySelector('[data-avatar-view="side"]')).not.toBeNull();
   });
 
-  it('proyecta la foto frontal y trasera subida dentro de la silueta y rechaza URLs inseguras', () => {
+  it('sintetiza siempre el modelo paramétrico sobre el avatar y nunca pega la foto subida', () => {
     const model = createBodyModel({ required: DEFAULT_BODY_MEASUREMENTS });
     const fitReport = evaluateGarmentFit(model, {
       category: 'long_sleeve',
@@ -187,7 +188,7 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
     });
     const fakeDataUrl = 'data:image/png;base64,iVBORw0KGgo=';
 
-    const { container, rerender } = render(
+    const { container } = render(
       <AvatarViewer
         model={model}
         garmentCategory="long_sleeve"
@@ -204,32 +205,45 @@ describe('Coherencia de las tres vistas y medidas opcionales (M5 · T5.1 – T5.
       />,
     );
 
-    expect(container.querySelector('[data-garment-photo="front"]')).toHaveAttribute(
-      'href',
-      fakeDataUrl,
-    );
-    expect(container.querySelector('[data-garment-photo="back"]')).toHaveAttribute(
-      'href',
-      fakeDataUrl,
-    );
+    expect(container.querySelector('[data-garment="long_sleeve"]')).not.toBeNull();
+    expect(container.querySelector('[data-garment="long_sleeve-back"]')).not.toBeNull();
+    expect(container.querySelector('[data-garment-photo]')).toBeNull();
+  });
 
-    rerender(
-      <AvatarViewer
-        model={model}
-        garmentCategory="dress"
-        fitReport={fitReport}
-        showHeatmap={false}
-        garmentColorHex="#8B2635"
-        garmentMeta={{
-          name: 'Vestido midi',
-          imageUrl: 'https://evil.example/tracker.png',
-        }}
-        viewMode="front"
-        onChangeViewMode={() => {}}
-      />,
-    );
+  it('mantiene coherencia anatómica: ancho de espalda cambia frente y espalda, y entrepierna no alarga los brazos', () => {
+    const narrowBack = createBodyModel({
+      required: DEFAULT_BODY_MEASUREMENTS,
+      optional: { backWidth: 34 },
+    });
+    const wideBack = createBodyModel({
+      required: DEFAULT_BODY_MEASUREMENTS,
+      optional: { backWidth: 48 },
+    });
 
-    expect(container.querySelector('[data-garment-photo="front"]')).toBeNull();
+    const rigNarrow = computeMannequinRig(narrowBack, 'male');
+    const rigWide = computeMannequinRig(wideBack, 'male');
+
+    // Al ensanchar la espalda, tanto la vista de espalda como la de frente (torso superior y hombros) deben ampliarse
+    expect(rigWide.backChestX).toBeGreaterThan(rigNarrow.backChestX + 8);
+    expect(rigWide.chestX).toBeGreaterThan(rigNarrow.chestX + 4);
+    expect(rigWide.armpitX).toBeGreaterThan(rigNarrow.armpitX + 6);
+
+    // Al cambiar la entrepierna manteniendo la estatura, las piernas cambian pero los brazos conservan exactamente su largo
+    const shortLegs = createBodyModel({
+      required: { ...DEFAULT_BODY_MEASUREMENTS, inseam: 72 },
+    });
+    const longLegs = createBodyModel({
+      required: { ...DEFAULT_BODY_MEASUREMENTS, inseam: 88 },
+    });
+
+    const rigShort = computeMannequinRig(shortLegs, 'female');
+    const rigLong = computeMannequinRig(longLegs, 'female');
+
+    expect(rigLong.crotchY).toBeLessThan(rigShort.crotchY - 25);
+    expect(rigLong.arm.wrist.y).toBe(rigShort.arm.wrist.y);
+    expect(rigLong.arm.handTipY).toBe(rigShort.arm.handTipY);
+    expect(rigLong.sideArm.wrist.y).toBe(rigShort.sideArm.wrist.y);
+    expect(rigLong.sideArm.handTipY).toBe(rigShort.sideArm.handTipY);
   });
 
   it('permite alternar entre maniquí Mujer y Hombre en las 3 vistas manteniendo el calce', async () => {
