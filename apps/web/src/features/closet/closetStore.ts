@@ -1,6 +1,7 @@
 import type { GarmentCategory } from '@luca/domain';
 import { create } from 'zustand';
 import { getVaultServiceInstance, useVaultStore } from '@/features/vault/vaultStore';
+import { defaultRagClient } from '@/infrastructure/rag/ragClient';
 import {
   createGarment,
   deleteGarment,
@@ -59,6 +60,7 @@ export const useClosetStore = create<ClosetStoreState>((set) => ({
       const vault = getVaultServiceInstance();
       const items = await listGarmentsWithSizes(vault);
       set({ items, loaded: true, busy: false });
+      void defaultRagClient.syncGarments(items);
     } catch (err) {
       set({
         busy: false,
@@ -78,6 +80,7 @@ export const useClosetStore = create<ClosetStoreState>((set) => ({
         busy: false,
       }));
       useVaultStore.setState((s) => ({ eventCount: s.eventCount + 1 }));
+      void defaultRagClient.syncGarments([created]);
       return created;
     } catch (err) {
       set({
@@ -98,6 +101,7 @@ export const useClosetStore = create<ClosetStoreState>((set) => ({
         busy: false,
       }));
       useVaultStore.setState((s) => ({ eventCount: s.eventCount + 1 }));
+      void defaultRagClient.syncGarments([updated]);
       return updated;
     } catch (err) {
       set({
@@ -119,6 +123,7 @@ export const useClosetStore = create<ClosetStoreState>((set) => ({
         busy: false,
       }));
       useVaultStore.setState((s) => ({ eventCount: s.eventCount + 1 }));
+      void defaultRagClient.deleteGarment(garmentId);
     } catch (err) {
       set({
         busy: false,
@@ -139,6 +144,7 @@ export const useClosetStore = create<ClosetStoreState>((set) => ({
         busy: false,
       }));
       useVaultStore.setState((s) => ({ eventCount: s.eventCount + created.length }));
+      void defaultRagClient.syncGarments(created);
     } catch (err) {
       set({
         busy: false,
@@ -161,12 +167,14 @@ export const useClosetStore = create<ClosetStoreState>((set) => ({
       formalityFilter: 'all',
       sortBy: 'recent',
     }),
-  clearMemory: () =>
+  clearMemory: () => {
+    defaultRagClient.resetSession();
     set({
       items: [],
       loaded: false,
       busy: false,
       error: null,
       selectedId: null,
-    }),
+    });
+  },
 }));

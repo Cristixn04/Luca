@@ -1,0 +1,48 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: luca-rag-api
+  datasource:
+    url: ${LUCA_RAG_DB_URL:jdbc:postgresql://localhost:5432/luca_rag}
+    username: ${LUCA_RAG_DB_USER:luca}
+    password: ${LUCA_RAG_DB_PASSWORD:luca_dev_password}
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: ${LUCA_RAG_FLYWAY_ENABLED:true}
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+luca:
+  rag:
+    allowed-origins: ${LUCA_RAG_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080}
+    jwt:
+      secret: ${LUCA_RAG_JWT_SECRET:dev-only-change-in-production-luca-rag-jwt-secret-key-256-bits}
+      expiration-seconds: ${LUCA_RAG_JWT_EXPIRATION_SECONDS:86400}
+    embedding:
+      # Valores: auto | openai | ollama | local
+      # En 'auto': usa OpenAI si existe api-key; si no, usa el proveedor local determinista (sin red).
+      provider: ${LUCA_RAG_EMBEDDING_PROVIDER:auto}
+      dimensions: ${LUCA_RAG_EMBEDDING_DIMENSIONS:1536}
+      openai:
+        api-key: ${LUCA_OPENAI_API_KEY:}
+        base-url: ${LUCA_OPENAI_BASE_URL:https://api.openai.com/v1}
+        model: ${LUCA_OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+      ollama:
+        base-url: ${LUCA_OLLAMA_BASE_URL:http://127.0.0.1:11434}
+        model: ${LUCA_OLLAMA_EMBEDDING_MODEL:nomic-embed-text}
+    chunking:
+      max-tokens: 650
+      overlap-tokens: 80
+    search:
+      rrf-k: 60
+      vector-weight: 0.62
+      text-weight: 0.38
+      candidate-multiplier: 4
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

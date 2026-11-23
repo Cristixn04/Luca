@@ -16,6 +16,7 @@ import { applyClosetItemToFitting } from '@/features/fitting/GarmentPanel';
 import { useFittingStore } from '@/features/fitting/store';
 import { toOutfitGarmentInputs, useOutfitsStore } from '@/features/outfits/outfitsStore';
 import { useT } from '@/i18n/i18nStore';
+import { defaultRagClient } from '@/infrastructure/rag/ragClient';
 import { ClosetRackStage, type RackItemMeta } from './ClosetRackStage';
 import { createClosetSearchIndex } from './closetSearch';
 import { useClosetStore, type ClosetSortBy } from './closetStore';
@@ -134,10 +135,59 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
   }, [activeSeasonId, bodyModel, fitPreference, outfitInputs]);
 
   const searchIndex = useMemo(() => createClosetSearchIndex(items), [items]);
+  const [ragRanking, setRagRanking] = useState<{ query: string; ids: readonly string[] } | null>(null);
+
+  // Reordenamiento híbrido silencioso (Spring Boot + pgvector) con fallback automático a MiniSearch local
+  useEffect(() => {
+    const query = search.trim();
+    if (query.length < 2 || items.length === 0) {
+      setRagRanking(null);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      const candidateIds = items.map((item) => item.garment.id);
+      void defaultRagClient.searchAndRerank(query, candidateIds, items.length).then((hits) => {
+        if (cancelled) return;
+        if (!hits || hits.length === 0) {
+          setRagRanking(null);
+          return;
+        }
+        setRagRanking({ query, ids: hits.map((h) => h.externalId) });
+      });
+    }, 180);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [items, search]);
 
   const filteredItems = useMemo(() => {
     const query = search.trim();
-    const candidates = query.length > 0 ? searchIndex.search(query) : items;
+    const localHits = query.length > 0 ? searchIndex.search(query) : items;
+
+    let candidates = localHits;
+    if (query.length >= 2 && ragRanking && ragRanking.query === query && ragRanking.ids.length > 0) {
+      const byId = new Map(items.map((item) => [item.garment.id, item]));
+      const seen = new Set<string>();
+      const reranked: GarmentWithSizes[] = [];
+      for (const id of ragRanking.ids) {
+        const found = byId.get(id);
+        if (found && !seen.has(id)) {
+          seen.add(id);
+          reranked.push(found);
+        }
+      }
+      for (const item of localHits) {
+        if (!seen.has(item.garment.id)) {
+          seen.add(item.garment.id);
+          reranked.push(item);
+        }
+      }
+      candidates = reranked;
+    }
 
     const matched = candidates.filter(({ garment }) => {
       if (categoryFilter !== 'all' && garment.category !== categoryFilter) return false;
@@ -166,7 +216,7 @@ export function ClosetView({ onOpenInFitting }: ClosetViewProps) {
           return b.garment.updatedAt.localeCompare(a.garment.updatedAt);
       }
     });
-  }, [categoryFilter, formalityFilter, items, search, searchIndex, sortBy, statusFilter]);
+  }, [categoryFilter, formalityFilter, items, ragRanking, search, searchIndex, sortBy, statusFilter]);
 
   // Si un filtro oculta la prenda actualmente en spotlight, cerramos el spotlight limpiamente
   const effectiveSpotlightId = useMemo(() => {

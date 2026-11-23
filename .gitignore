@@ -49,6 +49,10 @@ coverage/
 test-results/
 playwright-report/
 
+# Java / Maven (services/rag-api)
+services/rag-api/target/
+services/rag-api/.env
+
 # OS / Editor
 .DS_Store
 Thumbs.db

@@ -6,6 +6,7 @@ import { defineConfig, type Plugin } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 const API_PROXY_TARGET = process.env.LUCA_API_PROXY_TARGET || 'http://127.0.0.1:8001';
+const RAG_PROXY_TARGET = process.env.LUCA_RAG_PROXY_TARGET || 'http://127.0.0.1:8080';
 const WEATHER_CACHE_TTL_MS = 30 * 60 * 1000;
 const weatherDevCache = new Map<string, { expiresAt: number; payload: string }>();
 
@@ -174,7 +175,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
-        navigateFallbackDenylist: [/^\/v1\//],
+        navigateFallbackDenylist: [/^\/v1\//, /^\/api\/rag\//],
       },
     }),
   ],
@@ -200,12 +201,20 @@ export default defineConfig({
         target: API_PROXY_TARGET,
         changeOrigin: true,
       },
+      '/api/rag': {
+        target: RAG_PROXY_TARGET,
+        changeOrigin: true,
+      },
     },
   },
   preview: {
     proxy: {
       '/v1': {
         target: API_PROXY_TARGET,
+        changeOrigin: true,
+      },
+      '/api/rag': {
+        target: RAG_PROXY_TARGET,
         changeOrigin: true,
       },
     },
