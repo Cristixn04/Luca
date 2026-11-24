@@ -85,42 +85,42 @@ export function MannequinDefs({ prefix }: MannequinDefsProps) {
 
       {/* Sombra anatómica cálida para volumen lateral y planos musculares */}
       <linearGradient id={`${prefix}-muscle-shade`} x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="rgb(138 76 50 / 42%)" />
-        <stop offset="100%" stopColor="rgb(138 76 50 / 16%)" />
+        <stop offset="0%" stopColor="var(--avatar-muscle-top, rgb(138 76 50 / 42%))" />
+        <stop offset="100%" stopColor="var(--avatar-muscle-bottom, rgb(138 76 50 / 16%))" />
       </linearGradient>
 
       {/* Oclusión profunda cálida para bajo busto/pectorales, omóplatos, glúteos y rodillas */}
       <linearGradient id={`${prefix}-skin-core-shade`} x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="rgb(122 62 40 / 54%)" />
-        <stop offset="62%" stopColor="rgb(142 78 52 / 28%)" />
-        <stop offset="100%" stopColor="rgb(142 78 52 / 6%)" />
+        <stop offset="0%" stopColor="var(--avatar-core-top, rgb(122 62 40 / 54%))" />
+        <stop offset="62%" stopColor="var(--avatar-core-mid, rgb(142 78 52 / 28%))" />
+        <stop offset="100%" stopColor="var(--avatar-core-bottom, rgb(142 78 52 / 6%))" />
       </linearGradient>
 
       {/* Oclusión radial para volumen 3D de busto, ombligo, fosa clavicular y rótulas */}
       <radialGradient id={`${prefix}-ambient-occlusion`} cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stopColor="rgb(112 56 36 / 48%)" />
-        <stop offset="60%" stopColor="rgb(138 76 50 / 22%)" />
-        <stop offset="100%" stopColor="rgb(138 76 50 / 0%)" />
+        <stop offset="0%" stopColor="var(--avatar-ao-center, rgb(112 56 36 / 48%))" />
+        <stop offset="60%" stopColor="var(--avatar-ao-mid, rgb(138 76 50 / 22%))" />
+        <stop offset="100%" stopColor="var(--avatar-ao-edge, rgb(138 76 50 / 0%))" />
       </radialGradient>
 
       {/* Luz clave de estudio para relieves de piel (pecho, deltoides, muslos, tibias) */}
       <radialGradient id={`${prefix}-skin-sheen`} cx="50%" cy="38%" r="54%">
-        <stop offset="0%" stopColor="rgb(255 245 236 / 58%)" />
-        <stop offset="58%" stopColor="rgb(255 238 224 / 22%)" />
-        <stop offset="100%" stopColor="rgb(255 238 224 / 0%)" />
+        <stop offset="0%" stopColor="var(--avatar-sheen-center, rgb(255 245 236 / 58%))" />
+        <stop offset="58%" stopColor="var(--avatar-sheen-mid, rgb(255 238 224 / 22%))" />
+        <stop offset="100%" stopColor="var(--avatar-sheen-edge, rgb(255 238 224 / 0%))" />
       </radialGradient>
 
       {/* Rubor sutil en mejillas */}
       <radialGradient id={`${prefix}-cheek-blush`} cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stopColor="rgb(208 118 102 / 24%)" />
-        <stop offset="100%" stopColor="rgb(208 118 102 / 0%)" />
+        <stop offset="0%" stopColor="var(--avatar-cheek, rgb(208 118 102 / 24%))" />
+        <stop offset="100%" stopColor="var(--avatar-cheek-edge, rgb(208 118 102 / 0%))" />
       </radialGradient>
 
       {/* Sombra natural bajo mentón y cuello */}
       <linearGradient id={`${prefix}-neck-shadow`} x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="rgb(92 48 32 / 52%)" />
-        <stop offset="56%" stopColor="rgb(92 48 32 / 18%)" />
-        <stop offset="100%" stopColor="rgb(92 48 32 / 0%)" />
+        <stop offset="0%" stopColor="var(--avatar-neck-top, rgb(92 48 32 / 52%))" />
+        <stop offset="56%" stopColor="var(--avatar-neck-mid, rgb(92 48 32 / 18%))" />
+        <stop offset="100%" stopColor="var(--avatar-neck-bottom, rgb(92 48 32 / 0%))" />
       </linearGradient>
 
       {/* Sombra suave de contacto en el suelo bajo los pies */}

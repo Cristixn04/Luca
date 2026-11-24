@@ -13,6 +13,7 @@ import { Badge } from '@/design-system/components/Badge';
 import { HEATMAP_TOKENS } from '@/design-system/tokens';
 import { useClosetStore } from '@/features/closet/closetStore';
 import { CATEGORY_LABELS } from '@/features/closet/types';
+import { useColorStore } from '@/features/color/colorStore';
 import { useVaultStore } from '@/features/vault/vaultStore';
 import { useT } from '@/i18n/i18nStore';
 import { GarmentCardPreviewSvg } from './GarmentCardPreviewSvg';
@@ -94,6 +95,8 @@ export function FittingRoom({ onOpenCloset }: FittingRoomProps = {}) {
   const closetItems = useClosetStore((s) => s.items);
   const closetLoaded = useClosetStore((s) => s.loaded);
   const loadCloset = useClosetStore((s) => s.loadCloset);
+  const colorLoaded = useColorStore((s) => s.loaded);
+  const loadColorProfile = useColorStore((s) => s.loadProfile);
 
   // Barra vertical derecha con dos apartados desplegables mutuamente excluyentes (Prenda | Medidas)
   const [activeDrawer, setActiveDrawer] = useState<'garment' | 'measurements' | null>(null);
@@ -116,6 +119,12 @@ export function FittingRoom({ onOpenCloset }: FittingRoomProps = {}) {
       void loadCloset();
     }
   }, [closetLoaded, loadCloset]);
+
+  useEffect(() => {
+    if (!colorLoaded) {
+      void loadColorProfile();
+    }
+  }, [colorLoaded, loadColorProfile]);
 
   // Si el usuario añade nuevas prendas al clóset, vuelve a permitir selección automática
   useEffect(() => {

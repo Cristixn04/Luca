@@ -42,11 +42,13 @@ export function getActiveSeasonId(profile: PersistedColorProfile | null): ColorS
 
 export interface ColorStoreState {
   profile: PersistedColorProfile | null;
+  draftSwatches: ColorSwatchesInput | null;
   loaded: boolean;
   busy: boolean;
   error: string | null;
 
   loadProfile: () => Promise<void>;
+  setDraftSwatches: (input: ColorSwatchesInput) => void;
   saveProfile: (input: {
     skinHex: string;
     hairHex: string;
@@ -67,9 +69,19 @@ function canAccessVault(): boolean {
 
 export const useColorStore = create<ColorStoreState>((set, get) => ({
   profile: null,
+  draftSwatches: null,
   loaded: false,
   busy: false,
   error: null,
+
+  setDraftSwatches: (input) =>
+    set({
+      draftSwatches: {
+        skinHex: input.skinHex.toUpperCase(),
+        hairHex: input.hairHex.toUpperCase(),
+        eyeHex: input.eyeHex.toUpperCase(),
+      },
+    }),
 
   loadProfile: async () => {
     const vault = getVaultServiceInstance();
@@ -120,7 +132,16 @@ export const useColorStore = create<ColorStoreState>((set, get) => ({
           },
         });
       }
-      set({ profile: record, loaded: true, busy: false });
+      set({
+        profile: record,
+        draftSwatches: {
+          skinHex: record.skinHex,
+          hairHex: record.hairHex,
+          eyeHex: record.eyeHex,
+        },
+        loaded: true,
+        busy: false,
+      });
       return record;
     } catch (err) {
       set({
@@ -168,7 +189,7 @@ export const useColorStore = create<ColorStoreState>((set, get) => ({
       if (canAccessVault()) {
         await vault.deleteRecord('color_profile', 'current');
       }
-      set({ profile: null, loaded: true, busy: false });
+      set({ profile: null, draftSwatches: null, loaded: true, busy: false });
     } catch (err) {
       set({
         busy: false,
@@ -180,6 +201,7 @@ export const useColorStore = create<ColorStoreState>((set, get) => ({
   clearMemory: () =>
     set({
       profile: null,
+      draftSwatches: null,
       loaded: false,
       busy: false,
       error: null,

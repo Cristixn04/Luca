@@ -159,9 +159,11 @@ function CircularSwatchRow({
 export function ColorView({ onOpenGarmentInCloset }: ColorViewProps) {
   const t = useT();
   const profile = useColorStore((s) => s.profile);
+  const draftSwatches = useColorStore((s) => s.draftSwatches);
   const loaded = useColorStore((s) => s.loaded);
   const busy = useColorStore((s) => s.busy);
   const loadProfile = useColorStore((s) => s.loadProfile);
+  const setDraftSwatches = useColorStore((s) => s.setDraftSwatches);
   const saveProfile = useColorStore((s) => s.saveProfile);
   const setOverrideSeason = useColorStore((s) => s.setOverrideSeason);
   const setIgnored = useColorStore((s) => s.setIgnored);
@@ -171,11 +173,32 @@ export function ColorView({ onOpenGarmentInCloset }: ColorViewProps) {
   const closetLoaded = useClosetStore((s) => s.loaded);
   const loadCloset = useClosetStore((s) => s.loadCloset);
 
-  const [skinHex, setSkinHex] = useState<string>(profile?.skinHex ?? DEFAULT_COLOR_SWATCHES.skinHex);
-  const [hairHex, setHairHex] = useState<string>(profile?.hairHex ?? DEFAULT_COLOR_SWATCHES.hairHex);
-  const [eyeHex, setEyeHex] = useState<string>(profile?.eyeHex ?? DEFAULT_COLOR_SWATCHES.eyeHex);
+  const [skinHex, setSkinHex] = useState<string>(
+    draftSwatches?.skinHex ?? profile?.skinHex ?? DEFAULT_COLOR_SWATCHES.skinHex,
+  );
+  const [hairHex, setHairHex] = useState<string>(
+    draftSwatches?.hairHex ?? profile?.hairHex ?? DEFAULT_COLOR_SWATCHES.hairHex,
+  );
+  const [eyeHex, setEyeHex] = useState<string>(
+    draftSwatches?.eyeHex ?? profile?.eyeHex ?? DEFAULT_COLOR_SWATCHES.eyeHex,
+  );
   const [savedNotice, setSavedNotice] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<'all' | PaletteColorRole>('all');
+
+  const handleSkinChange = (nextSkin: string) => {
+    setSkinHex(nextSkin);
+    setDraftSwatches({ skinHex: nextSkin, hairHex, eyeHex });
+  };
+
+  const handleHairChange = (nextHair: string) => {
+    setHairHex(nextHair);
+    setDraftSwatches({ skinHex, hairHex: nextHair, eyeHex });
+  };
+
+  const handleEyeChange = (nextEye: string) => {
+    setEyeHex(nextEye);
+    setDraftSwatches({ skinHex, hairHex, eyeHex: nextEye });
+  };
 
   useEffect(() => {
     if (!loaded) {
@@ -401,7 +424,7 @@ export function ColorView({ onOpenGarmentInCloset }: ColorViewProps) {
                   inputId="color-skin-custom"
                   valueHex={skinHex}
                   options={SKIN_SWATCHES}
-                  onChange={setSkinHex}
+                  onChange={handleSkinChange}
                 />
 
                 <div className="border-t border-[var(--glass-divider)] pt-3">
@@ -410,7 +433,7 @@ export function ColorView({ onOpenGarmentInCloset }: ColorViewProps) {
                     inputId="color-hair-custom"
                     valueHex={hairHex}
                     options={HAIR_SWATCHES}
-                    onChange={setHairHex}
+                    onChange={handleHairChange}
                   />
                 </div>
 
@@ -420,7 +443,7 @@ export function ColorView({ onOpenGarmentInCloset }: ColorViewProps) {
                     inputId="color-eye-custom"
                     valueHex={eyeHex}
                     options={EYE_SWATCHES}
-                    onChange={setEyeHex}
+                    onChange={handleEyeChange}
                   />
                 </div>
               </div>

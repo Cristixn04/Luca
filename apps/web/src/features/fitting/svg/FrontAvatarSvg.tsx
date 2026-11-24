@@ -3,6 +3,7 @@ import { Badge } from '@/design-system/components/Badge';
 import type { M2GarmentCategory, MannequinSilhouette } from '../store';
 import { buildAnatomicalFrontBackPath } from './anatomyPaths';
 import { AVATAR_VIEWBOX } from './anchors';
+import { useAvatarColorStyle } from './avatarPalette';
 import {
   EditorialBasewear,
   EditorialFemaleBackHair,
@@ -61,6 +62,7 @@ export function FrontAvatarSvg({
   patternIdSuffix,
 }: SingleAvatarViewProps) {
   const rig = computeMannequinRig(model, silhouette);
+  const { cssVars: avatarColorVars } = useAvatarColorStyle();
   const cx = rig.cx;
   const a = rig.arm;
   const isFemale = silhouette === 'female';
@@ -83,6 +85,7 @@ export function FrontAvatarSvg({
     <svg
       viewBox={`0 0 ${AVATAR_VIEWBOX.width} ${AVATAR_VIEWBOX.height}`}
       className={frameless ? 'h-full w-auto max-w-full' : 'h-auto w-full'}
+      style={avatarColorVars}
       role="img"
       aria-label="Avatar paramétrico de frente con mapa de calor de calce"
     >

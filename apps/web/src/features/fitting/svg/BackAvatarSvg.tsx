@@ -1,6 +1,7 @@
 import { Badge } from '@/design-system/components/Badge';
 import { buildAnatomicalFrontBackPath } from './anatomyPaths';
 import { AVATAR_VIEWBOX } from './anchors';
+import { useAvatarColorStyle } from './avatarPalette';
 import { BackPantsTemplate } from './BackPantsTemplate';
 import { BackTshirtTemplate } from './BackTshirtTemplate';
 import { EditorialBackHead, EditorialBasewear } from './EditorialFigureParts';
@@ -23,6 +24,7 @@ export function BackAvatarSvg({
   patternIdSuffix,
 }: SingleAvatarViewProps) {
   const rig = computeMannequinRig(model, silhouette);
+  const { cssVars: avatarColorVars } = useAvatarColorStyle();
   const cx = rig.cx;
   const a = rig.arm;
   const isFemale = silhouette === 'female';
@@ -44,6 +46,7 @@ export function BackAvatarSvg({
     <svg
       viewBox={`0 0 ${AVATAR_VIEWBOX.width} ${AVATAR_VIEWBOX.height}`}
       className={frameless ? 'h-full w-auto max-w-full' : 'h-auto w-full'}
+      style={avatarColorVars}
       role="img"
       aria-label="Avatar paramétrico de espalda con mapa de calor de calce"
     >

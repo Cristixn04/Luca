@@ -1,6 +1,7 @@
 import { Badge } from '@/design-system/components/Badge';
 import { buildAnatomicalSideBodyPath } from './anatomyPaths';
 import { AVATAR_VIEWBOX } from './anchors';
+import { useAvatarColorStyle } from './avatarPalette';
 import { EditorialBasewear, EditorialSideHead } from './EditorialFigureParts';
 import { isLowerCategory, type SingleAvatarViewProps } from './FrontAvatarSvg';
 import { resolveUpperBlueprint } from './garmentVisuals';
@@ -24,6 +25,7 @@ export function SideAvatarSvg({
   patternIdSuffix,
 }: SingleAvatarViewProps) {
   const rig = computeMannequinRig(model, silhouette);
+  const { cssVars: avatarColorVars } = useAvatarColorStyle();
   const cx = rig.cx;
   const s = rig.side;
   const sa = rig.sideArm;
@@ -161,6 +163,7 @@ export function SideAvatarSvg({
     <svg
       viewBox={`0 0 ${AVATAR_VIEWBOX.width} ${AVATAR_VIEWBOX.height}`}
       className={frameless ? 'h-full w-auto max-w-full' : 'h-auto w-full'}
+      style={avatarColorVars}
       role="img"
       aria-label="Avatar paramétrico de perfil con mapa de calor de calce"
     >
