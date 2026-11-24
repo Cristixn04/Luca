@@ -16,7 +16,7 @@ spring:
 
 luca:
   rag:
-    allowed-origins: ${LUCA_RAG_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080}
+    allowed-origins: ${LUCA_RAG_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:8090}
     jwt:
       secret: ${LUCA_RAG_JWT_SECRET:dev-only-change-in-production-luca-rag-jwt-secret-key-256-bits}
       expiration-seconds: ${LUCA_RAG_JWT_EXPIRATION_SECONDS:86400}

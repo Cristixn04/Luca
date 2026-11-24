@@ -3,7 +3,7 @@ package dev.luca.rag.repository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pgvector.PGvector;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +22,7 @@ import java.util.UUID;
  * + SET LOCAL app.current_tenant para activar Row-Level Security en PostgreSQL).
  */
 @Repository
-@ConditionalOnBean(JdbcTemplate.class)
+@Profile("!test")
 public class PgVectorRagRepository implements RagRepository {
 
     private final JdbcTemplate jdbcTemplate;

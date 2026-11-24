@@ -53,6 +53,9 @@ playwright-report/
 services/rag-api/target/
 services/rag-api/.env
 
+# Runtime local (PIDs y logs de start-luca.sh)
+.luca-runtime/
+
 # OS / Editor
 .DS_Store
 Thumbs.db
