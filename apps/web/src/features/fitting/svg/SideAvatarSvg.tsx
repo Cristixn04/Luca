@@ -1,4 +1,5 @@
 import { Badge } from '@/design-system/components/Badge';
+import { buildAnatomicalSideBodyPath } from './anatomyPaths';
 import { AVATAR_VIEWBOX } from './anchors';
 import { EditorialBasewear, EditorialSideHead } from './EditorialFigureParts';
 import { isLowerCategory, type SingleAvatarViewProps } from './FrontAvatarSvg';
@@ -33,70 +34,47 @@ export function SideAvatarSvg({
 
   const wY = sa.wrist.y;
   const handTipY = sa.handTipY;
-  const handLen = Math.max(14, handTipY - wY);
+  const handLen = Math.max(15, handTipY - wY);
 
-  // Cuerpo anatómico editorial de perfil derecho (postura erguida en S: dorsal, pectoral, lumbar, glúteo, gemelo y pie)
-  const profileBodyPath = [
-    `M ${cx - 8.2} ${rig.chinY - 4}`,
-    `C ${cx - 9.4} ${rig.neckBaseY + 1}, ${s.shoulderBackX - 3.6} ${rig.shoulderY - 3}, ${s.shoulderBackX - 1.2} ${rig.shoulderY + 6}`,
-    `C ${s.chestBackX - 4.2} ${rig.chestY - 5}, ${s.chestBackX - 1.6} ${rig.chestY + 14}, ${s.waistBackX} ${rig.waistY}`,
-    `C ${s.hipBackX - 3.2} ${rig.hipY - 12}, ${s.hipBackX - 3.4} ${s.gluteApexY + 10}, ${s.thighBackX} ${rig.crotchY + 12}`,
-    `C ${s.thighBackX - 0.8} ${rig.kneeY - 18}, ${s.kneeBackX + 2.6} ${rig.kneeY + 3}, ${s.calfBackX - 1.6} ${rig.calfY - 3}`,
-    `C ${s.calfBackX - 0.4} ${rig.calfY + 18}, ${s.ankleBackX + 2.4} ${rig.ankleJointY - 6}, ${s.ankleBackX} ${rig.ankleJointY}`,
-    // Talón redondeado -> arco plantar suave -> bola del pie -> dedo gordo -> empeine
-    `C ${s.ankleBackX - 3.6} ${rig.footY - 5}, ${s.ankleBackX - 4.2} ${rig.footY + 0.5}, ${s.ankleBackX + 2.4} ${rig.footY + 0.8}`,
-    `Q ${cx + 2} ${rig.footY - 0.8} ${s.ankleFrontX + 9} ${rig.footY + 0.8}`,
-    `L ${s.ankleFrontX + 19.5} ${rig.footY + 0.8}`,
-    `C ${s.ankleFrontX + 22.2} ${rig.footY + 0.3}, ${s.ankleFrontX + 22.2} ${rig.footY - 3.8}, ${s.ankleFrontX + 17.5} ${rig.footY - 4.8}`,
-    `C ${s.ankleFrontX + 11.4} ${rig.footY - 7.2}, ${s.ankleFrontX + 4.8} ${rig.ankleJointY + 3}, ${s.ankleFrontX} ${rig.ankleJointY}`,
-    // Tibia -> rótula marcada -> cuádriceps pleno -> abdomen -> pectoral/busto -> cuello frontal
-    `C ${s.calfFrontX - 1.4} ${rig.calfY + 6}, ${s.kneeFrontX + 0.8} ${rig.kneeY + 5}, ${s.kneeFrontX + 1.4} ${rig.kneeY - 3}`,
-    `C ${s.thighFrontX + 1.6} ${rig.crotchY + 14}, ${s.hipFrontX + 1.4} ${rig.hipY + 8}, ${s.hipFrontX} ${rig.hipY}`,
-    `C ${s.waistFrontX + 1.4} ${rig.waistY + 10}, ${s.waistFrontX} ${rig.waistY - 8}, ${s.chestFrontX} ${s.underBustY}`,
-    `C ${s.bustFrontX + 2.2} ${s.underBustY - 2}, ${s.bustFrontX + 2.2} ${s.bustApexY - 4}, ${s.chestFrontX - 1.2} ${rig.chestY - 14}`,
-    `C ${s.shoulderFrontX + 1.8} ${rig.shoulderY + 4}, ${s.shoulderFrontX} ${rig.shoulderY - 1}, ${cx + 6.4} ${rig.neckBaseY + 2}`,
-    `L ${cx + 6.4} ${rig.chinY - 4}`,
-    'Z',
-  ].join(' ');
+  const profileBodyPath = buildAnatomicalSideBodyPath(rig);
 
-  // Mano relajada de perfil refinada (muñeca fina, pulgar adelantado, dedos afinados curvados hacia la pierna)
+  // Mano relajada de perfil fiel a croquis (pulgar adelantado, dedos afinados en abanico suave)
   const sideHandSubpath = [
-    `C ${sa.wrist.frontX + 2.8} ${wY + handLen * 0.22}, ${sa.wrist.frontX + 3.6} ${wY + handLen * 0.45}, ${sa.wrist.frontX + 2.2} ${wY + handLen * 0.56}`,
-    `L ${sa.wrist.frontX + 0.4} ${wY + handLen * 0.48}`,
-    `C ${sa.wrist.frontX + 1.4} ${wY + handLen * 0.72}, ${sa.wrist.frontX + 0.5} ${handTipY - 2.4}, ${sa.wrist.frontX - 2.2} ${handTipY}`,
-    `C ${sa.wrist.backX - 0.6} ${handTipY - 0.6}, ${sa.wrist.backX - 1.4} ${handTipY - handLen * 0.28}, ${sa.wrist.backX - 0.5} ${wY + handLen * 0.24}`,
-    `C ${sa.wrist.backX - 0.3} ${wY + handLen * 0.12}, ${sa.wrist.backX - 0.1} ${wY + 1}, ${sa.wrist.backX} ${wY}`,
+    `C ${sa.wrist.frontX + 3.0} ${wY + handLen * 0.2}, ${sa.wrist.frontX + 4.0} ${wY + handLen * 0.44}, ${sa.wrist.frontX + 2.4} ${wY + handLen * 0.56}`,
+    `L ${sa.wrist.frontX + 0.4} ${wY + handLen * 0.46}`,
+    `C ${sa.wrist.frontX + 1.8} ${wY + handLen * 0.72}, ${sa.wrist.frontX + 0.8} ${handTipY - 2.2}, ${sa.wrist.frontX - 1.8} ${handTipY + 0.6}`,
+    `C ${sa.wrist.backX - 0.8} ${handTipY - 0.8}, ${sa.wrist.backX - 2.0} ${handTipY - handLen * 0.3}, ${sa.wrist.backX - 0.8} ${wY + handLen * 0.24}`,
+    `C ${sa.wrist.backX - 0.4} ${wY + handLen * 0.12}, ${sa.wrist.backX - 0.1} ${wY + 1}, ${sa.wrist.backX} ${wY}`,
   ].join(' ');
 
-  // Brazo editorial completo de perfil con curva natural del deltoides, bíceps/tríceps y antebrazo levemente adelantado
+  // Brazo de perfil en curva natural (húmero levemente atrás, antebrazo fluyendo hacia adelante)
   const profileArmPath = [
     `M ${sa.shoulder.backX} ${sa.shoulder.y}`,
     `C ${sa.shoulder.backX + 1} ${rig.shoulderY - 1.5}, ${sa.shoulder.frontX - 1} ${rig.shoulderY - 1.5}, ${sa.shoulder.frontX} ${sa.shoulder.y}`,
-    `C ${sa.bicep.frontX + 1.8} ${sa.bicep.y - 4}, ${sa.bicep.frontX + 1.0} ${sa.bicep.y + 6}, ${sa.elbow.frontX} ${sa.elbow.y}`,
-    `C ${sa.wrist.frontX + 2.6} ${sa.elbow.y + (wY - sa.elbow.y) * 0.36}, ${sa.wrist.frontX + 1.0} ${wY - 6}, ${sa.wrist.frontX} ${wY}`,
+    `C ${sa.bicep.frontX + 1.8} ${sa.bicep.y - 4}, ${sa.bicep.frontX + 0.8} ${sa.bicep.y + 7}, ${sa.elbow.frontX} ${sa.elbow.y}`,
+    `C ${sa.wrist.frontX + 2.8} ${sa.elbow.y + (wY - sa.elbow.y) * 0.34}, ${sa.wrist.frontX + 1.0} ${wY - 6}, ${sa.wrist.frontX} ${wY}`,
     sideHandSubpath,
-    `C ${sa.elbow.backX - 1.2} ${sa.elbow.y + 10}, ${sa.elbow.backX - 1.4} ${sa.elbow.y + 2}, ${sa.elbow.backX} ${sa.elbow.y}`,
-    `C ${sa.bicep.backX - 2.0} ${sa.bicep.y + 4}, ${sa.shoulder.backX - 2.0} ${sa.shoulder.y + 10}, ${sa.shoulder.backX} ${sa.shoulder.y}`,
+    `C ${sa.elbow.backX - 1.0} ${sa.elbow.y + 12}, ${sa.elbow.backX - 1.8} ${sa.elbow.y + 2}, ${sa.elbow.backX} ${sa.elbow.y}`,
+    `C ${sa.bicep.backX - 2.0} ${sa.bicep.y + 5}, ${sa.shoulder.backX - 2.0} ${sa.shoulder.y + 10}, ${sa.shoulder.backX} ${sa.shoulder.y}`,
     'Z',
   ].join(' ');
 
-  // Contorno abierto en el hombro para fundirse orgánicamente con el trapecio sin corte artificial
   const profileArmOpenInkPath = [
-    `M ${sa.shoulder.frontX - 0.4} ${sa.shoulder.y + 6}`,
-    `C ${sa.bicep.frontX + 1.8} ${sa.bicep.y - 4}, ${sa.bicep.frontX + 1.0} ${sa.bicep.y + 6}, ${sa.elbow.frontX} ${sa.elbow.y}`,
-    `C ${sa.wrist.frontX + 2.6} ${sa.elbow.y + (wY - sa.elbow.y) * 0.36}, ${sa.wrist.frontX + 1.0} ${wY - 6}, ${sa.wrist.frontX} ${wY}`,
+    `M ${sa.shoulder.frontX - 0.4} ${sa.shoulder.y + 7}`,
+    `C ${sa.bicep.frontX + 1.8} ${sa.bicep.y - 4}, ${sa.bicep.frontX + 0.8} ${sa.bicep.y + 7}, ${sa.elbow.frontX} ${sa.elbow.y}`,
+    `C ${sa.wrist.frontX + 2.8} ${sa.elbow.y + (wY - sa.elbow.y) * 0.34}, ${sa.wrist.frontX + 1.0} ${wY - 6}, ${sa.wrist.frontX} ${wY}`,
     sideHandSubpath,
-    `C ${sa.elbow.backX - 1.2} ${sa.elbow.y + 10}, ${sa.elbow.backX - 1.4} ${sa.elbow.y + 2}, ${sa.elbow.backX} ${sa.elbow.y}`,
-    `C ${sa.bicep.backX - 2.0} ${sa.bicep.y + 4}, ${sa.shoulder.backX - 2.0} ${sa.shoulder.y + 10}, ${sa.shoulder.backX + 0.4} ${sa.shoulder.y + 3}`,
+    `C ${sa.elbow.backX - 1.0} ${sa.elbow.y + 12}, ${sa.elbow.backX - 1.8} ${sa.elbow.y + 2}, ${sa.elbow.backX} ${sa.elbow.y}`,
+    `C ${sa.bicep.backX - 2.0} ${sa.bicep.y + 5}, ${sa.shoulder.backX - 2.0} ${sa.shoulder.y + 10}, ${sa.shoulder.backX + 0.4} ${sa.shoulder.y + 4}`,
   ].join(' ');
 
   const profileForearmAndHandPath = [
     `M ${sa.bicep.backX} ${sa.bicep.y}`,
     `L ${sa.bicep.frontX} ${sa.bicep.y}`,
     `C ${sa.elbow.frontX} ${sa.elbow.y - 4}, ${sa.elbow.frontX} ${sa.elbow.y}, ${sa.elbow.frontX} ${sa.elbow.y}`,
-    `C ${sa.wrist.frontX + 2.6} ${sa.elbow.y + (wY - sa.elbow.y) * 0.36}, ${sa.wrist.frontX + 1.0} ${wY - 6}, ${sa.wrist.frontX} ${wY}`,
+    `C ${sa.wrist.frontX + 2.8} ${sa.elbow.y + (wY - sa.elbow.y) * 0.34}, ${sa.wrist.frontX + 1.0} ${wY - 6}, ${sa.wrist.frontX} ${wY}`,
     sideHandSubpath,
-    `C ${sa.elbow.backX - 1.2} ${sa.elbow.y + 10}, ${sa.elbow.backX - 1.4} ${sa.elbow.y + 2}, ${sa.elbow.backX} ${sa.elbow.y}`,
+    `C ${sa.elbow.backX - 1.0} ${sa.elbow.y + 12}, ${sa.elbow.backX - 1.8} ${sa.elbow.y + 2}, ${sa.elbow.backX} ${sa.elbow.y}`,
     'Z',
   ].join(' ');
 
@@ -110,19 +88,21 @@ export function SideAvatarSvg({
   const renderBareSideArm = () => (
     <g>
       <path d={profileArmPath} fill={`url(#${patternPrefix}-side-body-grad)`} />
-      <g clipPath={`url(#${armClipId})`} pointerEvents="none">
-        {/* Sombra posterior suave en tríceps y antebrazo */}
+      <g
+        clipPath={`url(#${armClipId})`}
+        filter={`url(#${patternPrefix}-soft-shade)`}
+        pointerEvents="none"
+      >
         <path
-          d={`M ${sa.shoulder.backX - 3} ${sa.shoulder.y} L ${sa.shoulder.backX + 6.5} ${sa.shoulder.y} L ${sa.elbow.backX + 5.2} ${sa.elbow.y} L ${sa.wrist.backX + 3.6} ${wY} L ${sa.wrist.backX - 3} ${handTipY} L ${sa.shoulder.backX - 4} ${handTipY} Z`}
+          d={`M ${sa.shoulder.backX - 4} ${sa.shoulder.y} L ${sa.shoulder.backX + 7} ${sa.shoulder.y} L ${sa.elbow.backX + 5.6} ${sa.elbow.y} L ${sa.wrist.backX + 3.6} ${wY} L ${sa.wrist.backX - 4} ${handTipY} L ${sa.shoulder.backX - 5} ${handTipY} Z`}
           fill={`url(#${patternPrefix}-muscle-shade)`}
-          opacity="0.72"
+          opacity="0.78"
         />
-        {/* Brillo suave en deltoides lateral y cara anterior del antebrazo */}
         <ellipse
-          cx={(sa.shoulder.backX + sa.shoulder.frontX) * 0.56}
-          cy={sa.shoulder.y + 11}
-          rx={5.2}
-          ry={12}
+          cx={(sa.shoulder.backX + sa.shoulder.frontX) * 0.58}
+          cy={sa.shoulder.y + 12}
+          rx={5.6}
+          ry={14}
           fill={`url(#${patternPrefix}-skin-sheen)`}
         />
       </g>
@@ -130,18 +110,21 @@ export function SideAvatarSvg({
         d={profileArmOpenInkPath}
         fill="none"
         stroke="var(--mannequin-stroke)"
-        strokeWidth="1.15"
+        strokeWidth="1.05"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      {/* Definición muy sutil del deltoides inferior y dedos de perfil */}
+      {/* Separación fina de dedos en abanico de perfil */}
       <path
-        d={`M ${sa.shoulder.backX + 2.5} ${sa.bicep.y - 6} Q ${(sa.shoulder.backX + sa.shoulder.frontX) * 0.5} ${sa.bicep.y - 2} ${sa.bicep.frontX - 1} ${sa.bicep.y - 7} M ${sa.wrist.frontX - 0.4} ${handTipY - handLen * 0.32} L ${sa.wrist.frontX - 1.2} ${handTipY - 1.5}`}
+        d={[
+          `M ${sa.wrist.frontX - 0.6} ${wY + handLen * 0.56} L ${sa.wrist.frontX - 1.4} ${handTipY - 1.6}`,
+          `M ${sa.wrist.backX + 1.2} ${wY + handLen * 0.58} L ${sa.wrist.backX + 0.4} ${handTipY - 2.6}`,
+        ].join(' ')}
         fill="none"
-        stroke="var(--mannequin-detail)"
-        strokeWidth="0.6"
+        stroke="var(--mannequin-stroke)"
+        strokeWidth="0.56"
         strokeLinecap="round"
-        opacity="0.68"
+        opacity="0.72"
         pointerEvents="none"
       />
     </g>
@@ -192,6 +175,16 @@ export function SideAvatarSvg({
         </clipPath>
       </defs>
 
+      {/* Sombra suave de contacto en el suelo */}
+      <ellipse
+        cx={cx + 5}
+        cy={rig.footY + 3.5}
+        rx={26}
+        ry={5}
+        fill={`url(#${patternPrefix}-floor-shadow)`}
+        pointerEvents="none"
+      />
+
       {/* Relleno base cálido del cuerpo de perfil */}
       <path
         d={profileBodyPath}
@@ -199,89 +192,94 @@ export function SideAvatarSvg({
         data-avatar-body="side"
       />
 
-      {/* Sombreado anatómico de perfil recortado al cuerpo */}
-      <g clipPath={`url(#${bodyClipId})`} pointerEvents="none">
+      {/* Modelado volumétrico 3D difuminado recortado al cuerpo de perfil */}
+      <g
+        clipPath={`url(#${bodyClipId})`}
+        filter={`url(#${patternPrefix}-soft-shade)`}
+        pointerEvents="none"
+      >
         <path
-          d={`M ${cx - 10} ${rig.chinY - 4} L ${cx + 9} ${rig.chinY - 4} L ${cx + 8} ${rig.neckBaseY + 2} Q ${cx - 1} ${rig.neckBaseY + 6} ${cx - 10} ${rig.neckBaseY + 1} Z`}
+          d={`M ${cx - 10} ${rig.chinY - 4} L ${cx + 9} ${rig.chinY - 4} L ${cx + 8} ${rig.neckBaseY + 3} Q ${cx - 1} ${rig.neckBaseY + 7} ${cx - 10} ${rig.neckBaseY + 2} Z`}
           fill={`url(#${patternPrefix}-neck-shadow)`}
         />
         <path
           d={[
-            `M ${s.shoulderBackX - 6} ${rig.shoulderY}`,
-            `L ${s.chestBackX + 8} ${rig.chestY}`,
+            `M ${s.shoulderBackX - 7} ${rig.shoulderY}`,
+            `L ${s.chestBackX + 9} ${rig.chestY}`,
             `L ${s.waistBackX + 7} ${rig.waistY}`,
-            `L ${s.hipBackX + 11} ${s.gluteApexY}`,
-            `L ${s.thighBackX + 8} ${rig.crotchY + 24}`,
-            `L ${s.kneeBackX + 6.5} ${rig.kneeY}`,
-            `L ${s.calfBackX + 8} ${rig.calfY}`,
-            `L ${s.ankleBackX + 4} ${rig.ankleJointY}`,
+            `L ${s.hipBackX + 12} ${s.gluteApexY}`,
+            `L ${s.thighBackX + 9} ${rig.crotchY + 24}`,
+            `L ${s.kneeBackX + 7} ${rig.kneeY}`,
+            `L ${s.calfBackX + 9} ${rig.calfY}`,
+            `L ${s.ankleBackX + 4.5} ${rig.ankleJointY}`,
             `L ${s.ankleBackX - 6} ${rig.footY + 2}`,
-            `L ${s.hipBackX - 9} ${rig.footY + 2}`,
+            `L ${s.hipBackX - 10} ${rig.footY + 2}`,
             'Z',
           ].join(' ')}
           fill={`url(#${patternPrefix}-muscle-shade)`}
-          opacity="0.7"
+          opacity="0.76"
         />
         <path
-          d={`M ${s.chestFrontX - 9} ${s.underBustY - 1} Q ${s.chestFrontX - 1} ${s.underBustY + 3.8} ${s.bustFrontX + 3} ${s.underBustY - 1} L ${s.bustFrontX + 3} ${s.underBustY + 6.5} L ${s.chestFrontX - 9} ${s.underBustY + 4.5} Z`}
+          d={`M ${s.chestFrontX - 10} ${s.underBustY - 1} Q ${s.chestFrontX - 1} ${s.underBustY + 4.2} ${s.bustFrontX + 3} ${s.underBustY - 1} L ${s.bustFrontX + 3} ${s.underBustY + 7.5} L ${s.chestFrontX - 10} ${s.underBustY + 5} Z`}
           fill={`url(#${patternPrefix}-skin-core-shade)`}
-          opacity="0.72"
+          opacity="0.78"
         />
         <ellipse
           cx={s.thighFrontX - 5.5}
           cy={rig.crotchY + (rig.kneeY - rig.crotchY) * 0.45}
-          rx={5.2}
-          ry={21}
+          rx={6}
+          ry={24}
           fill={`url(#${patternPrefix}-skin-sheen)`}
         />
         <ellipse
           cx={s.calfFrontX - 2.5}
           cy={rig.calfY + 8}
-          rx={3.2}
-          ry={17}
+          rx={3.8}
+          ry={19}
           fill={`url(#${patternPrefix}-skin-sheen)`}
         />
       </g>
 
-      {/* Líneas anatómicas finas de perfil */}
+      {/* Líneas anatómicas ultrafinas de perfil */}
       <g pointerEvents="none" fill="none" strokeLinecap="round">
         <path
           d={`M ${cx - 3.6} ${rig.chinY + 1} Q ${cx - 0.5} ${rig.neckBaseY + 2} ${s.shoulderFrontX - 2} ${rig.shoulderY + 5}`}
           stroke="var(--mannequin-detail)"
-          strokeWidth="0.65"
+          strokeWidth="0.6"
+          opacity="0.72"
         />
         {!isFemale && (
           <path
             d={`M ${s.chestFrontX - 7} ${s.underBustY + 1} Q ${s.chestFrontX} ${s.underBustY + 2.6} ${s.bustFrontX - 0.2} ${s.underBustY - 1.5}`}
             stroke="var(--mannequin-detail)"
-            strokeWidth="0.72"
+            strokeWidth="0.68"
           />
         )}
         <path
-          d={`M ${s.kneeFrontX - 3.5} ${rig.kneeY - 3} Q ${s.kneeFrontX - 1} ${rig.kneeY + 1} ${s.kneeFrontX - 3} ${rig.kneeY + 5}`}
-          stroke="var(--mannequin-detail)"
-          strokeWidth="0.68"
-        />
-        <path
-          d={`M ${s.kneeBackX + 2} ${rig.kneeY + 1} L ${s.kneeBackX + 5.8} ${rig.kneeY + 2.2}`}
+          d={`M ${s.kneeFrontX - 3.4} ${rig.kneeY - 3} Q ${s.kneeFrontX - 0.8} ${rig.kneeY + 1} ${s.kneeFrontX - 2.8} ${rig.kneeY + 5}`}
           stroke="var(--mannequin-detail)"
           strokeWidth="0.62"
+        />
+        <path
+          d={`M ${s.kneeBackX + 1.8} ${rig.kneeY + 1} L ${s.kneeBackX + 5.6} ${rig.kneeY + 2.2}`}
+          stroke="var(--mannequin-detail)"
+          strokeWidth="0.58"
         />
         <path
           d={`M ${s.ankleBackX + 3.4} ${rig.calfY + 18} L ${s.ankleBackX + 3} ${rig.ankleJointY + 3}`}
           stroke="var(--mannequin-detail)"
-          strokeWidth="0.62"
+          strokeWidth="0.58"
         />
         <path
           d={`M ${cx + 0.8} ${rig.ankleJointY + 1.5} Q ${cx + 2.5} ${rig.ankleJointY + 3.5} ${cx + 0.2} ${rig.ankleJointY + 5.2}`}
           stroke="var(--mannequin-detail)"
-          strokeWidth="0.68"
+          strokeWidth="0.62"
         />
         <path
-          d={`M ${s.ankleFrontX + 16} ${rig.footY - 2.8} Q ${s.ankleFrontX + 18.2} ${rig.footY - 2} ${s.ankleFrontX + 19} ${rig.footY - 0.1}`}
+          d={`M ${s.ankleFrontX + 14.8} ${rig.footY - 2.8} Q ${s.ankleFrontX + 17.0} ${rig.footY - 2} ${s.ankleFrontX + 17.8} ${rig.footY - 0.1}`}
           stroke="var(--mannequin-stroke)"
-          strokeWidth="0.6"
-          opacity="0.7"
+          strokeWidth="0.56"
+          opacity="0.68"
         />
       </g>
 
@@ -293,12 +291,12 @@ export function SideAvatarSvg({
         bodyClipId={bodyClipId}
       />
 
-      {/* Contorno de tinta espresso limpio abrazando cuerpo y ropa base */}
+      {/* Contorno de tinta refinada abrazando cuerpo y ropa base */}
       <path
         d={profileBodyPath}
         fill="none"
         stroke="var(--mannequin-stroke)"
-        strokeWidth="1.2"
+        strokeWidth="1.08"
         strokeLinejoin="round"
         strokeLinecap="round"
       />
@@ -349,7 +347,7 @@ export function SideAvatarSvg({
             d={overlayLimbPath}
             fill={`url(#${patternPrefix}-limb-grad)`}
             stroke="var(--mannequin-stroke)"
-            strokeWidth="1.15"
+            strokeWidth="1.05"
             strokeLinejoin="round"
           />
         </>
@@ -384,7 +382,7 @@ export function SideAvatarSvg({
                 d={overlayLimbPath}
                 fill={`url(#${patternPrefix}-limb-grad)`}
                 stroke="var(--mannequin-stroke)"
-                strokeWidth="1.15"
+                strokeWidth="1.05"
                 strokeLinejoin="round"
               />
             </>

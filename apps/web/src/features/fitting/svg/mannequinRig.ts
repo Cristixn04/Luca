@@ -141,72 +141,76 @@ export function computeMannequinRig(
   const s = front.scale;
   const isFemale = silhouette === 'female';
 
-  // Cabeza y cuello proporcionales a la estatura (canon editorial ~7.6–7.8 cabezas, sin cuello alargado)
-  const headRy = r2(clamp(front.headRadius * 1.12, 18.5, 25));
-  const headRx = r2(headRy * (isFemale ? 0.69 : 0.74));
+  // Cabeza y cuello con canon profesional de croquis (~7.8 cabezas, cuello estilizado en mujer y firme en hombre)
+  const headRy = r2(clamp(front.headRadius * 1.1, 18.5, 24.5));
+  const headRx = r2(headRy * (isFemale ? 0.68 : 0.72));
   const shoulderY = r2(front.shoulderY);
   const headCenterY = r2(
-    clamp(Math.min(shoulderY - headRy * 1.54, front.headCenterY + 5), headRy + 9, shoulderY - headRy - 10),
+    clamp(Math.min(shoulderY - headRy * 1.56, front.headCenterY + 4.5), headRy + 9, shoulderY - headRy - 10),
   );
   const headTopY = r2(headCenterY - headRy);
   const chinY = r2(headCenterY + headRy);
-  const neckHalf = r2(isFemale ? headRx * 0.54 : headRx * 0.66);
-  const neckBaseY = r2(chinY + (shoulderY - chinY) * 0.52);
+  const neckHalf = r2(isFemale ? headRx * 0.48 : headRx * 0.64);
+  const neckBaseY = r2(chinY + (shoulderY - chinY) * 0.56);
 
-  // Hitos verticales coherentes (si el usuario define largo de espalda sin largo de torso, lo reflejamos en cintura)
+  // Hitos verticales con altura anatómica real de cintura natural (~60% del tramo hombro -> entrepierna)
+  // para que pelvis, cadera y glúteos tengan su proporción real de croquis (~24% de estatura desde cintura a entrepierna)
   const crotchY = r2(front.crotchY);
   const footY = r2(front.ankleY);
-  const minPelvisGapPx = Math.max(22, model.heightCm * 0.06 * s);
+  const torsoSpanPx = Math.max(48, crotchY - shoulderY);
+  const minPelvisGapPx = Math.max(36, torsoSpanPx * 0.34);
   const maxWaistY = crotchY - minPelvisGapPx;
-  const minWaistY = shoulderY + Math.max(32, model.heightCm * 0.16 * s);
+  const minWaistY = shoulderY + Math.max(36, torsoSpanPx * 0.42);
 
+  const naturalWaistY = shoulderY + torsoSpanPx * (isFemale ? 0.57 : 0.6);
   const waistY = r2(
-    model.landmarks.torsoEstimated && !model.backLengthEstimated
-      ? clamp(shoulderY + model.backLengthCm * s, minWaistY, maxWaistY)
-      : clamp(front.waistY, minWaistY, maxWaistY),
+    !model.landmarks.torsoEstimated
+      ? clamp(front.waistY, minWaistY, maxWaistY)
+      : !model.backLengthEstimated
+        ? clamp(shoulderY + model.backLengthCm * s * 0.88, minWaistY, maxWaistY)
+        : clamp(naturalWaistY, minWaistY, maxWaistY),
   );
-  const chestY = r2(shoulderY + (waistY - shoulderY) * 0.36);
-  const hipY = r2(waistY + (crotchY - waistY) * 0.58);
-  const bustUnderY = r2(Math.min(waistY - 8, chestY + (isFemale ? 11 : 7)));
-  const armpitY = r2(Math.min(chestY + 1, waistY - 12));
+  const chestY = r2(shoulderY + (waistY - shoulderY) * 0.44);
+  const hipY = r2(waistY + (crotchY - waistY) * 0.62);
+  const bustUnderY = r2(Math.min(waistY - 10, chestY + (isFemale ? 13 : 8.5)));
+  const armpitY = r2(Math.min(chestY + 2, waistY - 14));
   const kneeY = r2(crotchY + (footY - crotchY) * 0.48);
-  const calfY = r2(kneeY + (footY - kneeY) * 0.34);
+  const calfY = r2(kneeY + (footY - kneeY) * 0.31);
   const ankleJointY = r2(footY - 14);
 
-  // Proporciones horizontales fieles a las medidas reales (sin topes artificiales que anulen cambios)
-  // El ancho de espalda (backWidth) impacta directamente tanto en Espalda como en la silueta dorsal visible de Frente.
-  const widthFactor = isFemale ? 0.86 : 0.94;
+  // Proporciones horizontales anatómicas fieles a medidas reales (silueta femenina con cintura/cadera en S y masculina en V)
+  const widthFactor = isFemale ? 0.84 : 0.96;
   const rawShoulderHalf = front.shoulderHalfW * widthFactor;
-  const rawChestHalf = front.chestHalfW * (isFemale ? 0.86 : 0.93);
-  const rawBackHalf = (model.backWidthCm / 2) * s * (isFemale ? 0.86 : 0.93);
-  const defaultBackHalf = ((model.shouldersWidthCm * 0.9) / 2) * s * (isFemale ? 0.86 : 0.93);
+  const rawChestHalf = front.chestHalfW * (isFemale ? 0.85 : 0.94);
+  const rawBackHalf = (model.backWidthCm / 2) * s * (isFemale ? 0.85 : 0.94);
+  const defaultBackHalf = ((model.shouldersWidthCm * 0.9) / 2) * s * (isFemale ? 0.85 : 0.94);
   const backDeltaPx = model.backWidthEstimated ? 0 : rawBackHalf - defaultBackHalf;
 
   const backChestX = r2(clamp(rawBackHalf, neckHalf + 11, 70));
   const chestX = r2(clamp(rawChestHalf + backDeltaPx * 0.55, neckHalf + 11, 68));
   const armpitX = r2(
-    clamp(chestX + (isFemale ? 1.5 : 2) + backDeltaPx * 0.25, neckHalf + 12, 70),
+    clamp(chestX + (isFemale ? 1.2 : 2.2) + backDeltaPx * 0.25, neckHalf + 12, 70),
   );
   const shoulderX = r2(
-    clamp(Math.max(rawShoulderHalf + backDeltaPx * 0.35, armpitX + 2.2), neckHalf + 15, 74),
+    clamp(Math.max(rawShoulderHalf + backDeltaPx * 0.35, armpitX + (isFemale ? 2.8 : 4.2)), neckHalf + 15, 74),
   );
 
-  const waistX = r2(clamp(front.waistHalfW * (isFemale ? 0.84 : 0.92), 14, 66));
-  const hipX = r2(clamp(front.hipHalfW * (isFemale ? 0.92 : 0.88), 18, 70));
+  const waistX = r2(clamp(front.waistHalfW * (isFemale ? 0.78 : 0.89), 13, 66));
+  const hipX = r2(clamp(front.hipHalfW * (isFemale ? 0.97 : 0.88), 18, 72));
 
-  // Piernas atléticas y esculpidas (muslo lleno, gemelo medial hacia adentro, tobillo definido)
-  const kneeInnerX = r2(isFemale ? 4.8 : 5.4);
-  const kneeOuterX = r2(clamp(hipX * (isFemale ? 0.68 : 0.72), kneeInnerX + 12, 46));
-  const calfInnerX = r2(isFemale ? 4.3 : 4.8);
-  const calfOuterX = r2(clamp(hipX * (isFemale ? 0.67 : 0.74), calfInnerX + 13, 47));
-  const ankleInnerX = r2(isFemale ? 6.6 : 7.4);
+  // Piernas con anatomía de croquis real (entrepierna limpia, muslo pleno, gemelo medial marcado, tobillo fino)
+  const kneeInnerX = r2(isFemale ? 3.8 : 4.6);
+  const kneeOuterX = r2(clamp(hipX * (isFemale ? 0.62 : 0.69), kneeInnerX + 11, 46));
+  const calfInnerX = r2(isFemale ? 3.5 : 4.2);
+  const calfOuterX = r2(clamp(hipX * (isFemale ? 0.63 : 0.72), calfInnerX + 12, 47));
+  const ankleInnerX = r2(isFemale ? 6.0 : 6.8);
   const ankleOuterX = r2(
-    clamp(ankleInnerX + (isFemale ? 8.2 : 9.8) + (hipX - 34) * 0.08, ankleInnerX + 7.5, 24),
+    clamp(ankleInnerX + (isFemale ? 7.6 : 9.2) + (hipX - 34) * 0.08, ankleInnerX + 7.0, 24),
   );
 
   // Longitud anatómica real de brazos: depende SOLO de estatura y hombro (nunca se alargan con la entrepierna)
   const armLengthPx = model.heightCm * 0.335 * s;
-  const handLengthPx = model.heightCm * 0.108 * s;
+  const handLengthPx = model.heightCm * 0.112 * s;
   const deltoidY = r2(shoulderY + armLengthPx * 0.06);
   const bicepY = r2(shoulderY + armLengthPx * 0.28);
   const elbowY = r2(shoulderY + armLengthPx * 0.5);
@@ -225,42 +229,43 @@ export function computeMannequinRig(
     return lerp(hipX * 0.94, kneeOuterX, (y - crotchY) / Math.max(1, kneeY - crotchY));
   };
 
-  // Grosor anatómico atlético del brazo proporcional a la complexión superior
-  const buildFactor = clamp((chestX + shoulderX) / 80, 0.86, 1.32);
-  const upperArmThickness = r2((isFemale ? 11.8 : 15.8) * buildFactor);
-  const elbowThickness = r2((isFemale ? 9.8 : 12.8) * buildFactor);
-  const forearmThickness = r2((isFemale ? 9.4 : 12.6) * buildFactor);
+  // Grosor anatómico equilibrado (esbelto y natural en mujer, atlético proporcionado en hombre)
+  const buildFactor = clamp((chestX + shoulderX) / 80, 0.88, 1.28);
+  const upperArmThickness = r2((isFemale ? 11.4 : 14.8) * buildFactor);
+  const elbowThickness = r2((isFemale ? 9.8 : 12.6) * buildFactor);
+  const forearmThickness = r2((isFemale ? 9.6 : 12.4) * buildFactor);
   const wristThickness = r2((isFemale ? 6.4 : 8.2) * buildFactor);
 
-  // Caída natural en ligera postura en A (~7°) desde el deltoides, con aire limpio junto a cintura y cadera
-  const shoulderBaseInner = armpitX + (isFemale ? 3.2 : 4.0);
+  // Postura A-pose anatómica limpia (como croquis Imágenes 3 y 4):
+  // el brazo sale suavemente en diagonal desde el deltoides sin bultos en hombro ni pellizcos en codo
+  const shoulderBaseInner = armpitX + (isFemale ? 2.4 : 3.2);
   const maxOuterX = 144;
   const bicepInner = r2(
-    Math.min(maxOuterX - upperArmThickness, Math.max(shoulderBaseInner, torsoHalfWidthAtY(bicepY) + 3.4)),
+    Math.min(maxOuterX - upperArmThickness, Math.max(shoulderBaseInner + 1.5, torsoHalfWidthAtY(bicepY) + 3.2)),
   );
   const elbowInner = r2(
     Math.min(
       maxOuterX - elbowThickness,
-      Math.max(bicepInner + 2.8, torsoHalfWidthAtY(elbowY) + 6.5),
+      Math.max(bicepInner + (isFemale ? 4.2 : 4.6), torsoHalfWidthAtY(elbowY) + (isFemale ? 9.5 : 10.5)),
     ),
   );
   const forearmInner = r2(
     Math.min(
       maxOuterX - forearmThickness,
-      Math.max(elbowInner + 2.4, torsoHalfWidthAtY(forearmY) + 7.4),
+      Math.max(elbowInner + (isFemale ? 4.8 : 5.2), torsoHalfWidthAtY(forearmY) + (isFemale ? 12.5 : 13.5)),
     ),
   );
   const wristInner = r2(
     Math.min(
       maxOuterX - wristThickness,
-      Math.max(forearmInner + 2.2, torsoHalfWidthAtY(wristY) + 8.6),
+      Math.max(forearmInner + (isFemale ? 4.6 : 5.0), torsoHalfWidthAtY(wristY) + (isFemale ? 14.5 : 15.5)),
     ),
   );
 
   const arm = {
     deltoid: {
       y: deltoidY,
-      outerX: r2(Math.min(maxOuterX, Math.max(shoulderX + (isFemale ? 4.2 : 6.2), bicepInner + upperArmThickness))),
+      outerX: r2(Math.min(maxOuterX, Math.max(shoulderX + (isFemale ? 2.6 : 4.2), bicepInner + upperArmThickness - 1.2))),
       innerX: armpitX,
     },
     bicep: {
@@ -286,60 +291,60 @@ export function computeMannequinRig(
     handTipY,
   };
 
-  // Perfil anatómico con postura natural en S (espalda torácica, pecho erguido, arco lumbar, glúteo y gemelo)
-  const halfChestD = clamp(((side.chestFrontX - side.chestBackX) / 2) * (isFemale ? 0.94 : 1.04), 15, 48);
-  const halfWaistD = clamp(((side.waistFrontX - side.waistBackX) / 2) * (isFemale ? 0.86 : 0.94), 12, 46);
-  const halfHipD = clamp(((side.hipFrontX - side.hipBackX) / 2) * (isFemale ? 0.98 : 0.98), 16, 50);
+  // Perfil anatómico en S-curve natural y proporcionado (fiel a Imagen 3 derecha e Imagen 4 centro)
+  const halfChestD = clamp(((side.chestFrontX - side.chestBackX) / 2) * (isFemale ? 0.9 : 1.0), 14, 46);
+  const halfWaistD = clamp(((side.waistFrontX - side.waistBackX) / 2) * (isFemale ? 0.8 : 0.9), 11, 44);
+  const halfHipD = clamp(((side.hipFrontX - side.hipBackX) / 2) * (isFemale ? 0.96 : 0.94), 15, 48);
 
-  const sideChestBackX = r2(cx - halfChestD * 0.88);
-  const sideChestFrontX = r2(cx + halfChestD * (isFemale ? 0.92 : 1.08));
-  const bustApexY = r2(chestY + 2);
-  const bustFrontX = r2(sideChestFrontX + (isFemale ? 8.2 : 2.6));
-  const underBustY = r2(bustUnderY + 2);
+  const sideChestBackX = r2(cx - halfChestD * 0.84);
+  const sideChestFrontX = r2(cx + halfChestD * (isFemale ? 0.88 : 1.04));
+  const bustApexY = r2(chestY + (isFemale ? 4.0 : 2));
+  const bustFrontX = r2(sideChestFrontX + (isFemale ? 8.8 : 2.8));
+  const underBustY = r2(bustUnderY + (isFemale ? 2.5 : 1.5));
 
-  const sideWaistBackX = r2(cx - halfWaistD * (isFemale ? 0.62 : 0.74));
-  const sideWaistFrontX = r2(cx + halfWaistD * (isFemale ? 0.9 : 0.94));
+  const sideWaistBackX = r2(cx - halfWaistD * (isFemale ? 0.58 : 0.72));
+  const sideWaistFrontX = r2(cx + halfWaistD * (isFemale ? 0.84 : 0.9));
 
-  const sideHipBackX = r2(cx - halfHipD * (isFemale ? 1.24 : 1.12));
+  const sideHipBackX = r2(cx - halfHipD * (isFemale ? 1.18 : 1.04));
   const sideHipFrontX = r2(cx + halfHipD * (isFemale ? 0.84 : 0.88));
-  const gluteApexY = r2(hipY + 5);
+  const gluteApexY = r2(hipY + 6);
 
-  const sideShoulderBackX = r2(cx - halfChestD * 0.62);
-  const sideShoulderFrontX = r2(cx + halfChestD * 0.52);
+  const sideShoulderBackX = r2(cx - halfChestD * 0.58);
+  const sideShoulderFrontX = r2(cx + halfChestD * 0.48);
 
-  const legDepthFactor = clamp(halfHipD / 22, 0.82, 1.38);
-  const thighBackX = r2(cx - halfHipD * 0.84);
+  const legDepthFactor = clamp(halfHipD / 22, 0.82, 1.32);
+  const thighBackX = r2(cx - halfHipD * 0.82);
   const thighFrontX = r2(cx + halfHipD * 0.86);
-  const kneeBackX = r2(cx - (isFemale ? 8.8 : 10.6) * legDepthFactor);
-  const kneeFrontX = r2(cx + (isFemale ? 11.2 : 12.8) * legDepthFactor);
-  const calfBackX = r2(cx - (isFemale ? 14.2 : 16.4) * legDepthFactor);
-  const calfFrontX = r2(cx + (isFemale ? 7.4 : 8.8) * legDepthFactor);
+  const kneeBackX = r2(cx - (isFemale ? 7.6 : 9.2) * legDepthFactor);
+  const kneeFrontX = r2(cx + (isFemale ? 10.6 : 12.2) * legDepthFactor);
+  const calfBackX = r2(cx - (isFemale ? 11.8 : 13.8) * legDepthFactor);
+  const calfFrontX = r2(cx + (isFemale ? 6.4 : 7.8) * legDepthFactor);
   const ankleBackX = r2(cx - (isFemale ? 5.6 : 6.6));
-  const ankleFrontX = r2(cx + (isFemale ? 5.2 : 6.2));
+  const ankleFrontX = r2(cx + (isFemale ? 4.6 : 5.6));
 
-  // Brazo de perfil atlético con leve caída natural hacia adelante en antebrazo (independiente de entrepierna)
-  const sideArmCenterX = (sideShoulderBackX + sideShoulderFrontX) / 2 - 1.5;
-  const sideArmHalfW = r2((isFemale ? 7.0 : 9.4) * buildFactor);
+  // Brazo de perfil fiel a croquis: húmero ligeramente atrás del eje del pecho y antebrazo fluyendo hacia el muslo frontal
+  const sideArmCenterX = (sideShoulderBackX + sideShoulderFrontX) / 2 - 2.2;
+  const sideArmHalfW = r2((isFemale ? 6.2 : 8.8) * buildFactor);
   const sideArm = {
     shoulder: {
       y: deltoidY,
-      backX: r2(sideArmCenterX - sideArmHalfW - 2.2),
-      frontX: r2(sideArmCenterX + sideArmHalfW + 1.2),
+      backX: r2(sideArmCenterX - sideArmHalfW - 2.4),
+      frontX: r2(sideArmCenterX + sideArmHalfW + 1.0),
     },
     bicep: {
       y: bicepY,
-      backX: r2(sideArmCenterX - sideArmHalfW - 1.2),
-      frontX: r2(sideArmCenterX + sideArmHalfW - 0.6),
+      backX: r2(sideArmCenterX - sideArmHalfW - 1.8),
+      frontX: r2(sideArmCenterX + sideArmHalfW - 0.8),
     },
     elbow: {
       y: elbowY,
-      backX: r2(sideArmCenterX - sideArmHalfW + 0.5),
-      frontX: r2(sideArmCenterX + sideArmHalfW + 1.4),
+      backX: r2(sideArmCenterX - sideArmHalfW - 0.6),
+      frontX: r2(sideArmCenterX + sideArmHalfW + 0.6),
     },
     wrist: {
       y: wristY,
-      backX: r2(sideArmCenterX - sideArmHalfW + 7.2),
-      frontX: r2(sideArmCenterX + sideArmHalfW + 3.4),
+      backX: r2(sideArmCenterX - sideArmHalfW + 7.4),
+      frontX: r2(sideArmCenterX + sideArmHalfW + 3.2),
     },
     handTipY,
   };

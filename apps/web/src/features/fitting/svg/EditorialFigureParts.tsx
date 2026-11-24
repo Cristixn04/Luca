@@ -102,8 +102,12 @@ export function EditorialFrontHead({ rig, patternPrefix }: EditorialPartProps) {
       {/* Base facial con volumen cálido */}
       <path d={headPath} fill={`url(#${patternPrefix}-head-grad)`} />
 
-      {/* Planos de sombreado editorial recortados al rostro */}
-      <g clipPath={`url(#${headClipId})`} pointerEvents="none">
+      {/* Planos de sombreado editorial difuminados recortados al rostro */}
+      <g
+        clipPath={`url(#${headClipId})`}
+        filter={`url(#${patternPrefix}-micro-shade)`}
+        pointerEvents="none"
+      >
         <path
           d={[
             `M ${cx - headRx * 1.08} ${headTopY}`,
@@ -379,7 +383,11 @@ export function EditorialSideHead({ rig, patternPrefix }: EditorialPartProps) {
 
       <path d={profileHeadPath} fill={`url(#${patternPrefix}-side-body-grad)`} />
 
-      <g clipPath={`url(#${sideHeadClipId})`} pointerEvents="none">
+      <g
+        clipPath={`url(#${sideHeadClipId})`}
+        filter={`url(#${patternPrefix}-micro-shade)`}
+        pointerEvents="none"
+      >
         <path
           d={[
             `M ${cx + hr * 0.48} ${chinY + 1}`,
@@ -468,11 +476,11 @@ export function EditorialSideHead({ rig, patternPrefix }: EditorialPartProps) {
           <>
             <path
               d={[
-                `M ${cx + hr * 0.56} ${headTopY + 1.8}`,
-                `C ${cx + hr * 0.28} ${headTopY - 5.8}, ${cx - hr * 0.78} ${headTopY - 4}, ${cx - hr * 1.02} ${headCenterY + 3}`,
-                `C ${cx - hr * 1.15} ${chinY + 12}, ${cx - hr * 1.02} ${rig.shoulderY + 16}, ${cx - hr * 0.5} ${rig.shoulderY + 22}`,
+                `M ${cx + hr * 0.56} ${headTopY + 1.4}`,
+                `C ${cx + hr * 0.24} ${headTopY - 8.5}, ${cx - hr * 0.94} ${headTopY - 7.8}, ${cx - hr * 1.12} ${headCenterY + 2}`,
+                `C ${cx - hr * 1.22} ${chinY + 12}, ${cx - hr * 1.04} ${rig.shoulderY + 16}, ${cx - hr * 0.5} ${rig.shoulderY + 22}`,
                 `C ${cx - hr * 0.16} ${rig.shoulderY + 14}, ${cx - hr * 0.16} ${chinY + 5}, ${earX - 0.5} ${earY + 5.2}`,
-                `C ${earX + 1.2} ${earY - 3.2}, ${cx + hr * 0.14} ${headTopY + 6.4}, ${cx + hr * 0.56} ${headTopY + 1.8}`,
+                `C ${earX + 1.2} ${earY - 3.2}, ${cx + hr * 0.14} ${headTopY + 6.4}, ${cx + hr * 0.56} ${headTopY + 1.4}`,
                 'Z',
               ].join(' ')}
               fill={`url(#${patternPrefix}-hair-grad)`}
@@ -661,9 +669,12 @@ export function EditorialBasewear({
 }: EditorialPartProps & { view: 'front' | 'side' | 'back'; bodyClipId: string }) {
   const { cx, silhouette } = rig;
   const isFemale = silhouette === 'female';
-  const waistTopY = Math.max(rig.waistY + 1, rig.hipY - 14.5);
-  const bandBottomY = waistTopY + 6.4;
-  const hemY = rig.crotchY + 18.5;
+  const waistTopY = Math.max(
+    rig.waistY + (rig.hipY - rig.waistY) * (isFemale ? 0.36 : 0.44),
+    rig.hipY - (isFemale ? 17 : 18),
+  );
+  const bandBottomY = waistTopY + (isFemale ? 5.2 : 6.4);
+  const hemY = rig.crotchY + (isFemale ? 13.5 : 17.5);
 
   if (view === 'side') {
     const s = rig.side;
