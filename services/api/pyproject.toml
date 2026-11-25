@@ -21,7 +21,7 @@ dependencies = [
 [project.optional-dependencies]
 vision = [
     "onnxruntime>=1.20.0",
-    "rembg>=2.0.60",
+    "rembg>=2.0.87",
 ]
 dev = [
     "httpx>=0.28.0,<1.0.0",
