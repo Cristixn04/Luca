@@ -13,6 +13,7 @@ from app.adapters.tagging.gemini_tagger import (
 )
 from app.adapters.vision.rembg_remover import SimpleBorderBackgroundRemover
 from app.main import create_app
+from app.ports.tagging import GarmentCategoryLiteral, GarmentTagSuggestion
 from app.security.controls import DailyBudgetGuard, InMemoryRateLimiter
 from tests.test_vision import VALID_TOKEN, make_garment_photo
 
@@ -107,8 +108,9 @@ def test_vision_analyze_succeeds_even_if_ai_tagger_fails() -> None:
             self,
             front_image_bytes: bytes,
             back_image_bytes: bytes | None = None,
-        ) -> Any:
-            del front_image_bytes, back_image_bytes
+            target_category: GarmentCategoryLiteral | None = None,
+        ) -> GarmentTagSuggestion | None:
+            del front_image_bytes, back_image_bytes, target_category
             raise RuntimeError("503 UNAVAILABLE")
 
     app = create_app(

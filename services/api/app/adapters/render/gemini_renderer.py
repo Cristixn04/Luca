@@ -1,6 +1,7 @@
 import base64
 import io
 import json
+import logging
 import os
 from collections import deque
 from typing import Any
@@ -14,6 +15,8 @@ from app.ports.render import (
     OutfitRenderGarmentInput,
     OutfitRenderResult,
 )
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_IMAGE_MODEL = "gemini-nano-banana-2.1"
 FALLBACK_IMAGE_MODELS: tuple[str, ...] = (
@@ -522,7 +525,6 @@ def _render_realistic_2d_studio_png(
         base, sec, pat = _garment_colors(idx, g)
         fill = (*base, 255)
         stroke = _shade(base, 0.56)
-        hi = _tint(base, 0.14)
         spec_text = (g.visual_spec_summary or "").lower()
         is_long = g.category == "long_sleeve" or "long" in spec_text
         is_dress = g.category == "dress"
@@ -680,6 +682,8 @@ class GeminiMannequinRenderer:
         content_blocks: list[dict[str, str]],
     ) -> OutfitRenderResult:
         del prompt
+        if self._custom_client is None:
+            raise RuntimeError("Custom Gemini client is not configured")
         interaction = self._custom_client.interactions.create(
             model=self._model,
             store=False,
@@ -870,7 +874,8 @@ class GeminiMannequinRenderer:
                             height=height,
                             provider=f"gemini:{model_name}",
                         )
-            except Exception:  # noqa: BLE001
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("Gemini image model %s failed; trying next fallback: %s", model_name, exc)
                 continue
 
         # Respaldo inteligente cuando Free Tier bloquea modelos de imagen (429 limit: 0):
