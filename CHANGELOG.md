@@ -6,6 +6,31 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-24
+
+### Added
+- **Identidad visual oficial y experiencia cósmica de acceso**:
+  - Logotipo vectorial caligráfico oficial de **Luca** (`LucaBrandLogo`) e icono espiral PWA (`public/icons/icon.svg`).
+  - Rediseño cósmico de la bóveda (`VaultGate` + `CosmicConstellationCanvas` con Motion v14) y transición cinematográfica `CosmicLoginTransition` con cometa Catmull-Rom en espiral S y soporte `prefers-reduced-motion`.
+- **Avatar anatómico editorial en 3 vistas conectado en vivo a Color**:
+  - Geometría anatómica $C^1$-continua en `Frente`, `Perfil` y `Espalda` para siluetas `Mujer` y `Hombre` (`anatomyPaths.ts`, `mannequinRig.ts`) con sombreado 3D difuminado (`feGaussianBlur`) y ropa base oliva mate.
+  - Cabeza esculpida con estructura ósea facial (sienes, pómulos, ángulo mandibular y mentón) y tercios verticales anatómicos reales (`EditorialFigureParts.tsx`).
+  - Sincronización en tiempo real con el apartado **Color** (`avatarPalette.ts`, `colorStore.ts`, `ColorView.tsx`) aplicando piel, cabello, cejas e iris al instante en todas las vistas.
+- **Gemelo digital IA y giro 3D en Clóset**:
+  - Síntesis `GarmentVisualSpec` desde foto real para renderizado paramétrico coherente en Probador, Clóset y Outfits, con tarjeta interactiva con giro 3D a la foto de referencia en el perchero de Clóset.
+  - Rediseño bento a pantalla completa de **Color** (`ColorView`) y **Memoria** (`MemoryVaultPanel` + `TasteMemorySection`), más transición direccional tipo carrusel entre vistas.
+- **Microservicio RAG & Reordenamiento Híbrido (`services/rag-api`)**:
+  - Servicio Java 21 + Spring Boot 3.4 + PostgreSQL/`pgvector` con índice vectorial HNSW, búsqueda léxica GIN (`tsvector` español), fusión RRF (`HybridReranker`), aislamiento multi-tenant JWT + Row-Level Security y fallback silencioso a `MiniSearch` local.
+  - Script unificado de arranque [`start-luca.sh`](start-luca.sh) (`--status`, `--stop`, `--rebuild`).
+- **Gobernanza y CI/CD listos para lanzamiento**:
+  - Actualización de acciones CI (`actions/checkout@v7`, `actions/setup-node@v7`, `pnpm/action-setup@v6`) y dependencias web (`lucide-react@1`, `globals@17`, `jsdom@31`, `eslint-plugin-react-refresh@0.5`, `@testing-library/jest-dom@7`).
+  - Nuevo job de CI para `services/rag-api` (Java 21 / Maven), `.github/CODEOWNERS`, `SECURITY.md` y ruleset importable `.github/rulesets/main-protection.json`.
+
+### Fixed
+- Corregido `pnpm typecheck` en checkouts limpios de CI asegurando la compilación previa de `@luca/domain`.
+- Corregidos avisos de `ruff` y errores de `mypy` en `services/api`.
+- Desacoplado el largo de brazos respecto a la entrepierna y reflejado el ancho de espalda en vista frontal y trasera en `mannequinRig.ts`.
+
 ## [1.0.0] - 2026-11-20
 
 ### Added
